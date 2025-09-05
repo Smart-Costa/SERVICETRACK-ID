@@ -1,0 +1,282 @@
+<!-- Add Model Modal:
+En este form se el ingreso y edición de modelos de activos.
+-->
+<!-- Modal principal para agregar modelo -->
+<div class="modal fade" id="addModelModal" data-context="new" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-simple modal-dialog-centered modal-add-new-role">
+        <div class="modal-content">
+            <div class="modal-body">
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <div class="text-center mb-6">
+                    <h4 id="modalTitle" class="role-title mb-2">Agregar Modelo Nuevo</h4>
+                </div>
+                <!-- Add model form -->
+                
+             
+                <form id="addModelsForm" class="row g-6" asp-action="AgregarModelo" asp-controller="Administration" method="post">
+                    <input type="hidden" id="modeloId" name="modeloId" class="form-control input2" />
+                    <div class="col-12">
+                        <label class="form-label" for="marca">Seleccionar Marca:</label>
+                        <div class="d-flex align-items-center">
+                            <select id="marca" name="marcaID" class="form-control input2" required>
+                                <option value="" disabled selected>Seleccione una marca</option>
+                            </select>
+                            <button type="button" class="btn btn-primary ms-2" data-bs-toggle="modal" data-bs-target="#addBrandModal">
+                                +
+                            </button>
+                        </div>
+                        <div id="userModelError" class="error-message2"></div>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label" for="name">Nombre</label>
+                        <input type="text" id="name" name="nombre" class="form-control input2" placeholder="Ingrese el nombre del modelo" required />
+                        <div id="modelNameError" class="error-message2"></div>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label" for="description">Descripción</label>
+                        <textarea id="description" name="descripcion" class="form-control input2" placeholder="Ingrese una breve descripción del modelo" rows="4" required></textarea>
+                        <div id="modelDescriptionError" class="error-message2"></div>
+                    </div>
+
+                    <div class="col-12 d-flex justify-content-center gap-3 mt-3">
+                        <button type="submit" id="saveStateButton" class="btn btn-primary button2">
+                            Guardar
+                        </button>
+                        <button type="button" class="btn btn-secondary button2" id="cancelButton" data-bs-dismiss="modal">
+                            Cancelar
+                        </button>
+                    </div>
+                </form>
+                <!--/ Add model form -->
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- Modal para agregar marcas -->
+<div class="modal fade" id="addBrandModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-md modal-simple modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body">
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <div class="text-center mb-4">
+                    <h4 class="role-title mb-2">Agregar Marca Nueva</h4>
+                </div>
+                <!-- Add brand form -->
+                <form id="addBrandForm" class="row g-4" asp-action="AddBrand2" asp-controller="Administration" method="post" novalidate>
+                    <div class="col-12">
+                        <label class="form-label" for="nameMarca">Nombre de la Marca</label>
+                        <input type="text"
+                               id="nameMarca"
+                               name="add_brand_name"
+                               class="form-control input2"
+                               placeholder="Ingrese el nombre de la marca"
+                               required
+                               />
+                        <div id="nameErrorMarca" class="text-danger small mt-1">
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label" for="descriptionMarca">Descripción</label>
+                        <textarea id="descriptionMarca"
+                                  name="add_brand_description"
+                                  class="form-control input2"
+                                  placeholder="Ingrese una breve descripción de la marca"
+                                  rows="3"
+                                  required
+                                 ></textarea>
+                        <div id="descriptionErrorMarca" class="text-danger small mt-1">
+                        </div>
+                    </div>
+
+                    <div class="col-12 d-flex justify-content-center gap-3 mt-3">
+                        <button type="submit" class="btn btn-primary" id="saveBrandButton">Agregar</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    </div>
+                </form>
+                <!--/ Add brand form -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+  //Script para el envio del modal de modelos
+
+    document.addEventListener("DOMContentLoaded", function () {
+        const formModel = document.getElementById("addModelsForm"); // Cambié el id al del formulario real
+        const addModelModal = document.getElementById("addModelModal");
+
+        // Evento de envío del formulario
+        formModel.addEventListener("submit", function (e) {
+            // Prevenir el envío por defecto solo si hay un error
+            e.preventDefault();
+
+            // Obtener los valores de los inputs
+            const nameInput = document.getElementById("name");
+            const descriptionInput = document.getElementById("description");
+            const nameValue = nameInput.value.trim();
+            const descriptionValue = descriptionInput.value.trim();
+
+            // Divs de error
+            const nameErrorDiv = document.getElementById("modelNameError");
+            const descriptionErrorDiv = document.getElementById("modelDescriptionError");
+
+            // Limpiar mensajes de error previos
+            nameErrorDiv.textContent = "";
+            descriptionErrorDiv.textContent = "";
+
+            let isValid = true;
+
+            // Validar nombre
+            if (!nameValue || nameValue.length < 3 || nameValue.length > 250) {
+                nameErrorDiv.textContent = "El nombre debe tener entre 3 y 250 caracteres.";
+                isValid = false;
+            }
+
+            // Validar descripción
+            if (!descriptionValue || descriptionValue.length < 3 || descriptionValue.length > 250) {
+                descriptionErrorDiv.textContent = "La descripción debe tener entre 3 y 250 caracteres.";
+                isValid = false;
+            }
+
+            // Si la validación es correcta, enviar el formulario
+            if (isValid) {
+                console.log("Formulario válido. Enviando al servidor.");
+                formModel.submit(); // Enviar el formulario de manera estándar
+            } else {
+                console.log("Formulario inválido. Corrige los errores e inténtalo nuevamente.");
+            }
+        });
+
+        // Limpiar el formulario al cerrar el modal
+        $(addModelModal).on('hidden.bs.modal', function () {
+            // Limpiar los campos del formulario
+            formModel.reset();
+
+            // Limpiar los mensajes de error
+            document.getElementById("modelNameError").textContent = "";
+            document.getElementById("modelDescriptionError").textContent = "";
+        });
+    });
+
+
+
+       //Script para el envio del modal de marcas
+    document.addEventListener("DOMContentLoaded", function () {
+      const formMarca = document.getElementById("addBrandForm");
+      const cancelButton = document.querySelector("#addBrandModal .btn-secondary");
+
+      formMarca.addEventListener("submit", function (e) {
+          e.preventDefault();
+
+          const nameInput = document.getElementById("nameMarca");
+          const descriptionInput = document.getElementById("descriptionMarca");
+          const nameValue = nameInput.value.trim();
+          const descriptionValue = descriptionInput.value.trim();
+
+          const nameErrorDiv = document.getElementById("nameErrorMarca");
+          const descriptionErrorDiv = document.getElementById("descriptionErrorMarca");
+
+          nameErrorDiv.textContent = "";
+          descriptionErrorDiv.textContent = "";
+
+          let isValid = true;
+
+          if (!nameValue || nameValue.length < 3 || nameValue.length > 250) {
+              nameErrorDiv.textContent = "El nombre debe tener entre 3 y 250 caracteres.";
+              isValid = false;
+          }
+
+          if (!descriptionValue || descriptionValue.length < 3 || descriptionValue.length > 250) {
+              descriptionErrorDiv.textContent = "La descripción debe tener entre 3 y 250 caracteres.";
+              isValid = false;
+          }
+
+         if (isValid) {
+      console.log("Formulario válido. Enviando al servidor.");
+
+      fetch(formMarca.action, {
+          method: 'POST',
+          body: new FormData(formMarca)
+      })
+      .then(response => {
+          if (!response.ok) {
+              throw new Error('Error en la respuesta del servidor');
+          }
+          return response.json();
+      })
+      .then(data => {
+          if (data.success) {
+              console.log("Marca agregada:", data);
+
+              // Cerrar modal de marca
+              const modalElement = document.getElementById("addBrandModal");
+              const modalBrand = bootstrap.Modal.getOrCreateInstance(modalElement);
+              modalBrand.hide();
+
+              // Limpiar el formulario de marca
+              formMarca.reset();
+
+              // Agregar la nueva marca al select
+              const marcaSelect = document.getElementById("marca");
+              const option = document.createElement("option");
+              option.value = data.id;
+              option.textContent = data.name;
+              option.selected = true;
+              marcaSelect.appendChild(option);
+
+              // Abrir modal de modelo
+              const modalModel = new bootstrap.Modal(document.getElementById("addModelModal"));
+              modalModel.show();
+          } else {
+              console.error("Error al agregar la marca:", data.message);
+          }
+      })
+      .catch(error => {
+          console.error("Error:", error);
+      });
+          } else {
+              console.log("Formulario inválido. Corrige los errores e inténtalo nuevamente.");
+          }
+      });
+        // Manejo del evento de Cancelar
+        cancelButton.addEventListener("click", function() {
+            // Cerrar el modal de marcas
+            const modalBrand = bootstrap.Modal.getInstance(document.getElementById("addBrandModal"));
+            modalBrand.hide();
+
+            // Abrir el modal de agregar modelo
+            const modalModel = new bootstrap.Modal(document.getElementById("addModelModal"));
+            modalModel.show();
+        });
+    });
+
+
+
+</script>
+
+
+
+<!-- #region Estilos CSS -->
+
+<style>
+    .error-message2 {
+        color: red;
+        font-size: 0.875rem;
+        margin-top: 5px;
+    }
+
+    .error-message3 {
+        color: red;
+        font-size: 0.875rem;
+        text-align: center;
+        margin-top: 5px;
+    }
+
+    .button2 {
+        margin-top: 10px;
+    }
+</style>
+

@@ -1,0 +1,59 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="EPPlus" Version="5.8.0" />
+    <PackageReference Include="MailKit" Version="4.13.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.4" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.4">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SQLite" Version="9.0.4" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.4" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.4">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="9.0.0" />
+    <PackageReference Include="System.Data.SQLite" Version="1.0.119" />
+     <None Update="AspnetCoreMvcFullContext.db">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Models\ViewModels\" />
+    <Folder Include="DLL\" />
+    <Folder Include="DocumentosActivo\" />
+    <Folder Include="FotosActivos\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="Diverscan.Activos.DL">
+      <HintPath>..\..\..\..\OneDrive\Escritorio\Archivos\DLLs\Diverscan.Activos.DL.dll</HintPath>
+    </Reference>
+    <Reference Include="Diverscan.Activos.EL">
+      <HintPath>..\..\..\..\OneDrive\Escritorio\Archivos\DLLs\Diverscan.Activos.EL.dll</HintPath>
+    </Reference>
+    <Reference Include="Diverscan.Activos.UIL">
+      <HintPath>..\..\..\..\OneDrive\Escritorio\Archivos\DLLs\Diverscan.Activos.UIL.dll</HintPath>
+    </Reference>
+    <Reference Include="Diverscan.Activos.Utilities">
+      <HintPath>..\..\..\..\OneDrive\Escritorio\Archivos\DLLs\Diverscan.Activos.Utilities.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Plantillas\**\*.*">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="DocumentosActivo\**\*.*">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="FotosActivos\**\*.*">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,1796 @@
+@{
+  ViewData["Title"] = "Usuarios";
+}
+
+@section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css">
+  <link rel="stylesheet" href="~/vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css">
+  <link rel="stylesheet" href="~/vendor/libs/datatables-buttons-bs5/buttons.bootstrap5.css">
+  <link rel="stylesheet" href="~/vendor/libs/select2/select2.css" />
+  <link rel="stylesheet" href="~/vendor/libs/&#64;form-validation/form-validation.css" />
+}
+
+@section VendorScripts {
+  <script src="~/vendor/libs/moment/moment.js"></script>
+  <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
+  <script src="~/vendor/libs/select2/select2.js"></script>
+  <script src="~/vendor/libs/&#64;form-validation/popular.js"></script>
+  <script src="~/vendor/libs/&#64;form-validation/bootstrap5.js"></script>
+  <script src="~/vendor/libs/&#64;form-validation/auto-focus.js"></script>
+  <script src="~/vendor/libs/cleavejs/cleave.js"></script>
+  <script src="~/vendor/libs/cleavejs/cleave-phone.js"></script>
+  using Diverscan.Activos.EL;
+  using AspnetCoreMvcFull.Models.Users;
+}
+
+@section PageScripts {
+  <script src="~/js/app-user-list.js"></script>
+
+}
+
+@model AspnetCoreMvcFull.Controllers.UsersController.UsuariosRolesViewModel
+
+
+@* VARIABLES QUE CONTIENEN LA INFORMACION DE FILTROS DE BUSQUEDA, ORDEN DE REGISTROS Y PAGINADO DE DATOS *@
+@{
+
+
+  //Variable que almacena el string de busqueda por nombre, apellido, correo y rol de usuarios
+  string user_search_input = ViewData["User_Search_Input"] is string user_search_input_value ?
+  user_search_input_value : "";
+  //string que almacena el string de filtrado de usuarios segun su estado activo/inactivo
+  string user_state = ViewData["User_State"] is string user_state_value ? user_state_value : "";
+  //Variable que contiene el nombre de la columna que dicta el orden
+  string order_by = ViewData["Order_By"] is string order_by_value ? order_by_value : "name";
+
+
+  //Variable que almacena el conteo de paginas totales
+  int total_pages = Int32.TryParse(ViewData["Total_Pages"]?.ToString(), out int total_pages_result) ?
+  total_pages_result : 1;
+  //Variable que contiene el numero de pagina actual
+  int current_page = Int32.TryParse(ViewData["Current_Page"]?.ToString(), out int current_page_result) ?
+  current_page_result : 1;
+  //Variable que contiene el numero de usuarios por pagina
+  int users_per_page = Int32.TryParse(ViewData["Users_Per_Page"]?.ToString(), out int users_per_page_result) ?
+  users_per_page_result : 5;
+
+}
+<style>
+  /* Clase para el efecto de hover de seleccion */
+  .sortable-column:hover {
+    background-color: #f0f0f0;
+    /* Fondo gris claro */
+    cursor: pointer;
+    /* Cambia el cursor a mano */
+  }
+
+  /* Clase para el encabezado seleccionado */
+  .sortable-column.active {
+    background-color: #f0f0f0;
+    /* Fondo gris para indicar selección */
+    font-weight: bold;
+    /* Resalta el texto */
+  }
+
+  .error-message2 {
+    color: red;
+    font-size: 12px;
+    margin-top: 5px;
+  }
+
+
+  .input2 {
+    margin-bottom: 10px;
+  }
+
+  .button2 {
+    margin-top: 10px;
+  }
+
+  select {
+    appearance: auto;
+    /* Asegura que se muestren los estilos del navegador */
+    /*-moz-appearance: auto;*/
+    /* Firefox */
+    -webkit-appearance: auto;
+    /* Safari y Chrome */
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 6" fill="none" stroke="gray" stroke-width="2"><path d="M1 1l4 4 4-4"/></svg>');
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    /* Posición de la flecha */
+    background-size: 12px 12px;
+    /* Ajusta el tamaño de la flecha */
+    padding-right: 30px;
+    /* Espacio para la flecha */
+    font-size: 16px;
+    /* Ajusta el tamaño de la fuente */
+    height: 40px;
+    /* Altura del select */
+    border: 1px solid #ccc;
+    /* Borde del select */
+    border-radius: 5px;
+    /* Bordes redondeados */
+    color: #333;
+    /* Color del texto */
+  }
+</style>
+
+
+@* ************** Content ************** *@
+
+
+
+
+
+
+
+
+@* CUERPO DEL MODAL CONFIRMAR DESACTIVAR*@
+<div class="modal fade show hidden" id="deactivateUserConfirmationModal" tabindex="-1" aria-modal="true" role="dialog"
+  style="display: none; padding-left: 0px; background-color: rgba(0, 0, 0, 0.5);">
+
+
+  @* Script para mostrar mensaje y enviar formulario *@
+  <script>
+    const deactivate_user = () => {
+      const deactivating_user_msg_label = document.getElementById('deactivating_user_msg_label');
+      deactivating_user_msg_label.style.display = 'inline';
+
+      setTimeout(() => {
+        document.getElementById('deactivate_user_form').submit();
+        document.getElementById('deactivateUserConfirmationModal').style.display = 'none';
+        deactivating_user_msg_label.style.display = 'none';
+      }, 1500);
+
+    }
+
+  </script>
+
+  <div class="modal-dialog modal-md modal-simple modal-dialog-centered">
+
+    <div class="modal-content">
+
+      <div class="modal-body">
+
+        @* Boton para cerrar el modal y ocultar mensaje de error en caso de que se haya mostrado*@
+        <button type="button" class="btn-close p-2 m-2" aria-label="Close" onclick="document.getElementById('deactivateUserConfirmationModal').style.display='none';
+          document.getElementById('deactivating_user_msg_label').style.display = 'none';">
+        </button>
+
+        @* Titulo del modal *@
+        <div class="text-center mb-6">
+          <h4 class="role-title mb-2">¿Activar/Desactivar usuario?</h4>
+        </div>
+
+        @* Mensaje de exito *@
+        <div class="text-center mb-2">
+          <label id="deactivating_user_msg_label" class="text-success"
+            style="display: none; margin-left: 5%; align-self: center; justify-self: center;">
+            Cambiando de estado a usuario...
+          </label>
+        </div>
+
+
+
+        @* Form para enviar el formulario *@
+        <form asp-action="DeactivateActivateUser" asp-controller="Users" method="post" class="dt_adv_search"
+          id="deactivate_user_form">
+          @* input oculto para almacenar el UserSysId del usuario para ser enviado al controller *@
+          <input type="hidden" name="userIdToActivateDeactivate" id="userIdToActivateDeactivate" value="" />
+          <input type="hidden" name="isUserToActivateDeactivateApproved" id="isUserToActivateDeactivateApproved"
+            value="" />
+
+          @* div contenedor *@
+          <div class="container mt-12 justify-content-center">
+
+            @* Primera fila donde esta el Boton de confirmar y Cancelar *@
+            <div class="row" style="justify-self: center;">
+              <div class="col">
+                <button type="button" class="btn btn-primary w-full h-auto" onclick="deactivate_user();">
+                  Confirmar
+                </button>
+              </div>
+
+              <div class="col">
+                <button type="button" class="btn btn-secondary w-full h-auto" onclick="document.getElementById('deactivateUserConfirmationModal').style.display='none';
+                  document.getElementById('deactivating_user_msg_label').style.display = 'none';">
+                  Cancelar
+                </button>
+              </div>
+            </div>
+
+          </div>
+
+        </form>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+
+@* CUERPO DEL MODAL CONFIRMAR DESACTIVAR MULTIPLES USUARIOS*@
+<div class="modal fade show hidden" id="deactivateMultipleUsersConfirmationModal" tabindex="-1" aria-modal="true"
+  role="dialog" style="display: none; padding-left: 0px; background-color: rgba(0, 0, 0, 0.5);">
+
+  @* Script para mostrar mensaje y enviar formulario *@
+  <script>
+    const deactivate_multiple_users = () => {
+
+      //Obtener el value (userId) de todas last checkbox que estan marcadas
+      const checked_user_checkboxes = document.querySelectorAll('.checked-checkbox');
+
+      //Asignar los ids de los usuarios seleccionados al input oculto que llega al controller
+      let users_ids_to_deactivate = '';
+      let users_states_to_deactivate = '';
+      //los ids pasan al controller en forma de string que sigue la siguiente estructura:
+      // userID,userID,userID,userID,userID,userID,userID,
+      // para que en el controller se pueda hacer un split en cada coma y asi Obtener un Array de ids
+
+      //se completan los strings con todos los valores de ids de usuario y estados separados por comas
+      checked_user_checkboxes.forEach(checkbox => {
+        users_ids_to_deactivate += `${checkbox.value.split(",")[0]},`;
+        users_states_to_deactivate += `${checkbox.value.split(",")[1]},`;
+      });
+
+      //se Asignar el valor de los strings A sus respectivos hidden inputs para que viajen al controller
+      //se elimina el ultimo caracter en ambos strings ya que es una "," vacia
+      document.getElementById('users_ids_to_deactivate').value = users_ids_to_deactivate.slice(0, -1);
+      document.getElementById('users_states_to_deactivate').value = users_states_to_deactivate.slice(0, -1);
+
+      //se muestra el mensaje de desactivando usuarios
+      const deactivating_users_msg_label = document.getElementById('deactivating_users_msg_label');
+      deactivating_users_msg_label.style.display = 'inline';
+      //se envia el formulario
+      setTimeout(() => {
+        document.getElementById('deactivate_multiple_users_form').submit();
+        document.getElementById('deactivateMultipleUsersConfirmationModal').style.display = 'none';
+        deactivating_users_msg_label.style.display = 'none';
+      }, 1500);
+
+    }
+
+  </script>
+
+
+
+  <div class="modal-dialog modal-md modal-simple modal-dialog-centered">
+
+    <div class="modal-content">
+
+      <div class="modal-body">
+
+        @* Boton para cerrar el modal y ocultar mensaje de error en caso de que se haya mostrado*@
+        <button type="button" class="btn-close p-2 m-2" aria-label="Close" onclick="document.getElementById('deactivateMultipleUsersConfirmationModal').style.display='none';
+          document.getElementById('deactivating_users_msg_label').style.display = 'none';">
+        </button>
+
+        @* Titulo del modal *@
+        <div class="text-center mb-6">
+          <h4 class="role-title mb-2">¿Activar/Desactivar usuarios seleccionados?</h4>
+        </div>
+        @* Mensaje de exito *@
+        <div class="text-center mb-2">
+          <label id="deactivating_users_msg_label" class="text-success"
+            style="display: none; margin-left: 5%; align-self: center; justify-self: center;">
+            Cambiando de estado a usuarios seleccionados...
+          </label>
+        </div>
+
+
+
+        @* Form para enviar el formulario *@
+        <form asp-action="DeactivateActivateMultipleUsers" asp-controller="Users" method="post" class="dt_adv_search"
+          id="deactivate_multiple_users_form">
+
+          @* input oculto para almacenar los ids de los usuarios a desactivar *@
+          <input type="hidden" name="users_ids_to_deactivate" id="users_ids_to_deactivate" value="" />
+          <input type="hidden" name="users_states_to_deactivate" id="users_states_to_deactivate" value="" />
+
+          @* div contenedor *@
+          <div class="container mt-12 justify-content-center">
+
+            @* Primera fila donde esta el Boton de confirmar y Cancelar *@
+            <div class="row" style="justify-self: center;">
+              <div class="col">
+                <button type="button" class="btn btn-primary w-full h-auto" onclick="deactivate_multiple_users();">
+                  Confirmar
+                </button>
+              </div>
+
+              <div class="col">
+                <button type="button" class="btn btn-secondary w-full h-auto" onclick="
+                document.getElementById('deactivateMultipleUsersConfirmationModal').style.display='none';
+                document.getElementById('deactivating_users_msg_label').style.display = 'none';">
+                  Cancelar
+                </button>
+              </div>
+            </div>
+
+          </div>
+
+        </form>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+
+
+@* CUERPO DEL MODAL AGREGAR USUARIO *@
+<div class="modal fade show hidden" id="AddUserModal" tabindex="-1" aria-modal="true" role="dialog"
+  style="display: none; padding-left: 0px; background-color: rgba(0, 0, 0, 0.5);">
+  <div class="modal-dialog modal-lg modal-simple modal-dialog-centered modal-add-new-role">
+    <div class="modal-content">
+
+      @* Scripts *@
+      <script>
+        //metodo para revisar inputs de registrar y enviar formulario
+        const check_inputs_register_user = () => {
+
+          let hasError = false;
+
+          // Limpiar mensajes de error previos
+          const errorMessages = document.querySelectorAll('.error-message2');
+          errorMessages.forEach(div => (div.textContent = ''));
+
+          // Inputs
+          const userName = document.getElementById('Username');
+          const userEmail = document.getElementById('UserEmail');
+          const idRol = document.getElementById('idRol');
+          const userPassword = document.getElementById('UserPassword');
+          const userConfirmPassword = document.getElementById('UserConfirmPassword');
+          const activateUser = document.getElementById('ActivateUser'); // Switch checkbox
+          const successMessage = document.getElementById('success_message');
+
+          // Validaciones
+          // UserName: Requerido, longitud entre 3 y 255 caracteres
+          if (!userName.value.trim()) {
+            document.getElementById('userNameError').textContent = 'El nombre de usuario es obligatorio.';
+            hasError = true;
+          } else if (userName.value.length < 3 || userName.value.length > 255) {
+            document.getElementById('userNameError').textContent = 'El nombre de usuario debe tener entre 3 y 255 caracteres.';
+            hasError = true;
+          }
+
+          // UserEmail: Requerido, formato de email válido, max 128 caracteres
+
+          if (!userEmail.value.trim()) {
+            document.getElementById('userEmailError').textContent = 'El email es obligatorio.';
+            hasError = true;
+          } else if (!userEmail.checkValidity()) {
+            document.getElementById('userEmailError').textContent = 'Debe ingresar un email válido.';
+            hasError = true;
+          } else if (userEmail.value.length > 128) {
+            document.getElementById('userEmailError').textContent = 'El email no debe exceder los 128 caracteres.';
+            hasError = true;
+          }
+
+          // RoleName (select): Requerido
+          if (!idRol.value.trim()) {
+            document.getElementById('userRolError').textContent = 'Debe seleccionar un rol.';
+            hasError = true;
+          }
+
+          // Validaciones de contraseñas, solo si no es edición
+          // UserPassword: Requerido, max 128 caracteres
+          if (!userPassword.value.trim()) {
+            document.getElementById('userPasswordError').textContent = 'La contraseña es obligatoria.';
+            hasError = true;
+          } else if (userPassword.value.length > 128 || userPassword.value.length < 8)
+          {
+            document.getElementById('userPasswordError').textContent =
+                userPassword.value.length < 8
+                    ? 'La contraseña debe tener al menos 8 caracteres.'
+                    : 'La contraseña no debe exceder los 128 caracteres.';
+            hasError = true;
+            console.log('entró');
+          }
+
+
+          // UserPasswordConfirm: Requerido, max 128 caracteres, coincide con UserPassword
+          if (!userConfirmPassword.value.trim()) {
+            document.getElementById('userPasswordConfirmError').textContent = 'Debe confirmar la contraseña.';
+            hasError = true;
+          } else if (userConfirmPassword.value.length > 128 || userConfirmPassword.value.length < 8)
+          {
+            document.getElementById('userPasswordConfirmError').textContent =
+                userConfirmPassword.value.length < 8
+                    ? 'La confirmación de la contraseña debe tener al menos 8 caracteres.'
+                    : 'La confirmación de la contraseña no debe exceder los 128 caracteres.';
+            hasError = true;
+          }
+          else if (userPassword.value !== userConfirmPassword.value) {
+            document.getElementById('userPasswordConfirmError').textContent = 'La confirmación de la contraseña no coincide.';
+            hasError = true;
+          }
+
+          // Si hay errores, prevenir el envío del formulario
+          if (hasError) {
+            return; // No enviar el formulario si hay errores
+          }
+
+          //mostrar mensaje de exito
+          successMessage.style.display = 'block';
+
+          //Agregar tiempo para enviar formulario, ocultar mensaje de exito y Resetear modal
+          setTimeout(() => {
+
+            // Cerrar el modal
+            document.getElementById('AddUserModal').style.display = 'none';
+
+            // Finalmente, enviar el formulario
+            document.getElementById('RegisterUserForm').submit(); // Esto se ejecuta solo si no hay errores
+
+            // Limpiar los campos manualmente después de enviar
+            userName.value = '';
+            userEmail.value = '';
+            idRol.selectedIndex = 0; // Resetear el select a la primera opción
+            userPassword.value = '';
+            userConfirmPassword.value = '';
+            activateUser.checked = false;
+
+            // Limpiar los mensajes de error después del envío
+            errorMessages.forEach(div => (div.textContent = ''));
+            //Limpiar mensaje de exito
+            successMessage.style.display = 'none';
+
+          }, 1500); // 1.5 segundos
+
+        }
+
+
+        document.addEventListener('DOMContentLoaded', () => {
+
+
+          //metodo para ocultar/Mostrar password
+          const toggle_password = (passwordField, passwordIcon) => {
+            if (passwordField.type === "password") {
+              passwordField.type = "text";
+              passwordIcon.classList = "ti ti-eye";
+            } else {
+              passwordField.type = "password";
+              passwordIcon.classList = "ti ti-eye-off";
+
+            }
+          }
+
+          //password input fields
+          passwordField = document.getElementById("UserPassword");
+          confirmPasswordField = document.getElementById("UserConfirmPassword");
+
+          //password toggle icons
+          passwordIcon = document.getElementById("password_toggle_icon");
+          confirmPasswordIcon = document.getElementById("confirm_password_toggle_icon");
+
+          //password toggle buttons
+          passwordToggleButton = document.getElementById("toggle_password_button");
+          confirmPasswordToggleButton = document.getElementById("toggle_confirm_password_button");
+
+          //asignar metodo a los botones
+          passwordToggleButton.addEventListener("click", () => toggle_password(passwordField, passwordIcon));
+          confirmPasswordToggleButton.addEventListener("click", () => toggle_password(confirmPasswordField, confirmPasswordIcon));
+
+
+
+        });
+
+
+      </script>
+
+      @* Cuerpo del modal registrar usuario *@
+      <div class="modal-body">
+        @* Boton cerrar modal *@
+        <button type="button" class="btn-close" aria-label="Close"
+          onclick="document.getElementById('AddUserModal').style.display = 'none';"></button>
+        @* titulo modal *@
+        <div class="text-center mb-6">
+          <h4 class="role-title mb-2">Agregar Usuario Nuevo</h4>
+        </div>
+
+
+
+        @* FORM PARA ENVIAR AL CONTROLLER*@
+        <form asp-action="AddUser" asp-controller="Users" method="post" class="dt_adv_search" id="RegisterUserForm">
+
+          @* Input Username *@
+          <div class="col-12">
+            <label class="form-label" for="Username">Usuario</label>
+            <input type="text" id="Username" name="Username" class="form-control input2" placeholder="Admin" required />
+            <div id="userNameError" class="error-message2"></div>
+          </div>
+
+
+          @* Input Email y Seleccionar rol *@
+          <div class="col-12 d-flex gap-3">
+            @* Email *@
+            <div style="width: 50%;">
+              <label class="form-label" for="UserEmail">Email</label>
+              <input type="email" id="UserEmail" name="UserEmail" class="form-control input2"
+                placeholder="Example@domain.com" required />
+              <div id="userEmailError" class="error-message2"></div>
+            </div>
+
+            @* Seleccionar Rol *@
+            <div style="width: 50%;">
+              <label class="form-label" for="idRol">Seleccionar Rol:</label>
+              <select id="idRol" name="idRol" class="form-control input2" required>
+                <option value="" disabled selected>Seleccione un rol</option>
+                @{
+                  foreach (var rol in Model.Roles)
+                  {
+                    <option value="@(rol.IdRol)">@(rol.Nombre)</option>
+                  }
+                }
+              </select>
+              <div id="userRolError" class="error-message2"></div>
+            </div>
+          </div>
+
+
+          @* Inputs password y conmfirm password  *@
+          <div class="col-12 d-flex gap-3">
+
+            @* input password *@
+            <div style="width: 50%;">
+              <label class="form-label" for="UserPassword">Contraseña</label>
+              <div class="input-group input-group-merge">
+                @* Input password *@
+                <input type="password" id="UserPassword" name="UserPassword" class="form-control"
+                  aria-describedby="password" placeholder="••••••••••" required />
+                @* Mostrar/Ocultar password *@
+                <span class="input-group-text cursor-pointer toggle-password" id="toggle_password_button">
+                  <i id="password_toggle_icon" class="ti ti-eye-off"></i>
+                </span>
+              </div>
+              <div id="userPasswordError" class="error-message2"></div>
+            </div>
+
+            @* Input confirmar password  *@
+            <div style="width: 50%;">
+              <label class="form-label" for="UserConfirmPassword">Confirmar Contraseña</label>
+              <div class="input-group input-group-merge">
+                @* Input confirmar password *@
+                <input type="password" id="UserConfirmPassword" name="UserConfirmPassword" class="form-control"
+                  placeholder="••••••••••" required />
+                <span class="input-group-text cursor-pointer toggle-password" id="toggle_confirm_password_button">
+                  <i id="confirm_password_toggle_icon" class="ti ti-eye-off"></i>
+                </span>
+              </div>
+              <div id="userPasswordConfirmError" class="error-message2"></div>
+            </div>
+          </div>
+
+
+          @* Inputs activar usuario *@
+          <div class="col-12 d-flex gap-3 mt-2">
+            <label class="switch">
+              @* input es usuario activo *@
+              <input type="checkbox" id="ActivateUser" name="ActivateUser" class="switch-input" />
+              <span class="switch-toggle-slider">
+                <span class="switch-on"></span>
+                <span class="switch-off"></span>
+              </span>
+              <span class="switch-label">Activar Empleado</span>
+            </label>
+          </div>
+
+
+          @* Mensaje de éxito enviando datos *@
+          <div class="col-12 d-flex gap-3 justify-content-center align-items-center">
+            <label class="text-success" style="display: none;" id="success_message">Enviando datos...</label>
+          </div>
+
+
+          @* Botones de registrar y Cancelar *@
+          <div class="col-12 d-flex justify-content-center gap-3 mt-3">
+            <button type="button" class="btn btn-primary button2" id="registerUserButton"
+              onclick="check_inputs_register_user()">
+              Guardar
+            </button>
+            <button type="button" class="btn btn-secondary button2"
+              onclick="document.getElementById('AddUserModal').style.display = 'none';">
+              Cancelar
+            </button>
+          </div>
+        </form>
+
+
+
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- Modal de advertencia -->
+<div class="modal fade" id="limitUsersModal" tabindex="-1" aria-labelledby="limitUsersModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title fw-bold" id="limitUsersModalLabel">Límite de Usuarios Activos</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body" id="limitUsersModalBody">
+                <!-- Mensaje dinámico -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Entendido</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@{
+    string msg = null;
+
+    if (TempData["Alert"] != null)
+    {
+        var alertObj = System.Text.Json.JsonSerializer.Deserialize<dynamic>(TempData["Alert"].ToString());
+        msg = alertObj?.GetProperty("Mensaje").ToString();
+
+        // Eliminarlo manualmente para que no persista
+        TempData.Remove("Alert");
+    }
+}
+
+@if (!string.IsNullOrEmpty(msg))
+{
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const modalBody = document.getElementById("limitUsersModalBody");
+            modalBody.innerHTML = `@Html.Raw(msg)`;
+            const myModal = new bootstrap.Modal(document.getElementById("limitUsersModal"));
+            myModal.show();
+        });
+    </script>
+}
+
+
+@* CUERPO DEL MODAL ACTUALIZAR USUARIO *@
+<div class="modal fade show hidden" id="EditUserModal" tabindex="-1" aria-modal="true" role="dialog"
+  style="display: none; padding-left: 0px; background-color: rgba(0, 0, 0, 0.5);">
+  <div class="modal-dialog modal-lg modal-simple modal-dialog-centered modal-add-new-role">
+    <div class="modal-content">
+
+      @* Scripts *@
+      <script>
+        //metodo para revisar inputs de editar y enviar formulario
+        const check_inputs_edit_user = () => {
+
+          let hasError = false;
+
+          // Limpiar mensajes de error previos
+          const errorMessages = document.querySelectorAll('.error-message2');
+          errorMessages.forEach(div => (div.textContent = ''));
+
+          // Inputs
+          const userName = document.getElementById('editUsername');
+          const userEmail = document.getElementById('editUserEmail');
+          const idRol = document.getElementById('editIdRol');
+          const activateUser = document.getElementById('editIsActive'); // Switch checkbox
+          const editSuccessMessage = document.getElementById('edit_success_message');
+
+          // Validaciones
+          // UserName: Requerido, longitud entre 3 y 255 caracteres
+          if (!userName.value.trim()) {
+            document.getElementById('userNameError').textContent = 'El nombre de usuario es obligatorio.';
+            hasError = true;
+          } else if (userName.value.length < 3 || userName.value.length > 255) {
+            document.getElementById('userNameError').textContent = 'El nombre de usuario debe tener entre 3 y 255 caracteres.';
+            hasError = true;
+          }
+
+          // UserEmail: Requerido, formato de email válido, max 128 caracteres
+
+          if (!userEmail.value.trim()) {
+            document.getElementById('userEmailError').textContent = 'El email es obligatorio.';
+            hasError = true;
+          } else if (!userEmail.checkValidity()) {
+            document.getElementById('userEmailError').textContent = 'Debe ingresar un email válido.';
+            hasError = true;
+          } else if (userEmail.value.length > 128) {
+            document.getElementById('userEmailError').textContent = 'El email no debe exceder los 128 caracteres.';
+            hasError = true;
+          }
+
+          // RoleName (select): Requerido
+          if (!idRol.value.trim()) {
+            document.getElementById('userRolError').textContent = 'Debe seleccionar un rol.';
+            hasError = true;
+          }
+
+          // Si hay errores, prevenir el envío del formulario
+          if (hasError) {
+            return; // No enviar el formulario si hay errores
+          }
+
+          //mostrar mensaje de exito
+          editSuccessMessage.style.display = 'block';
+
+          //Agregar tiempo para enviar formulario, ocultar mensaje de exito y Resetear modal
+          setTimeout(() => {
+
+            // Cerrar el modal
+            document.getElementById('EditUserModal').style.display = 'none';
+
+            // Finalmente, enviar el formulario
+            document.getElementById('EditUserForm').submit(); // Esto se ejecuta solo si no hay errores
+
+            // Limpiar los campos manualmente después de enviar
+            userName.value = '';
+            userEmail.value = '';
+            idRol.selectedIndex = 0; // Resetear el select a la primera opción
+            userPassword.value = '';
+            userConfirmPassword.value = '';
+            activateUser.checked = false;
+
+            // Limpiar los mensajes de error después del envío
+            errorMessages.forEach(div => (div.textContent = ''));
+            //Limpiar mensaje de exito
+            editSuccessMessage.style.display = 'none';
+
+          }, 1500); // 1.5 segundos
+
+        }
+
+
+      </script>
+
+      @* Cuerpo del modal actualizar usuario *@
+      <div class="modal-body">
+        @* Boton cerrar modal *@
+        <button type="button" class="btn-close" aria-label="Close"
+          onclick="document.getElementById('EditUserModal').style.display = 'none';"></button>
+        @* titulo modal *@
+        <div class="text-center mb-6">
+          <h4 class="role-title mb-2">Editar Usuario Nuevo</h4>
+        </div>
+
+
+
+        @* FORM PARA ENVIAR AL CONTROLLER*@
+        <form asp-action="EditUser" asp-controller="Users" method="post" class="dt_adv_search" id="EditUserForm">
+          @* Input oculto con el id del usuario seleccionado *@
+          <input type="hidden" id="editUserId" name="editUserId" class="form-control input2" placeholder="Admin"
+            value="" />
+
+          @* Input Username *@
+          <div class="col-12">
+            <label class="form-label" for="editUsername">Usuario</label>
+            <input type="text" id="editUsername" name="editUsername" class="form-control input2" placeholder="Admin"
+              required />
+            <div id="editUserNameError" class="error-message2"></div>
+          </div>
+
+
+          @* Input Email y Seleccionar rol *@
+          <div class="col-12 d-flex gap-3">
+            @* Email *@
+            <div style="width: 50%;">
+              <label class="form-label" for="editUserEmail">Email</label>
+              <input type="email" id="editUserEmail" name="editUserEmail" class="form-control input2"
+                placeholder="Example@domain.com" required />
+              <div id="editUserEmailError" class="error-message2"></div>
+            </div>
+
+            @* Seleccionar Rol *@
+            <div style="width: 50%;">
+              <label class="form-label" for="editIdRol">Seleccionar Rol:</label>
+              <select id="editIdRol" name="editIdRol" class="form-control input2" required>
+                <option value="" disabled selected>Seleccione un rol</option>
+                @{
+                  foreach (var rol in Model.Roles)
+                  {
+
+                    <option value="@(rol.IdRol)">@(rol.Nombre)</option>
+
+                  }
+                }
+              </select>
+              <div id="editUserRolError" class="error-message2"></div>
+            </div>
+          </div>
+
+
+          @* Inputs password y conmfirm password  *@
+          <div class="col-12 d-flex gap-3">
+
+            @* input password *@
+            <div style="width: 50%;">
+              <label class="form-label" for="editUserPassword">Contraseña</label>
+              <div class="input-group input-group-merge">
+                @* Input password *@
+                <input disabled type="password" id="editUserPassword" name="editUserPassword" class="form-control"
+                  aria-describedby="password" placeholder="••••••••••" required />
+                @* Mostrar/Ocultar password *@
+                <span class="input-group-text cursor-pointer toggle-password">
+                  <i class="ti ti-eye-off"></i>
+                </span>
+              </div>
+            </div>
+
+            @* Input confirmar password  *@
+            <div style="width: 50%;">
+              <label class="form-label" for="editUserConfirmPassword">Confirmar Contraseña</label>
+              <div class="input-group input-group-merge">
+                @* Input confirmar password *@
+                <input disabled type="password" id="editUserConfirmPassword" name="editUserConfirmPassword"
+                  class="form-control" placeholder="••••••••••" required />
+                <span class="input-group-text cursor-pointer toggle-password">
+                  <i class="ti ti-eye-off"></i>
+                </span>
+              </div>
+            </div>
+          </div>
+
+
+          @* Inputs activar usuario *@
+          <div class="col-12 d-flex gap-3 mt-2">
+            <label class="switch">
+              @* input es usuario activo *@
+              <input type="checkbox" id="editIsActive" name="editIsActive" class="switch-input" />
+              <span class="switch-toggle-slider">
+                <span class="switch-on"></span>
+                <span class="switch-off"></span>
+              </span>
+              <span class="switch-label">Activar Empleado</span>
+            </label>
+          </div>
+
+
+          @* Mensaje de éxito actualizando datos *@
+          <div class="col-12 d-flex gap-3 justify-content-center align-items-center">
+            <label class="text-success" style="display: none;" id="edit_success_message">Actualizando datos...</label>
+          </div>
+
+
+          @* Botones de registrar y Cancelar *@
+          <div class="col-12 d-flex justify-content-center gap-3 mt-3">
+            <button type="button" class="btn btn-primary button2" onclick="check_inputs_edit_user()">
+              Guardar
+            </button>
+            <button type="button" class="btn btn-secondary button2"
+              onclick="document.getElementById('EditUserModal').style.display = 'none';">
+              Cancelar
+            </button>
+          </div>
+        </form>
+
+
+
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+
+
+<!-- Users List Table -->
+
+<div class="card">
+  <link rel="stylesheet" href="@Url.Content("~/css/site.css")" />
+
+  @* Script para manejar el check masivo
+    Si la checkbox principal se marca, todas las demas tambien
+    Si alguna checkbox de empleado no esta marcada, la checkbox principal tampoco lo va a estar *@
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+
+      // Seleccionar los elementos necesarios
+      const selectAllCheckbox = document.getElementById('select_all');
+      const checkboxes = document.querySelectorAll('.checkbox-item');
+
+      const deactivate_multiple_users_button = document.getElementById('deactivate_multiple_users_button');
+
+      // Función para verificar si al menos una checkbox está seleccionada para activar el boton de desactivar en batch
+      const updateDisableUsersButtonState = () => {
+        const isAnyChecked = Array.from(checkboxes).some(checkbox => checkbox.checked);
+        deactivate_multiple_users_button.disabled = !isAnyChecked;
+      }
+
+      // Event listener para la checkbox de selección masiva
+      selectAllCheckbox.addEventListener("change", () => {
+        const isChecked = selectAllCheckbox.checked;
+        checkboxes.forEach(checkbox => {
+          if (isChecked) {
+            //Si se marcan last casillas items mediante el select masivo, se agrega la respectiva clase a casilla item
+            checkbox.className = 'checkbox-item checked-checkbox';
+          } else {
+            checkbox.className = 'checkbox-item';
+          }
+          checkbox.checked = isChecked;
+        });
+        updateDisableUsersButtonState();
+      });
+
+      // Event listener para las checkboxes individuales
+      checkboxes.forEach(checkbox => {
+        //Event listener para Desmarcar la casilla de check masivo si alguna de las casillas estan desmarcada
+        checkbox.addEventListener('change', () => {
+          if (!checkbox.checked) {
+            selectAllCheckbox.checked = false; // Desmarcar el principal
+          } else if (Array.from(checkboxes).every(cb => cb.checked)) {
+            selectAllCheckbox.checked = true; // Marcar el principal si todos están seleccionados
+          }
+          updateDisableUsersButtonState();
+        });
+
+      });
+
+    });
+
+  </script>
+
+
+  @* Form para enviar la solicitud de busqueda al Controller segun los filtros ingresados*@
+  <form asp-action="List" asp-controller="Users" method="get" class="dt_adv_search" id="search_form">
+
+    @* TITULO *@
+    <h5 class="card-header h4">Filtros</h5>
+
+    <div class="card-body">
+
+      @* FILTROS DE BUSQUEDA Y BOTONES *@
+      <div class="row">
+        <div class="col-12">
+
+
+
+          @* Busqueda por estado de usuario y boton de limpiar filtros *@
+          <div class="row g-3 mt-1">
+
+            @* Estado Activo/Inactivo y de ID *@
+            <div class="col d-flex align-items-center">
+              @* Seleccion de estado del usuario *@
+              <select name="user_state" class="form-select form-select-sm w-auto h-100">
+                @{
+
+                  if (user_state == "activo")
+                  {
+                    <option value="estatus"> Estatus </option>
+                    <option value="activo" selected> Activo </option>
+                    <option value="inactivo"> Inactivo </option>
+                  }
+                  else if (user_state == "inactivo")
+                  {
+                    <option value="estatus"> Estatus </option>
+                    <option value="activo"> Activo </option>
+                    <option value="inactivo" selected> Inactivo </option>
+                  }
+                  else
+                  {
+                    <option value="estatus" selected> Estatus </option>
+                    <option value="activo"> Activo </option>
+                    <option value="inactivo"> Inactivo </option>
+                  }
+
+                }
+
+              </select>
+
+
+
+            </div>
+
+
+
+          </div>
+
+          <hr>
+
+
+
+                    <script>
+                        document.addEventListener('DOMContentLoaded', () => {
+                          const selectAllCheckbox = document.getElementById('selectAllRoles');
+                          const roleCheckboxes = document.querySelectorAll('.role-checkbox');
+                          const batchDeactivateButton = document.getElementById('batchDeactivateButton'); // input[type=checkbox] switch
+                          const switchToggleSlider = document.querySelector('.switch-toggle-slider');
+
+                          // Habilitar/deshabilitar el botón/switch según selección
+                          function updateBatchDeactivateButtonState() {
+                            const anyChecked = Array.from(roleCheckboxes).some(cb => cb.checked);
+                            batchDeactivateButton.disabled = !anyChecked;
+                          }
+
+                          // Estado visual del switch (opcional)
+                          batchDeactivateButton.addEventListener('change', () => {
+                            const state = batchDeactivateButton.checked ? 'activar' : 'desactivar';
+                            if (switchToggleSlider) {
+                              const onEl = switchToggleSlider.querySelector('.switch-on');
+                              const offEl = switchToggleSlider.querySelector('.switch-off');
+                              if (onEl) onEl.setAttribute('data-state', state);
+                              if (offEl) offEl.setAttribute('data-state', state);
+                            }
+                          });
+
+                          // Seleccionar todos
+                          if (selectAllCheckbox) {
+                            selectAllCheckbox.addEventListener('change', () => {
+                              const isChecked = selectAllCheckbox.checked;
+                              roleCheckboxes.forEach(cb => cb.checked = isChecked);
+                              updateBatchDeactivateButtonState();
+                            });
+                          }
+
+                          // Checkboxes individuales
+                          roleCheckboxes.forEach(checkbox => {
+                            checkbox.addEventListener('change', () => {
+                              if (selectAllCheckbox) {
+                                const allChecked = Array.from(roleCheckboxes).every(cb => cb.checked);
+                                selectAllCheckbox.checked = allChecked;
+                              }
+                              updateBatchDeactivateButtonState();
+                            });
+                          });
+
+                          // Mostrar resultados (éxitos + bloqueos por tope)
+                          function showBatchResults(roles) {
+                            // El backend devuelve camelCase: roleName, applied, finalState, message
+                            const applied = roles.filter(r => r.applied !== false); // true o undefined (siempre que no mande explicitamente false)
+                            const blocked = roles.filter(r => r.applied === false || (r.message && r.message.length));
+
+                            const successModalEl = document.getElementById('batchSuccessModal');
+                            const infoModalEl = document.getElementById('batchInfoModal');
+
+                            // helpers
+                            function openSuccessModal() {
+                              const list = applied.map(r => {
+                                const state = r.finalState ? 'Activado' : 'Desactivado';
+                                return `<li>${r.roleName} (${state})</li>`;
+                              }).join('');
+
+                              document.getElementById('batchSuccessMessage').innerHTML = `
+                                <p>Se han hecho cambios en los siguientes usuarios:</p>
+                                <ul>${list}</ul>
+                              `;
+
+                              const modal = new bootstrap.Modal(successModalEl);
+                              modal.show();
+
+                              // Si hay bloqueados, al cerrar el éxito mostramos el aviso
+                              successModalEl.addEventListener('hidden.bs.modal', () => {
+                                if (blocked.length) {
+                                  openInfoModal();
+                                } else {
+                                  redirectToList(); // si no hay bloqueados, redirige al cerrar
+                                }
+                              }, { once: true });
+                            }
+
+                            function openInfoModal() {
+                              // Si el backend ya manda mensajes por cada ítem, úsalos; si no, arma uno genérico
+                              const list = blocked.map(r => {
+                                const msg = r.message && r.message.length ? r.message : 'No se pudo activar por límite de plan.';
+                                return `<li><strong>${r.roleName}</strong>: ${msg}</li>`;
+                              }).join('');
+
+                              document.getElementById('batchInfoMessage').innerHTML = `
+                                <p>Algunos usuarios no pudieron activarse:</p>
+                                <ul>${list}</ul>
+                              `;
+
+                              const modal = new bootstrap.Modal(infoModalEl);
+                              modal.show();
+
+                              infoModalEl.addEventListener('hidden.bs.modal', () => {
+                                redirectToList();
+                              }, { once: true });
+                            }
+
+                            function redirectToList() {
+                              const configuracionListUrl = '@Url.Action("List", "Configuracion")';
+                              window.location.href = configuracionListUrl;
+                            }
+
+                            if (applied.length && blocked.length) {
+                              // Primero muestra éxitos, luego aviso
+                              openSuccessModal();
+                            } else if (applied.length && !blocked.length) {
+                              // Solo éxitos
+                              openSuccessModal();
+                            } else if (!applied.length && blocked.length) {
+                              // Todo bloqueado → solo aviso
+                              openInfoModal();
+                            } else {
+                              // Ni aplicados ni bloqueados (raro, pero por si acaso)
+                              redirectToList();
+                            }
+                          }
+
+                          // Click batch (usar el switch como disparador)
+                          batchDeactivateButton.addEventListener('click', () => {
+                            const selectedRoleIds = Array.from(roleCheckboxes)
+                              .filter(cb => cb.checked)
+                              .map(cb => cb.getAttribute('data-role-id'));
+
+                            if (selectedRoleIds.length === 0) return;
+
+                            const state = batchDeactivateButton.checked ? 'activar' : 'desactivar';
+                            const activarDesactivarBatchUrl = '@Url.Action("ActivarDesactivarBatch", "Configuracion")';
+
+                            fetch(activarDesactivarBatchUrl, {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                roles: selectedRoleIds,
+                                action: state
+                              }),
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                              if (data && data.success) {
+                                // Actualiza UI si tienes helpers propios
+                                if (typeof updateRoleLinks === 'function') {
+                                  updateRoleLinks(data.roles);
+                                }
+                                showBatchResults(data.roles);
+                              } else {
+                                // Modal de info para error general
+                                const infoEl = document.getElementById('batchInfoModal');
+                                document.getElementById('batchInfoMessage').innerHTML =
+                                  `<p>Ocurrió un error al actualizar los roles.</p>`;
+                                const modal = new bootstrap.Modal(infoEl);
+                                modal.show();
+                              }
+                            })
+                            .catch(error => {
+                              console.error('Error al actualizar roles:', error);
+                              const infoEl = document.getElementById('batchInfoModal');
+                              document.getElementById('batchInfoMessage').innerHTML =
+                                `<p>Ocurrió un error de red/servidor.</p>`;
+                              const modal = new bootstrap.Modal(infoEl);
+                              modal.show();
+                            });
+                          });
+
+                          // Restaurar estado del switch desde localStorage (opcional)
+                          if (localStorage.getItem('switchState') === 'true') {
+                            batchDeactivateButton.checked = true;
+                          } else {
+                            batchDeactivateButton.checked = false;
+                          }
+                          batchDeactivateButton.addEventListener('change', function () {
+                            localStorage.setItem('switchState', batchDeactivateButton.checked);
+                          });
+
+                          // Estado inicial del botón/switch
+                          updateBatchDeactivateButtonState();
+                        });
+                    </script>
+
+
+
+                    <!-- Modal de aviso / información (bloqueados por tope) -->
+                    <div class="modal fade" id="batchInfoModal" tabindex="-1" aria-labelledby="batchInfoModalLabel" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content border-0 shadow-lg">
+                                <div class="modal-header bg-warning">
+                                    <h5 class="modal-title fw-bold" id="batchInfoModalLabel">Aviso</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                                </div>
+                                <div class="modal-body" id="batchInfoMessage">
+                                    <!-- contenido dinámico -->
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Entendido</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- (Tu modal de éxito existente) -->
+                    <div class="modal fade" id="batchSuccessModal" tabindex="-1" aria-labelledby="batchSuccessModalLabel" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content" style="background-color: #e0f7fa;">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="batchSuccessModalLabel">Cambio Exitoso</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div id="batchSuccessMessage"></div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+
+          @* Boton de desactivar seleccionados *@
+                    <!-- Este es el Checkbox principal -->
+                    <div class="d-flex align-items-center mb-3">
+                        <!-- Checkbox original -->
+                        
+
+
+                        <label class="switch switch-lg">
+                            <input type="checkbox" id="batchDeactivateButton" class="switch-input" disabled>
+                            <span class="switch-toggle-slider">
+                                <span class="switch-on" data-state="activar">
+                                    <i class="ti ti-check"></i>
+                                </span>
+                                <span class="switch-off" data-state="desactivar">
+                                    <i class="ti ti-x"></i>
+                                </span>
+                            </span>
+                            <span class="switch-label">Activar/Desactivar</span>
+                        </label>
+                    </div>
+
+          @* Filtros de cantidad de Usuarios, Input de busqueda y Boton Buscar *@
+          <div class="row g-3 mt-1 ">
+
+            @* Filtro de cantidad de usuarios a mostrar *@
+            <div class="col d-flex align-items-center">
+
+              <label for="users_per_page" class="me-2">Mostrar</label>
+              <select id="users_per_page" name="users_per_page" class="form-select form-select-sm w-auto h-75">
+                @* SE ITERA PARA CREAR LAS OPCIONES DE PAGINADO Y SE IDENTIFICA SI UNA OPCION YA ESTABA SELECCIONADA
+                      ANTERIORMENTE PARA DEJAR ESA OPCION ACTIVA *@
+                @{
+                  for (int i = 5; i <= 20; i = i + 5)
+                  {
+                    if (i == users_per_page)
+                    {
+                      <option value="@i" selected>@i</option>
+                    }
+                    else
+                    {
+                      <option value="@i">@i</option>
+                    }
+
+                  }
+                }
+              </select>
+              <span class="ms-2">usuarios</span>
+            </div>
+           
+            <script>
+                document.addEventListener('DOMContentLoaded', function () {
+                  const usersPerPageSelect = document.getElementById('users_per_page');
+
+                  const searchForm = document.getElementById('search_form');
+
+                  if (usersPerPageSelect && searchForm) {
+                    console.log('Select y formulario encontrados');
+
+                    function submitForm() {
+                      console.log('Opción seleccionada:', usersPerPageSelect.value);
+                      setTimeout(() => {
+                        if (typeof searchForm.requestSubmit === 'function') {
+                          searchForm.requestSubmit();
+                        } else {
+                          searchForm.submit();
+                        }
+                      }, 100);
+                    }
+
+                    usersPerPageSelect.addEventListener('change', submitForm);
+                    usersPerPageSelect.addEventListener('click', () => console.log('Select clickeado'));
+                  } else {
+                    console.log('No se encontraron elementos necesarios');
+                  }
+                });
+            </script>
+                     
+            @* Filtro de cantidad de usuarios a mostrar *@
+
+
+            @* Input de busqueda de usuario por nombre, apellido, correo o rol y Boton buscar *@
+            <div class="col d-flex align-items-center" style="width: 100%;">
+
+
+                <input type="text" class="form-control dt-input dt-full-name mx-2 h-auto flex-grow-1" data-column=1
+                        data-column-index="0" placeholder="Usuario..." name="user_search_input" value="@(user_search_input)">
+
+                <button class="btn btn-primary align-self-center mx-2 w-full h-auto" id="search_button">
+                    Buscar
+                </button>
+
+                <a href="@Url.Action("List", "Configuracion")" class="btn btn-primary align-self-center mx-2 w-full h-auto"
+                    style="white-space: nowrap;">
+                    Limpiar filtros
+                </a>
+
+                            <button type="button" class="btn btn-primary align-self-center mx-2 w-full h-auto"
+                                    style="white-space: nowrap;" onclick="document.getElementById('AddUserModal').style.display = 'block'">
+                                + Nuevo Usuario
+                            </button>
+            </div>
+
+            @* Botones buscar y registrar Usuario *@
+
+
+          </div>
+          @* Filtros de cantidad de Usuario y Botones Buscar y Registrar *@
+
+
+        </div>
+      </div>
+
+
+
+    </div>
+
+
+
+        <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="deleteModalLabel">Confirmar eliminación</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body" id="deleteModalBody">
+                        <!-- Este texto se actualizará dinámicamente -->
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                        <a id="confirmDeleteBtn" class="btn btn-borrar-naranja d-none" href="#">Borrar</a>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            function mostrarModal(tipo, mensaje) {
+                const deleteModal = document.getElementById('deleteModal');
+                const deleteModalLabel = document.getElementById('deleteModalLabel');
+                const deleteModalBody = document.getElementById('deleteModalBody');
+                const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+                const modalHeader = deleteModal.querySelector('.modal-header');
+
+                deleteModalLabel.textContent = (tipo === "success") ? "Éxito" : "Error";
+                deleteModalBody.innerHTML = mensaje;
+
+                // Estilos dinámicos según el tipo
+                if (tipo === "success") {
+                    modalHeader.style.backgroundColor = "transparent";
+                    deleteModalLabel.style.color = "#606060";
+                } else {
+                    modalHeader.style.backgroundColor = "#FF5100";
+                    deleteModalLabel.style.color = "white";
+                }
+
+                confirmDeleteBtn.classList.add('d-none');
+
+                const modal = new bootstrap.Modal(deleteModal);
+                modal.show();
+
+                deleteModal.addEventListener('hidden.bs.modal', function () {
+                    history.replaceState(null, '', window.location.pathname);
+                });
+            }
+        </script>
+
+        <script>
+            // Handler del botón
+            // document.getElementById('btnNuevoUsuario').addEventListener('click', async (e) => {
+            //   e.preventDefault();
+
+            //   try {
+            //     const res = await fetch('@Url.Content("~/Configuracion/CanCreateMoreUsers")', { method: 'GET' });
+            //     if (!res.ok) throw new Error('No se pudo verificar el límite del plan.');
+
+            //     const data = await res.json();
+            //     if (!data.allowed) {
+            //       // No permitido: muestra tu modal de error
+            //       const msg = `Con tu plan actual solo puedes tener <strong>${data.cap}</strong> usuarios. `
+            //                 + `Actualmente tienes <strong>${data.count}</strong>.`;
+            //       mostrarModal('error', msg);
+            //       return;
+            //     }
+
+            //     // Permitido: abre el modal de "Nuevo Usuario"
+            //     const addUserEl = document.getElementById('AddUserModal');
+            //     const addUserModal = new bootstrap.Modal(addUserEl);
+            //     addUserModal.show();
+
+            //   } catch (err) {
+            //     // Error de red/servidor: informa
+            //     mostrarModal('error', 'No se pudo validar el límite de usuarios. Inténtalo de nuevo.');
+            //     console.error(err);
+            //   }
+            // });
+        </script>
+
+    @* Tabla de los usuarios *@
+    <div class="card-datatable table-responsive">
+      <table class="dt-advanced-search table">
+
+        @* SCRIPT PARA LLENAR DATA DE FORMULARIO DE EDITAR DE USUARIO CON LA DATA DEL EMPLEADO SELECCIONADO *@
+        <script>
+
+          const fill_selected_user_data = (userId, name, email, rol, state) => {
+
+            //Definicion de variables que contienen la referencia a su respectivo elemento html
+            document.getElementById("editUserId").value = userId;
+            document.getElementById("editUsername").value = name;
+            document.getElementById("editUserEmail").value = email;
+            document.getElementById("editIdRol").value = rol;
+            //Checkear el switch de Estado segun el valor del state
+            if (state == "True") {
+              document.getElementById("editIsActive").checked = true;
+            } else if (state == "False") {
+              document.getElementById("editIsActive").checked = false;
+            }
+
+            //abrir modal
+            document.getElementById("EditUserModal").style.display = 'block';
+
+
+          }
+
+          //METODO QUE SEGUN EL CAMPO CAMBIA EL ORDEN DE LOS REGISTROS A ASCENDENTE O DESCENDENTE
+          const change_orderby = (columnName) => {
+            const current_orderby_value = document.getElementById('order_by').value;
+            if (current_orderby_value === `${columnName}_ascending`) {
+              document.getElementById('order_by').value = `${columnName}_descending`;
+              console.log('change to descending');
+            } else {
+              document.getElementById('order_by').value = `${columnName}_ascending`;
+              console.log('change to ascending');
+            }
+            document.getElementById('search_button').click();
+          }
+
+        </script>
+
+
+
+        @* Titulos de las columnas de la tabla *@
+        <thead>
+          <tr>
+
+            @* INPUT OCULTO QUE ALMACENA EL ORDEN DE LA LISTA PARA ENVIAR AL FORMULARIO *@
+            <input type="hidden" id="order_by" name="order_by" value="@order_by" />
+
+            @* CHECKBOX PARA REALIZAR LA SELECCION MASIVA *@
+            <th><input type="checkbox" id="selectAllRoles" class="form-check-input"> </th>
+
+            @* SE ORDENA ALFABETICAMENTE AL DAR CLICK EN NOMBRE, CORREO, FECHA DE CREACION*@
+
+            @* Se consulta si el orden por nombre ya estaba asignado
+                para asignar el estilo de columna representativa del orden
+
+                 Si no existe ningun valor en order_by se asigna a nombre *@
+            <th class=" sortable-column cursor-pointer sortable-column cursor-pointer
+                @(order_by == "name_ascending" || order_by == "name_descending"
+                ? "active"
+                : ""
+                )" onclick="change_orderby('name')">
+              Nombre
+              @{
+                //Dependiendo del orden se carga el icono de la flecha hacia arriba o hacia abajo
+                if (order_by == "name_ascending")
+                {
+                  <span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                      class="icon icon-tabler icons-tabler-outline icon-tabler-arrow-down">
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                      <path d="M12 5l0 14" />
+                      <path d="M18 13l-6 6" />
+                      <path d="M6 13l6 6" />
+                    </svg>
+                  </span>
+                }
+                else if (order_by == "name_descending")
+                {
+                  <span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                      class="icon icon-tabler icons-tabler-outline icon-tabler-arrow-up">
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                      <path d="M12 5l0 14" />
+                      <path d="M18 11l-6 -6" />
+                      <path d="M6 11l6 -6" />
+                    </svg>
+                  </span>
+                }
+
+              }
+            </th>
+            @* Se consulta si el orden por email ya estaba asignado
+                para asignar el estilo de columna representativa del orden *@
+            <th class=" sortable-column cursor-pointer
+            @(order_by == "email_ascending" || order_by == "email_descending"
+            ? "active"
+            : ""
+            )" onclick="change_orderby('email')">
+              Correo electronico
+              @{
+                //Dependiendo del orden se carga el icono de la flecha hacia arriba o hacia abajo
+                if (order_by == "email_ascending")
+                {
+                  <span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                      class="icon icon-tabler icons-tabler-outline icon-tabler-arrow-down">
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                      <path d="M12 5l0 14" />
+                      <path d="M18 13l-6 6" />
+                      <path d="M6 13l6 6" />
+                    </svg>
+                  </span>
+                }
+                else if (order_by == "email_descending")
+                {
+                  <span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                      class="icon icon-tabler icons-tabler-outline icon-tabler-arrow-up">
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                      <path d="M12 5l0 14" />
+                      <path d="M18 11l-6 -6" />
+                      <path d="M6 11l6 -6" />
+                    </svg>
+                  </span>
+                }
+
+              }
+            </th>
+
+            @* Se consulta si el orden por rol ya estaba asignado
+                para asignar el estilo de columna representativa del orden *@
+            <th class=" sortable-column cursor-pointer
+            @(order_by == "role_ascending" || order_by == "role_descending"
+            ? "active"
+            : ""
+            )" onclick="change_orderby('role')">
+              Rol
+              @{
+                //Dependiendo del orden se carga el icono de la flecha hacia arriba o hacia abajo
+                if (order_by == "role_ascending")
+                {
+                  <span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                      class="icon icon-tabler icons-tabler-outline icon-tabler-arrow-down">
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                      <path d="M12 5l0 14" />
+                      <path d="M18 13l-6 6" />
+                      <path d="M6 13l6 6" />
+                    </svg>
+                  </span>
+                }
+                else if (order_by == "role_descending")
+                {
+                  <span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                      class="icon icon-tabler icons-tabler-outline icon-tabler-arrow-up">
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                      <path d="M12 5l0 14" />
+                      <path d="M18 11l-6 -6" />
+                      <path d="M6 11l6 -6" />
+                    </svg>
+                  </span>
+                }
+
+              }
+            </th>
+
+
+            @* Se consulta si el orden por fecha de creacion ya estaba asignado
+                para asignar el estilo de columna representativa del orden *@
+            <th class=" sortable-column cursor-pointer
+            @(order_by == "creation_date_ascending" || order_by == "creation_date_descending"
+            ? "active"
+            : ""
+            )" onclick="change_orderby('creation_date')">
+              Fecha de creación
+              @{
+                //Dependiendo del orden se carga el icono de la flecha hacia arriba o hacia abajo
+                if (order_by == "creation_date_ascending")
+                {
+                  <span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                      class="icon icon-tabler icons-tabler-outline icon-tabler-arrow-down">
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                      <path d="M12 5l0 14" />
+                      <path d="M18 13l-6 6" />
+                      <path d="M6 13l6 6" />
+                    </svg>
+                  </span>
+                }
+                else if (order_by == "creation_date_descending")
+                {
+                  <span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                      class="icon icon-tabler icons-tabler-outline icon-tabler-arrow-up">
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                      <path d="M12 5l0 14" />
+                      <path d="M18 11l-6 -6" />
+                      <path d="M6 11l6 -6" />
+                    </svg>
+                  </span>
+                }
+
+              }
+            </th>
+
+
+            <th>Estado</th>
+            <th>Acciones</th>
+
+
+          </tr>
+        </thead>
+
+        @* Listado de los Usuarios del Model en la tabla *@
+        <tbody class="table-border-bottom-0">
+
+          @* Se hace loop en el Model que contiene la lista de usuarios y se crean las entradas en la tabla *@
+          @{
+            foreach (var user in Model.Usuarios)
+            {
+              <tr>
+                <td>
+                  @* Esta checkbox pertenece a la clase checked-checkbox si está marcada y
+                  almacena 2 valores del usuario con el siguiente formato: "UserID,UserIsActive"
+                  esto para poder extraer los datos respectivamente al momento de desactivar multiples usuarios *@
+                   <input type="checkbox" class="form-check-input role-checkbox" data-role-id="@user.UserSysId">
+                </td>
+
+                <td>
+                  @user.Username
+                </td>
+
+                <td>
+                  @user.Email
+                </td>
+
+                <td>
+                  @user.RolName
+                </td>
+
+                <td>
+                  @user.CreationDate
+                </td>
+
+                @* Si el usuario esta activo/inactivo el color del texto cambia rojo/verde *@
+                <td class="@(user.isActive == true ? "text-success" : "text-danger")">
+                  @(user.isActive ? "Activo" : "Inactivo")
+                </td>
+
+                @* Botones para editar/desactivar usuario *@
+                <td>
+                  <div class="d-flex justify-content-start">
+                    @* Boton de editar que llama al metodo para llenar los campos del modal de registro
+                      con la data del usuario seleccionado*@
+                    <a class="dropdown-item waves-effect w-auto" id="edit_btn"
+                      onclick="fill_selected_user_data('@(user.UserSysId)','@(user.Username)', '@(user.Email)', '@(user.RolId)', '@(user.isActive)')">
+
+                      <i class="ti ti-pencil me-1"></i>
+                    </a>
+                    @* Menu dropdown donde esta la opcion de desactivar *@
+                    <div class="dropdown">
+                      <button type="button" class="btn p-0 dropdown-toggle hide-arrow" data-bs-toggle="dropdown">
+                        <i class="ti ti-dots-vertical"></i>
+                      </button>
+
+                      <div class="dropdown-menu">
+                        @* Boton desactivar usuario *@
+                        <a class="dropdown-item cursor-pointer"
+                          onclick="document.getElementById('deactivateUserConfirmationModal').style.display = 'block'; document.getElementById('userIdToActivateDeactivate').value = '@(user.UserSysId)'
+                                                                                                  document.getElementById('isUserToActivateDeactivateApproved').value = '@(user.isActive)'">
+                          <i class="ti ti-trash me-1"></i> Activar/Desactivar
+                        </a>
+                      </div>
+                    </div>
+
+                  </div>
+
+                </td>
+              </tr>
+
+            }
+          }
+        </tbody>
+      </table>
+      <br />
+
+
+
+      @* Si no se encuentran Usuarios en el Model (Array de Usuarios), se muestra este mensaje*@
+      @{
+        if (Model.Usuarios.Length == 0)
+        {
+          <div class="d-flex justify-content-center">
+            <label class="mt-10">No se encontraron usuarios</label>
+          </div>
+        }
+      }
+
+
+      @* Paginacion *@
+      <nav aria-label="Page navigation">
+        <div class="d-flex flex-row-reverse m-lg-3">
+
+          @* CAMPO OCULTO QUE ALMACENA EL NUMERO DE LA PAGINA SELECCIONADA PARA ENVIAR AL FORMULARIO *@
+          <input type="hidden" id="page_number" name="page_number" value="@(current_page)" />
+
+
+
+
+
+          @* LISTA CON LOS BOTONES DE PAGINACION *@
+
+          <ul class="pagination pagination-rounded">
+            @* BOTON DE VOLVER A LA PRIMERA PAGINA *@
+            <li class="page-item first">
+              @* Onclick asigna el valor correspondiente a current_page *@
+              <button class="page-link" type="submit" onclick="document.getElementById('page_number').value = 1"><i
+                  class="ti ti-chevrons-left ti-sm"></i></button>
+            </li>
+            @* BOTON DE VOLVER A LA PAGINA ANTERIOR *@
+            <li class="page-item prev">
+              @* Onclick asigna el valor correspondiente a current_page *@
+              <button class="page-link" type="submit"
+                onclick="document.getElementById('page_number').value = @(current_page > 1 ? current_page - 1 : 1)">
+                <i class="ti ti-chevron-left ti-sm"></i>
+              </button>
+            </li>
+
+            @* LOOP PARA CREAR LOS BOTONES DE PAGINACION
+                SE CREA LA PAGINA ACTUAL Y LAS DOS SIGUIENTES*@
+            @{
+
+              for (int i = current_page; i <= current_page + 2; i++)
+              {
+                @* Solo si i es menor o igual a las paginas totales se crea el objeto <li>  *@
+                if (i <= total_pages)
+                {
+                  @* Si la pagina actual coincide con i, significa que es la pagina actual correspondiente y se asigna la clase al <li> *@
+                  <li class="page-item @(current_page == i ? "active": "")">
+                    <button class="page-link" type="submit"
+                      onclick="document.getElementById('page_number').value = @i">@i</button>
+                  </li>
+                }
+
+              }
+            }
+
+            @* BOTON DE IR A LA PAGINA SIGUIENTE *@
+            <li class="page-item next">
+              @* Onclick asigna el valor correspondiente a current_page *@
+              <button class="page-link" type="submit"
+                onclick="document.getElementById('page_number').value = @(current_page < total_pages ? current_page + 1 : total_pages)">
+                <i class="ti ti-chevron-right ti-sm"></i>
+              </button>
+            </li>
+            @* BOTON DE IR A LA ULTIMA PAGINA *@
+            <li class="page-item last">
+              @* Onclick asigna el valor correspondiente a current_page *@
+              <button class="page-link" type="submit"
+                onclick="document.getElementById('page_number').value = @(total_pages)">
+                <i class="ti ti-chevrons-right ti-sm"></i>
+              </button>
+            </li>
+          </ul>
+
+
+
+        </div>
+
+      </nav>
+
+
+    </div>
+
+  </form>
+
+</div>

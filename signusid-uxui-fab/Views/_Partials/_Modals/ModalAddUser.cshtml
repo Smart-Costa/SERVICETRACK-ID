@@ -1,0 +1,138 @@
+<!-- Add Role Modal:
+En este form se el ingreso y edición de roles.
+-->
+<div class="modal fade" id="addUserModal" tabindex="-1" aria-hidden="true" data-context="new">
+  <div class="modal-dialog modal-lg modal-simple modal-dialog-centered modal-add-new-role">
+    <div class="modal-content">
+      <div class="modal-body">
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <div class="text-center mb-6">
+          <h4 class="role-title mb-2">Agregar Usuario Nuevo</h4>
+        </div>
+        <!-- Add role form -->
+        <form id="addRoleForm" class="row g-6" asp-action="List" asp-controller="Users" method="post"
+          data-context="new">
+
+          <div class="col-12">
+            <label class="form-label" for="UserName">Usuario</label>
+            <input type="text" id="UserName" name="UserName" class="form-control input2" placeholder="Admin" required />
+            <!--Nombre en el from antiguo agregar/editar: ctl00$MainContent$txtAddUsername/ctl00$MainContent$txtEditUsername-->
+            <div id="userNameError" class="error-message2"></div>
+          </div>
+          <div class="col-12 d-flex gap-3">
+            <div style="width: 50%;">
+              <label class="form-label" for="UserEmail">Email</label>
+              <input type="email" id="UserEmail" name="UserEmail" class="form-control input2"
+                placeholder="Example@domain.com" required />
+              <!--Nombre en el from antiguo agregar/editar: ctl00$MainContent$TxtAddEmail/ctl00$MainContent$txtEditEmail-->
+              <div id="userEmailError" class="error-message2"></div>
+            </div>
+            <div style="width: 50%;">
+              <label for="RoleName">Seleccionar Rol:</label>
+              <select id="RoleName" name="RoleName" class="form-control input2" required>
+                <option value="" disabled selected>Seleccione un rol</option>
+              </select>
+              <!--Nombre en el from antiguo agregar/editar: ctl00$MainContent$ddlAddRole/ctl00$MainContent$ddlEditRoles-->
+              <div id="userRolError" class="error-message2"></div>
+            </div>
+          </div>
+          <div class="col-12 d-flex gap-3">
+            <!-- Contraseña -->
+            <div style="width: 50%;">
+              <label class="form-label" for="UserPassword">Contraseña</label>
+              <div class="input-group input-group-merge">
+                <input type="password" id="UserPassword" name="UserPassword" class="form-control"
+                  aria-describedby="password" placeholder="••••••••••" required />
+                <!--Nombre en el from antiguo agregar:ctl00$MainContent$txtAddContraseña -->
+                <span class="input-group-text cursor-pointer toggle-password" data-target="#UserPassword">
+                  <i class="ti ti-eye-off"></i>
+                </span>
+              </div>
+              <div id="userPasswordError" class="error-message2"></div>
+            </div>
+
+            <!-- Confirmar Contraseña -->
+            <div style="width: 50%;">
+              <label class="form-label" for="UserPasswordConfirm">Confirmar Contraseña</label>
+              <div class="input-group input-group-merge">
+                <input type="password" id="UserPasswordConfirm" name="UserPasswordConfirm" class="form-control"
+                  placeholder="••••••••••" required />
+                <!--Nombre en el from antiguo agregar: ctl00$MainContent$txtAddconfpass -->
+                <span class="input-group-text cursor-pointer toggle-password" data-target="#UserPasswordConfirm">
+                  <i class="ti ti-eye-off"></i>
+                </span>
+              </div>
+              <div id="userPasswordConfirmError" class="error-message2"></div>
+            </div>
+          </div>
+          <div class="col-12 d-flex gap-3">
+            <label class="switch">
+              <input type="checkbox" id="isActiveSwitch" class="switch-input" />
+              <span class="switch-toggle-slider">
+                <span class="switch-on"></span>
+                <span class="switch-off"></span>
+              </span>
+              <span class="switch-label">Activar Empleado</span>
+            </label>
+          </div>
+          <div class="col-12 d-flex justify-content-center gap-3 mt-3">
+            <button type="submit" name="ctl00$MainContent$btnAddrole" class="btn btn-primary button2"
+              id="saveRoleButton">
+              Guardar
+            </button><!--ctl00$MainContent$btnAddUser/ctl00$MainContent$UpdateUsuario-->
+            <button type="button" class="btn btn-secondary button2" id="cancelButton" data-bs-dismiss="modal">
+              Cancelar
+            </button>
+          </div>
+        </form>
+        <!--/ Add role form -->
+      </div>
+    </div>
+  </div>
+</div>
+<!-- #region Estilos CSS -->
+<style>
+  .error-message2 {
+    color: red;
+    font-size: 12px;
+    margin-top: 5px;
+  }
+
+  .input2 {
+    margin-bottom: 10px;
+  }
+
+  .button2 {
+    margin-top: 10px;
+  }
+
+  select {
+    appearance: auto;
+    /* Asegura que se muestren los estilos del navegador */
+    /*-moz-appearance: auto;*/
+    /* Firefox */
+    -webkit-appearance: auto;
+    /* Safari y Chrome */
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 6" fill="none" stroke="gray" stroke-width="2"><path d="M1 1l4 4 4-4"/></svg>');
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    /* Posición de la flecha */
+    background-size: 12px 12px;
+    /* Ajusta el tamaño de la flecha */
+    padding-right: 30px;
+    /* Espacio para la flecha */
+    font-size: 16px;
+    /* Ajusta el tamaño de la fuente */
+    height: 40px;
+    /* Altura del select */
+    border: 1px solid #ccc;
+    /* Borde del select */
+    border-radius: 5px;
+    /* Bordes redondeados */
+    color: #333;
+    /* Color del texto */
+  }
+</style>
+<!-- #endregion -->
+<!-- #region Scripts -->
+<!--/ Add Role Modal -->

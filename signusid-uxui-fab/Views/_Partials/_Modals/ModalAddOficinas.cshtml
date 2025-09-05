@@ -1,0 +1,207 @@
+                                          <!-- Add Pisos Modal:
+En este form se el ingreso y edición de edificios.
+-->
+<div class="modal fade" id="addOficinaModal" data-context="new" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-simple modal-dialog-centered modal-add-new-role">
+        <div class="modal-content">
+            <div class="modal-body">
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <div class="text-center mb-6">
+                    <h4 class="role-title mb-2">Agregar Oficina Nueva</h4>
+                </div>
+
+                <form id="addOficinaForm" class="row g-6" asp-action="InsertarOficina" asp-controller="Empresa" method="post">
+
+                    <div class="col-12">
+                        <label class="form-label" for="companySelect">Edificio</label>
+                        <select id="companySelect" name="companySysId" class="form-select" required>
+                            <option value="">Cargando edificios...</option>
+                        </select>
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label" for="pisoSelect">Piso</label>
+                        <select id="pisoSelect" name="buildingSysId" class="form-select" required>
+                            <option value="">Cargando pisos...</option>
+                        </select>
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label" for="sectorSelect">Sector</label>
+                        <select id="sectorSelect" name="floorSysId" class="form-select" required>
+                            <option value="">Cargando sector...</option>
+                        </select>
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label" for="name">Nombre de la oficina</label>
+                        <input type="text"
+                               id="name"
+                               name="name"
+                               class="form-control input2"
+                               placeholder="Ingrese el nombre de la oficina"
+                               required />
+                        <div id="stateNameError" class="error-message2"></div>
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label" for="description">Descripción</label>
+                        <textarea id="description"
+                                  name="description"
+                                  class="form-control input2"
+                                  placeholder="Ingrese una breve descripción de la oficina"
+                                  rows="4"
+                                  required></textarea>
+                        <div id="stateDescriptionError" class="error-message2"></div>
+                    </div>
+
+                    <div id="addingNamesError" class="error-message3"></div>
+
+                    <div class="col-12 d-flex justify-content-center gap-3 mt-3">
+                        <button type="submit" class="btn btn-primary button2" id="saveStateButton">
+                            Guardar
+                        </button>
+                        <button type="button" class="btn btn-secondary button2" id="cancelButton" data-bs-dismiss="modal">
+                            Cancelar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- #region Estilos CSS -->
+
+<style>
+    .error-message2 {
+        color: red;
+        font-size: 0.875rem;
+        margin-top: 5px;
+    }
+
+    .error-message3 {
+        color: red;
+        font-size: 0.875rem;
+        text-align: center;
+        margin-top: 5px;
+    }
+
+
+
+    .input2 {
+        margin-bottom: 10px;
+    }
+
+    .button2 {
+        margin-top: 10px;
+    }
+</style>
+
+<!-- #endregion -->
+<script>
+       document.addEventListener("DOMContentLoaded", function () {
+        const form = document.getElementById("addOficinaForm");
+        const cancelButton = document.getElementById("cancelButton");
+        const modal = document.getElementById("addOficinaModal");
+        const nameInput = document.getElementById("name");
+        const descriptionInput = document.getElementById("description");
+        const companySelect = document.getElementById("companySelect");
+        const pisoSelect = document.getElementById("pisoSelect");
+        const sectorSelect = document.getElementById("sectorSelect");
+
+        const nameErrorDiv = document.getElementById("stateNameError");
+        const descriptionErrorDiv = document.getElementById("stateDescriptionError");
+        const addingNamesErrorDiv = document.getElementById("addingNamesError");
+
+        const companyErrorDiv = document.createElement("div");
+        const pisoErrorDiv = document.createElement("div");
+        const sectorErrorDiv = document.createElement("div");
+
+        companyErrorDiv.classList.add("error-message2");
+        pisoErrorDiv.classList.add("error-message2");
+        sectorErrorDiv.classList.add("error-message2");
+
+        companySelect.parentNode.appendChild(companyErrorDiv);
+        pisoSelect.parentNode.appendChild(pisoErrorDiv);
+        sectorSelect.parentNode.appendChild(sectorErrorDiv);
+
+        function resetForm() {
+            form.reset();
+            nameErrorDiv.textContent = "";
+            descriptionErrorDiv.textContent = "";
+            companyErrorDiv.textContent = "";
+            pisoErrorDiv.textContent = "";
+            sectorErrorDiv.textContent = "";
+            addingNamesErrorDiv.textContent = "";
+        }
+
+        modal.addEventListener("hidden.bs.modal", resetForm);
+
+        cancelButton.addEventListener("click", function () {
+            resetForm();
+            const bsModal = bootstrap.Modal.getInstance(modal);
+            if (bsModal) bsModal.hide();
+        });
+
+        form.addEventListener("submit", function (e) {
+            e.preventDefault();
+
+            const nameValue = nameInput.value.trim();
+            const descriptionValue = descriptionInput.value.trim();
+            const companyValue = companySelect.value;
+            const pisoValue = pisoSelect.value;
+            const sectorValue = sectorSelect.value;
+
+            nameErrorDiv.textContent = "";
+            descriptionErrorDiv.textContent = "";
+            companyErrorDiv.textContent = "";
+            pisoErrorDiv.textContent = "";
+            sectorErrorDiv.textContent = "";
+            addingNamesErrorDiv.textContent = "";
+
+            let isValid = true;
+
+            if (!nameValue || nameValue.length < 3 || nameValue.length > 50) {
+                nameErrorDiv.textContent = "El nombre debe tener entre 3 y 50 caracteres.";
+                isValid = false;
+            }
+
+            if (!descriptionValue || descriptionValue.length < 3 || descriptionValue.length > 150) {
+                descriptionErrorDiv.textContent = "La descripción debe tener entre 3 y 150 caracteres.";
+                isValid = false;
+            }
+
+            if (!companyValue || companyValue === "") {
+                companyErrorDiv.textContent = "Debe seleccionar un edificio válido.";
+                isValid = false;
+            }
+
+            if (!pisoValue || pisoValue === "") {
+                pisoErrorDiv.textContent = "Debe seleccionar un piso válido.";
+                isValid = false;
+            }
+
+            if (!sectorValue || sectorValue === "") {
+                sectorErrorDiv.textContent = "Debe seleccionar un sector válido.";
+                isValid = false;
+            }
+
+            if (isValid) {
+                form.submit();
+            }
+        });
+
+        nameInput.addEventListener("input", () => nameErrorDiv.textContent = "");
+        descriptionInput.addEventListener("input", () => descriptionErrorDiv.textContent = "");
+        companySelect.addEventListener("change", () => companyErrorDiv.textContent = "");
+        pisoSelect.addEventListener("change", () => pisoErrorDiv.textContent = "");
+        sectorSelect.addEventListener("change", () => sectorErrorDiv.textContent = "");
+    });
+
+</script>
+
+
+
+
+<!--/ Add Edificios Modal -->

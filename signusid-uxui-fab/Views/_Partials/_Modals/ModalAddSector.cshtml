@@ -1,0 +1,184 @@
+<!-- Add Pisos Modal:
+En este form se el ingreso y edición de edificios.
+-->
+<div class="modal fade" id="addSectorModal" data-context="new" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-simple modal-dialog-centered modal-add-new-role">
+        <div class="modal-content">
+            <div class="modal-body" style="padding: 0 !important; margin-top: -20px; margin-bottom:-10px;">
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="margin-top: 15px;"></button>
+                <div class="text-center mb-6">
+                    <h4 class="role-title mb-2" style="margin-top: 15px">Agregar @ViewBag.NombreUbicacion</h4>
+                </div>
+
+                <form id="addSectorForm" class="row g-1" asp-action="InsertarSector" asp-controller="Empresa" method="post" style="row-gap: 4px; margin-bottom: 0;">
+
+                    <!-- Nuevo campo: Seleccionar empresa -->
+                    <div class="col-12" style="margin-bottom: 4px;">
+                        <label class="form-label" for="companySelect" style="margin-bottom: 2px;">Nombre @ViewBag.NombreUbicacionA</label>
+                        <select id="companySelect" name="companySysId" style="background-color:#C6C6C6" class="form-select" required>
+                            <option value="">Cargando edificios...</option>
+                        </select>
+                    </div>
+
+                    <div class="col-12" style="margin-bottom: 4px;">
+                        <label class="form-label" for="pisoSelect" style="margin-bottom: 2px;">Nombre @ViewBag.NombreUbicacionB</label>
+                        <select id="pisoSelect" name="buildingSysId" style="background-color:#C6C6C6" class="form-select" required>
+                            <option value="">Cargando pisos...</option>
+                        </select>
+                    </div>
+
+                    <div class="col-12" style="margin-bottom: 4px;">
+                        <label class="form-label" for="name" style="margin-bottom: 2px;">Nombre @ViewBag.NombreUbicacion</label>
+                        <input type="text"
+                               id="name"
+                               name="name"
+                               class="form-control input2"
+                               placeholder="Ingrese el nombre"
+                               required />
+                        <div id="stateNameError" class="error-message2"></div>
+                    </div>
+
+                    <div class="col-12" style="margin-bottom: 4px;">
+                        <label class="form-label" for="description" style="margin-bottom: 2px;">Descripción</label>
+                        <textarea id="description"
+                                  name="description"
+                                  class="form-control input2"
+                                  placeholder="Ingrese una breve descripción"
+                                  rows="4"
+                                  required
+                                  style="height: 70px; resize: none;"></textarea>
+                        <div id="stateDescriptionError" class="error-message2"></div>
+                    </div>
+
+                    <div id="addingNamesError" class="error-message3"></div>
+
+                    <div class="col-12 d-flex justify-content-center gap-2 mt-0" style="margin-bottom: 0;">
+                        <button type="submit" class="btn btn-primary" id="saveStateButton" style="margin-top:-10px; margin-bottom: 10px">
+                            Guardar
+                        </button>
+                        <button type="button" class="btn btn-secondary" id="cancelButton" style="margin-top:-10px; margin-bottom: 10px" data-bs-dismiss="modal">
+                            Cancelar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- #region Estilos CSS -->
+
+<style>
+    .error-message2 {
+        color: red;
+        font-size: 0.875rem;
+        margin-top: 5px;
+    }
+
+    .error-message3 {
+        color: red;
+        font-size: 0.875rem;
+        text-align: center;
+        margin-top: 5px;
+    }
+
+
+
+    .input2 {
+        margin-bottom: 10px;
+    }
+
+    .button2 {
+        margin-top: 10px;
+    }
+</style>
+
+<!-- #endregion -->
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const form = document.getElementById("addSectorForm");
+      const cancelButton = document.getElementById("cancelButton");
+      const modal = document.getElementById("addSectorModal");
+      const nameInput = document.getElementById("name");
+      const descriptionInput = document.getElementById("description");
+      const companySelect = document.getElementById("companySelect");
+      const pisoSelect = document.getElementById("pisoSelect");
+
+      const nameErrorDiv = document.getElementById("stateNameError");
+      const descriptionErrorDiv = document.getElementById("stateDescriptionError");
+      const companyErrorDiv = document.createElement("div");
+      const pisoErrorDiv = document.createElement("div");
+
+      companyErrorDiv.classList.add("error-message2");
+      pisoErrorDiv.classList.add("error-message2");
+
+      companySelect.parentNode.appendChild(companyErrorDiv);
+      pisoSelect.parentNode.appendChild(pisoErrorDiv);
+
+      function resetForm() {
+          form.reset();
+          nameErrorDiv.textContent = "";
+          descriptionErrorDiv.textContent = "";
+          companyErrorDiv.textContent = "";
+          pisoErrorDiv.textContent = "";
+      }
+
+      modal.addEventListener("hidden.bs.modal", resetForm);
+
+      cancelButton.addEventListener("click", function () {
+          resetForm();
+          const bsModal = bootstrap.Modal.getInstance(modal);
+          if (bsModal) bsModal.hide();
+      });
+
+      form.addEventListener("submit", function (e) {
+          e.preventDefault();
+
+          const nameValue = nameInput.value.trim();
+          const descriptionValue = descriptionInput.value.trim();
+          const companyValue = companySelect.value;
+          const pisoValue = pisoSelect.value;
+
+          nameErrorDiv.textContent = "";
+          descriptionErrorDiv.textContent = "";
+          companyErrorDiv.textContent = "";
+          pisoErrorDiv.textContent = "";
+
+          let isValid = true;
+
+          if (!nameValue || nameValue.length < 3 || nameValue.length > 50) {
+              nameErrorDiv.textContent = "El nombre debe tener entre 3 y 50 caracteres.";
+              isValid = false;
+          }
+
+          if (!descriptionValue || descriptionValue.length < 3 || descriptionValue.length > 150) {
+              descriptionErrorDiv.textContent = "La descripción debe tener entre 3 y 150 caracteres.";
+              isValid = false;
+          }
+           
+          if (!companyValue || companyValue === "") {
+              companyErrorDiv.textContent = "Debe seleccionar una empresa válida.";
+              isValid = false;
+          }
+
+          if (!pisoValue || pisoValue === "") {
+              pisoErrorDiv.textContent = "Debe seleccionar un piso válido.";
+              isValid = false;
+          }
+
+          if (isValid) {
+              form.submit();
+          }
+      });
+
+      nameInput.addEventListener("input", () => nameErrorDiv.textContent = "");
+      descriptionInput.addEventListener("input", () => descriptionErrorDiv.textContent = "");
+      companySelect.addEventListener("change", () => companyErrorDiv.textContent = "");
+      pisoSelect.addEventListener("change", () => pisoErrorDiv.textContent = "");
+  });
+
+</script>
+
+
+
+<!--/ Add Edificios Modal -->

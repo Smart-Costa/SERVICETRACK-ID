@@ -1,0 +1,1978 @@
+@using AspnetCoreMvcFull.Models.Mensajes
+@{
+    ViewBag.Title = "Crear Toma Fisica";
+}
+
+
+<head>
+
+    <!-- Select2 CSS -->
+    <!-- Select2 JS (después de jQuery) -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <link rel="stylesheet" href="~/css/registroEdicion.css" />
+
+
+
+
+
+</head>
+
+<h4 style="color:#606060" class="mb-4">
+    Crear Toma Fisica
+</h4>
+
+<div class="card p-4 shadow-sm">
+
+
+
+    <form method="post" asp-action="RegistroTomaFisica" asp-controller="Administration">
+        <input type="hidden" id="TomaFisicaFormulario" name="TomaFisicaFormulario" value="Insertar" />
+
+
+        <input id="tomaFisicaGuid" type="hidden" name="IdTomaFisica" />
+
+        <div class="p-3 rounded mb-4" style="border: 1px solid #d6d6d6;">
+            <!-- Fila 1 -->
+            <div class="row mb-3">
+                <div class="col-md-3">
+                    <label style="color:#606060" class="form-label">Fecha Inicial</label>
+                    <div class="d-flex align-items-center gap-2">
+                        <input type="text" class="form-control" id="fechaInicial" name="FechaInicial" placeholder="mm/dd/yy" readonly />
+                        <button class="btn btn-outline-orange" type="button" id="btnCalendario5">
+                            <img src="@Url.Content("~/img/calendario_icono.svg")" style="filter: brightness(0) invert(1);" alt="Calendario" width="20" height="20" />
+
+                        </button>
+                    </div>
+                    <div id="fechaInicialError" class="text-danger" style="font-size: 0.85em;"></div>
+                </div>
+                <div class="col-md-3">
+                    <label style="color:#606060" class="form-label">Fecha Final</label>
+                    <div class="d-flex align-items-center gap-2">
+                        <input type="text" class="form-control" id="fechaFinal" name="FechaFinal" placeholder="mm/dd/yy" readonly />
+                        <button class="btn btn-outline-orange" type="button" id="btnCalendario6">
+                            <img src="@Url.Content("~/img/calendario_icono.svg")" style="filter: brightness(0) invert(1);" alt="Calendario" width="20" height="20" />
+
+                        </button>
+                    </div>
+                    <div id="fechaFinalError" class="text-danger" style="font-size: 0.85em;"></div>
+                </div>
+
+                <div class="col-12 col-md-6">
+                    <label style="color:#606060" class="form-label">Nombre*</label>
+                    <input id="nombreTomaFisica" name="NombreTomaFisica" type="text" class="form-control" />
+                    <div id="nombreTomaFisicaError" class="text-danger" style="font-size: 0.85em;"></div>
+                </div>
+            </div>
+
+
+
+
+
+
+            <style>
+                .custom-divider {
+                    border-top: 1px solid #ddd;
+                    margin-top: 10px; /* Aumenta espacio superior */
+                    margin-bottom: 20px; /* Conserva espacio inferior */
+                }
+            </style>
+
+
+            <!-- Fila 2 -->
+            <div class="row mb-3">
+
+                <div class="col-md-12">
+                    <label class="form-label">Descripción</label>
+                    <input id="descripcionTomaFisica" type="text" class="form-control" style="height: 50px" />
+                    <div id="descripcionTomaFisicaError" class="text-danger" style="font-size: 0.85em;"></div>
+                </div>
+            </div>
+
+            <!-- Fila 3 -->
+            <div class="row mb-3">
+                <div class="col-md-3">
+                    <label style="color:#606060" class="form-label">Categoria*</label>
+                    <select id="selectCategoriaTomaFisica" name="CategoriaTomaFisica" class="form-select select-light">
+                        <option value="">Seleccione un elemento</option>
+                    </select>
+                    <div id="selectCategoriaTomaFisicaError" class="text-danger" style="font-size: 0.85em;"></div>
+                </div>
+                <div class="col-md-3">
+                    <label style="color:#606060" class="form-label">Usuario Asignado*</label>
+                    <select id="selectUsusarioAsignadoTomaFisica" name="UsuarioAsignadoTomaFisica" class="form-select select-light">
+                        <option value="">Seleccione un elemento</option>
+                    </select>
+                    <div id="selectUsusarioAsignadoTomaFisicaError" class="text-danger" style="font-size: 0.85em;"></div>
+                </div>
+                <div class="col-md-3">
+                    <label style="color:#606060" class="form-label">Ubicación A</label>
+                    <select id="selectUbicacionATomaFisica" name="UbicacionATomaFisica" class="form-select select-light">
+                        <option value="">Seleccione un elemento</option>
+                    </select>
+                    <div id="selectUbicacionATomaFisicaError" class="text-danger" style="font-size: 0.85em;"></div>
+                </div>
+                <div class="col-md-3">
+                    <label style="color:#606060" class="form-label">Ubicación B</label>
+                    <select id="selectUbicacionBTomaFisica" name="UbicacionBTomaFisica" class="form-select select-light">
+                        <option>Seleccione un elemento</option>
+                    </select>
+                </div>
+
+            </div>
+            <!-- Fila 4 -->
+            <div class="row mb-3">
+                <div class="col-md-3">
+                    <label style="color:#606060" class="form-label">Unidad Organizativa</label>
+                    <select id="selectUnidadOrganizativaTomaFisica" name="UnidadOrganizativaTomaFisica" class="form-select select-light">
+                        <option value="">Seleccione un elemento</option>
+                    </select>
+                    <div id="selectUnidadOrganizativaTomaFisicaError" class="text-danger" style="font-size: 0.85em;"></div>
+                </div>
+                <div class="col-md-3">
+                    <label style="color:#606060" class="form-label">Estado del Activo</label>
+                    <select id="selectEstadoActivo" name="EstadoActivo" class="form-select select-light">
+                        <option value="">Seleccione un elemento</option>
+                    </select>
+                    <div id="selectEstadoActivoError" class="text-danger" style="font-size: 0.85em;"></div>
+                </div>
+
+                <div class="col-md-3">
+                    <label style="color:#606060" class="form-label">Ubicación C</label>
+                    <select  id="selectUbicacionCTomaFisica" name="UbicacionCTomaFisica" class="form-select select-light">
+                        <option>Seleccione un elemento</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label style="color:#606060" class="form-label">Ubicación D</label>
+                    <select  id="selectUbicacionDTomaFisica" name="UbicacionDTomaFisica" class="form-select select-light">
+                        <option>Seleccione un elemento</option>
+                    </select>
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- Botones -->
+        <div class="row">
+            <div class="col-md-12 text-center">
+                <button type="submit" name="btnGuardar" value="guardar" class="btn btn-orange me-2">Guardar</button>
+
+                <button type="button" id="btnBorrar" class="btn btn-secondary">Borrar</button>
+
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Modal de confirmación -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Confirmar eliminación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="deleteModalBody">
+                <!-- Este texto se actualizará dinámicamente -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <a id="confirmDeleteBtn" class="btn btn-danger d-none" href="#">Borrar</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+<script>
+    function mostrarModal(tipo, mensaje) {
+        const deleteModal = document.getElementById('deleteModal');
+        const deleteModalLabel = document.getElementById('deleteModalLabel');
+        const deleteModalBody = document.getElementById('deleteModalBody');
+        const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+        const modalHeader = deleteModal.querySelector('.modal-header');
+
+        deleteModalLabel.textContent = (tipo === "success") ? "Éxito" : "Error";
+        deleteModalBody.innerHTML = mensaje;
+
+        // Estilos dinámicos según el tipo
+        if (tipo === "success") {
+            modalHeader.style.backgroundColor = "transparent";
+            deleteModalLabel.style.color = "#606060";
+        } else {
+            modalHeader.style.backgroundColor = "#FF5100";
+            deleteModalLabel.style.color = "white";
+        }
+
+        confirmDeleteBtn.classList.add('d-none');
+
+        const modal = new bootstrap.Modal(deleteModal);
+        modal.show();
+
+        deleteModal.addEventListener('hidden.bs.modal', function () {
+            history.replaceState(null, '', window.location.pathname);
+        });
+    }
+</script>
+
+<style>
+    select.form-select.is-invalid {
+        background-image: none !important; /* Quita el ícono de advertencia */
+    }
+
+</style>
+
+<!-- Modal de Confirmación -->
+<div class="modal fade" id="modalConfirmarEnvio" tabindex="-1" aria-labelledby="modalConfirmarEnvioLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title" id="modalConfirmarEnvioLabel">Campos incompletos</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                No se han completado todos los campos, ¿Desea continuar con el envío?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="cancelarEnvio">No, completar</button>
+                <button type="button" class="btn btn-primary" id="confirmarEnvio">Sí, enviar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    form input {
+        color: #606060;
+        border: 1px solid #C6C6C6;
+    }
+</style>
+
+<script>
+    // document.querySelector('form').addEventListener('submit', function (e) {
+    //     let valido = true;
+
+    //     // Validación Ubicación A
+    //     const selectUbicacionA = document.getElementById('selectUbicacionATomaFisica');
+    //     const errorUbicacionA = document.getElementById('selectUbicacionATomaFisicaError');
+    //     if (!selectUbicacionA.value.trim()) {
+    //         errorUbicacionA.textContent = 'Obligatorio';
+    //         selectUbicacionA.classList.add('is-invalid');
+    //         valido = false;
+    //     } else {
+    //         errorUbicacionA.textContent = '';
+    //         selectUbicacionA.classList.remove('is-invalid');
+    //     }
+
+    //     // Validación Unidad Organizativa
+    //     const selectUnidadOrg = document.getElementById('selectUnidadOrganizativaTomaFisica');
+    //     const errorUnidadOrg = document.getElementById('selectUnidadOrganizativaTomaFisicaError');
+    //     if (!selectUnidadOrg.value.trim()) {
+    //         errorUnidadOrg.textContent = 'Obligatorio';
+    //         selectUnidadOrg.classList.add('is-invalid');
+    //         valido = false;
+    //     } else {
+    //         errorUnidadOrg.textContent = '';
+    //         selectUnidadOrg.classList.remove('is-invalid');
+    //     }
+
+    //     // Validación Estado del Activo
+    //     const selectEstadoActivo = document.getElementById('selectEstadoActivo');
+    //     const errorEstadoActivo = document.getElementById('selectEstadoActivoError');
+    //     if (!selectEstadoActivo.value.trim()) {
+    //         errorEstadoActivo.textContent = 'Obligatorio';
+    //         selectEstadoActivo.classList.add('is-invalid');
+    //         valido = false;
+    //     } else {
+    //         errorEstadoActivo.textContent = '';
+    //         selectEstadoActivo.classList.remove('is-invalid');
+    //     }
+
+    //     if (!valido) {
+    //         e.preventDefault();
+    //     }
+    // });
+</script>
+
+<script>
+    // document.querySelector('form').addEventListener('submit', function (e) {
+    //     let valido = true;
+
+    //     // Validación Categoría
+    //     const selectCategoria = document.getElementById('selectCategoriaTomaFisica');
+    //     const errorCategoria = document.getElementById('selectCategoriaTomaFisicaError');
+    //     if (!selectCategoria.value.trim()) {
+    //         errorCategoria.textContent = 'Obligatorio';
+    //         selectCategoria.classList.add('is-invalid');
+    //         valido = false;
+    //     } else {
+    //         errorCategoria.textContent = '';
+    //         selectCategoria.classList.remove('is-invalid');
+    //     }
+
+    //     // Validación Usuario Asignado
+    //     const selectUsuario = document.getElementById('selectUsusarioAsignadoTomaFisica');
+    //     const errorUsuario = document.getElementById('selectUsusarioAsignadoTomaFisicaError');
+    //     if (!selectUsuario.value.trim()) {
+    //         errorUsuario.textContent = 'Obligatorio';
+    //         selectUsuario.classList.add('is-invalid');
+    //         valido = false;
+    //     } else {
+    //         errorUsuario.textContent = '';
+    //         selectUsuario.classList.remove('is-invalid');
+    //     }
+
+    //     if (!valido) {
+    //         e.preventDefault(); // Evita que se envíe el formulario si hay errores
+    //     }
+    // });
+</script>
+
+
+<script>
+    // document.querySelector('form').addEventListener('submit', function (e) {
+    //     let valido = true;
+
+    //     // Validación Ubicación A
+    //     const selectUbicacionA = document.getElementById('selectUbicacionATomaFisica');
+    //     const errorUbicacionA = document.getElementById('selectUbicacionATomaFisicaError');
+
+    //     if (!selectUbicacionA.value.trim()) {
+    //         errorUbicacionA.textContent = 'Obligatorio';
+    //         selectUbicacionA.classList.add('is-invalid');
+    //         valido = false;
+    //     } else {
+    //         errorUbicacionA.textContent = '';
+    //         selectUbicacionA.classList.remove('is-invalid');
+    //     }
+
+    //     // Validación Unidad Organizativa
+    //     const selectUnidadOrg = document.getElementById('selectUnidadOrganizativaTomaFisica');
+    //     const errorUnidadOrg = document.getElementById('selectUnidadOrganizativaTomaFisicaError');
+
+    //     if (!selectUnidadOrg.value.trim()) {
+    //         errorUnidadOrg.textContent = 'Obligatorio';
+    //         selectUnidadOrg.classList.add('is-invalid');
+    //         valido = false;
+    //     } else {
+    //         errorUnidadOrg.textContent = '';
+    //         selectUnidadOrg.classList.remove('is-invalid');
+    //     }
+
+    //     if (!valido) {
+    //         e.preventDefault(); // Evita que se envíe el formulario
+    //     }
+    // });
+</script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const btnBorrar = document.getElementById("btnBorrar");
+
+        btnBorrar.addEventListener("click", function () {
+            // Obtiene el formulario más cercano al botón
+            const form = btnBorrar.closest("form");
+
+            if (form) {
+                form.reset();
+
+                // Si estás usando Select2 o algún plugin, resetea visualmente también
+                const selects = form.querySelectorAll("select");
+                selects.forEach(select => {
+                    if ($(select).hasClass("select2-hidden-accessible")) {
+                        $(select).val("").trigger("change");
+                    } else {
+                        select.value = "";
+                    }
+                });
+
+                // Limpia los mensajes de error
+                const errores = form.querySelectorAll(".text-danger");
+                errores.forEach(div => div.innerText = "");
+
+                // También puedes limpiar inputs con contenido personalizado si es necesario
+                form.querySelectorAll("input[type=text]").forEach(input => input.value = "");
+
+                // Si tienes campos ocultos que no deseas limpiar, puedes excluirlos aquí
+                const hiddenPreservar = form.querySelector("#TomaFisicaFormulario");
+                if (hiddenPreservar) hiddenPreservar.value = "Insertar";
+            }
+        });
+    });
+</script>
+
+<script>
+    function mostrarModal(tipo, mensaje) {
+        const deleteModal = document.getElementById('deleteModal');
+        const deleteModalLabel = document.getElementById('deleteModalLabel');
+        const deleteModalBody = document.getElementById('deleteModalBody');
+        const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+        const modalHeader = deleteModal.querySelector('.modal-header');
+
+        deleteModalLabel.textContent = (tipo === "success") ? "Éxito" : "Error";
+        deleteModalBody.innerHTML = mensaje;
+
+        // Estilos dinámicos según el tipo
+        if (tipo === "success") {
+            modalHeader.style.backgroundColor = "transparent";
+            deleteModalLabel.style.color = "#606060";
+        } else {
+            modalHeader.style.backgroundColor = "#FF5100";
+            deleteModalLabel.style.color = "white";
+        }
+
+        confirmDeleteBtn.classList.add('d-none');
+
+        const modal = new bootstrap.Modal(deleteModal);
+        modal.show();
+
+        deleteModal.addEventListener('hidden.bs.modal', function () {
+            history.replaceState(null, '', window.location.pathname);
+        });
+    }
+</script>
+
+
+
+
+<script>
+    // document.querySelector('form').addEventListener('submit', function (e) {
+    //     const selectUbicacionA = document.getElementById('selectUbicacionATomaFisica');
+    //     const errorDiv = document.getElementById('selectUbicacionATomaFisicaError');
+    //     let valido = true;
+
+    //     if (!selectUbicacionA.value.trim()) {
+    //         errorDiv.textContent = 'Obligatorio';
+    //         selectUbicacionA.classList.add('is-invalid');
+    //         valido = false;
+    //     } else {
+    //         errorDiv.textContent = '';
+    //         selectUbicacionA.classList.remove('is-invalid');
+    //     }
+
+    //     if (!valido) {
+    //         e.preventDefault(); // Detener envío si no es válido
+    //     }
+    // });
+</script>
+
+
+
+
+
+
+@{
+    AlertMessage? alertMessage = null;
+
+    if (TempData["Alert"] is string alertJson)
+    {
+        try
+        {
+            alertMessage = System.Text.Json.JsonSerializer.Deserialize<AlertMessage>(alertJson);
+            TempData.Remove("Alert");
+        }
+        catch { alertMessage = null; }
+    }
+}
+
+@if (alertMessage != null)
+{
+    var jsonAlert = Json.Serialize(alertMessage); // serializa para usarlo en JS
+
+        <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                var alertData = @Html.Raw(jsonAlert);
+                console.log("SCRIPT DE ALERTA ACTIVADO");
+                console.log(alertData);
+
+                var deleteModal = document.getElementById('deleteModal');
+                var deleteModalLabel = document.getElementById('deleteModalLabel');
+                var deleteModalBody = document.getElementById('deleteModalBody');
+                var confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+                var modalHeader = deleteModal.querySelector('.modal-header');
+
+                deleteModalLabel.textContent = (alertData.tipo.toLowerCase() === "success") ? "Éxito" : "Error";
+                deleteModalBody.innerHTML = alertData.mensaje;
+
+                // Aplicar colores por defecto según tipo
+                if (alertData.tipo.toLowerCase() === "success") {
+                    modalHeader.style.backgroundColor = "transparent";
+                    deleteModalLabel.style.color = "#606060";
+                } else {
+                    modalHeader.style.backgroundColor = "#FF5100";
+                    deleteModalLabel.style.color = "white";
+                }
+
+                confirmDeleteBtn.classList.add('d-none');
+
+                var modal = new bootstrap.Modal(deleteModal);
+                modal.show();
+
+                deleteModal.addEventListener('hidden.bs.modal', function () {
+                    history.replaceState(null, '', window.location.pathname);
+                });
+            });
+        </script>
+}
+
+<style>
+    /* body {
+            background-color: #FFE2DA;
+
+        } */
+
+
+    .btn-orange {
+        background-color: #FF5100;
+        color: white;
+    }
+
+        .btn-orange:hover {
+            background-color: #e46b0f;
+            color: white;
+        }
+
+    .btn-outline-orange {
+        background-color: #FF5100;
+        color: white;
+        border: none;
+        transition: background-color 0.2s ease, color 0.2s ease;
+    }
+
+        .btn-outline-orange:hover {
+            border: 1px solid #FFA45B;
+            color: white;
+            background-color: #FFA45B;
+        }
+
+
+    .select-light {
+        background-color: #eeeeee;
+    }
+
+    h4 {
+        color: #353535;
+    }
+
+</style>
+<script>
+    const baseVerFoto = '@Url.Action("VerFotoPorRuta", "Administration")';
+
+              function cargarFotosActivo() {
+        const idActivo = document.getElementById("activoGuid").value;
+        if (!idActivo) return;
+
+        const urlObtener = '@Url.Action("ObtenerFotosActivo", "Administration")' + `?idActivo=${idActivo}`;
+
+        fetch(urlObtener)
+            .then(res => res.json())
+            .then(data => {
+                const slotsConFoto = new Set();
+
+                data.forEach(foto => {
+                    const div = document.getElementById(`foto${foto.slot}`);
+                    if (div) {
+                        div.style.backgroundColor = "#dddddd"; // ✅ Tiene foto
+                        slotsConFoto.add(foto.slot);
+                    }
+                });
+
+                // Asignar gris claro a los slots sin foto
+                for (let i = 1; i <= 5; i++) {
+                    if (!slotsConFoto.has(i)) {
+                        const div = document.getElementById(`foto${i}`);
+                        if (div) {
+                            div.style.backgroundColor = "#f2f2f2"; // ✅ No tiene foto
+                        }
+                    }
+                }
+            })
+            .catch(err => {
+                console.error("Error cargando fotos:", err);
+            });
+    }
+
+
+
+</script>
+
+<script>
+    document.querySelector('form').addEventListener('submit', function (e) {
+        let valido = true;
+        let camposVacios = [];
+        let mensaje = '';
+
+        // === Validación: Descripción ===
+        const descripcionInput = document.getElementById('descripcionTomaFisica');
+        const descripcionError = document.getElementById('descripcionTomaFisicaError');
+
+        if (!descripcionInput.value.trim()) {
+            descripcionError.textContent = 'Obligatorio';
+            camposVacios.push('Descripción');
+            valido = false;
+        } else if (descripcionInput.value.length > 100) {
+            descripcionError.textContent = 'Máximo 100 caracteres';
+            descripcionInput.classList.add('is-invalid');
+            mensaje = 'El campo <strong>Descripción</strong> debe tener máximo 100 caracteres.';
+            valido = false;
+        } else {
+            descripcionError.textContent = '';
+            descripcionInput.classList.remove('is-invalid');
+        }
+
+        // === Validación: Nombre (vacío o > 40 caracteres) ===
+        const nombreInput = document.getElementById('nombreTomaFisica');
+        const nombreError = document.getElementById('nombreTomaFisicaError');
+        if (!nombreInput.value.trim()) {
+            nombreError.textContent = 'Obligatorio';
+            camposVacios.push('Nombre de la Toma Física');
+            valido = false;
+        } else if (nombreInput.value.length > 40) {
+            nombreError.textContent = 'Máximo 40 caracteres';
+            mensaje = 'El campo <strong>Nombre de la Toma Física</strong> debe tener máximo 40 caracteres.';
+            valido = false;
+        } else {
+            nombreError.textContent = '';
+        }
+
+        // === Validación: Inputs requeridos ===
+        const camposInput = [
+            { id: 'fechaInicial', errorId: 'fechaInicialError', nombre: 'Fecha Inicial' },
+            { id: 'fechaFinal', errorId: 'fechaFinalError', nombre: 'Fecha Final' }
+        ];
+
+        camposInput.forEach(campo => {
+            const input = document.getElementById(campo.id);
+            const errorDiv = document.getElementById(campo.errorId);
+            if (!input.value.trim()) {
+                errorDiv.textContent = 'Obligatorio';
+                camposVacios.push(campo.nombre);
+                valido = false;
+            } else {
+                errorDiv.textContent = '';
+            }
+        });
+
+        // === Validación: Selects requeridos ===
+        const camposSelect = [
+            { id: 'selectUbicacionATomaFisica', errorId: 'selectUbicacionATomaFisicaError', nombre: 'Ubicación A' },
+            { id: 'selectCategoriaTomaFisica', errorId: 'selectCategoriaTomaFisicaError', nombre: 'Categoría' },
+            { id: 'selectEstadoActivo', errorId: 'selectEstadoActivoError', nombre: 'Estado del Activo' },
+            { id: 'selectUsusarioAsignadoTomaFisica', errorId: 'selectUsusarioAsignadoTomaFisicaError', nombre: 'Usuario Asignado' }
+                //{ id: 'descripcionTomaFisica', errorId: 'descripcionTomaFisicaError', nombre: 'Descripción' }
+        ];
+
+        camposSelect.forEach(campo => {
+            const select = document.getElementById(campo.id);
+            const errorDiv = document.getElementById(campo.errorId);
+            if (!select.value.trim()) {
+                errorDiv.textContent = 'Obligatorio';
+                camposVacios.push(campo.nombre);
+                valido = false;
+            } else {
+                errorDiv.textContent = '';
+            }
+        });
+
+        // === Resultado final ===
+        if (!valido) {
+            e.preventDefault();
+
+            if (mensaje) {
+                mostrarModal('error', mensaje); // Error específico (longitud del nombre o descripción)
+            } else if (camposVacios.length === 1) {
+                mostrarModal('error', `Debe completar el campo <strong>${camposVacios[0]}</strong>.`);
+            } else if (camposVacios.length > 1) {
+                const lista = camposVacios.map(c => `<li>${c}</li>`).join('');
+                mostrarModal('error', `<p>Debe completar los siguientes campos:</p><ul>${lista}</ul>`);
+            }
+        }
+    });
+</script>
+
+
+
+
+
+<script>
+    // document.querySelector('form').addEventListener('submit', function (e) {
+    //     const descripcionInput = document.getElementById('descripcionTomaFisica');
+    //     const errorDiv = document.getElementById('descripcionTomaFisicaError');
+
+    //     if (descripcionInput.value.length > 100) {
+    //         e.preventDefault(); // Detener envío
+    //         errorDiv.textContent = 'Máximo 100 carácteres';
+    //         descripcionInput.classList.add('is-invalid');
+    //     } else {
+    //         errorDiv.textContent = '';
+    //         descripcionInput.classList.remove('is-invalid');
+    //     }
+    // });
+</script>
+
+<script>
+    document.getElementById('modalSubirFoto').addEventListener('hidden.bs.modal', function () {
+        // Remover backdrop si queda
+        const backdrops = document.querySelectorAll('.modal-backdrop');
+        backdrops.forEach(b => b.remove());
+
+        // Limpiar clase del body que bloquea el scroll
+        document.body.classList.remove('modal-open');
+        document.body.style = ''; // por si queda overflow: hidden
+
+        // También eliminá el padding-right que Bootstrap a veces agrega
+        document.body.style.paddingRight = null;
+    });
+
+        document.querySelectorAll('.modal').forEach(function(modal) {
+        modal.addEventListener('hidden.bs.modal', function () {
+            document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+            document.body.classList.remove('modal-open');
+            document.body.style = '';
+        });
+    });
+
+
+</script>
+
+<link href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+<script>
+        document.addEventListener('DOMContentLoaded', function () {
+        const picker = flatpickr("#fechaInicial", {
+            dateFormat: "Y-m-d",
+            minDate: "today"
+        });
+
+        document.getElementById('btnCalendario5').addEventListener('click', function () {
+            picker.open();
+        });
+
+        // Validación sin errores de zona horaria
+        document.getElementById('fechaInicial').addEventListener('change', function () {
+            const valor = this.value;
+            const hoy = new Date();
+            const hoyStr = hoy.toISOString().split('T')[0]; // formato "YYYY-MM-DD"
+
+            if (valor < hoyStr) {
+                alert("La fecha seleccionada debe ser hoy o una fecha futura.");
+                this.value = "";
+            }
+        });
+    });
+
+</script>
+
+<script>
+        document.addEventListener('DOMContentLoaded', function () {
+        const inputFechaInicial = document.getElementById('fechaInicial');
+        const inputFechaFinal = document.getElementById('fechaFinal');
+
+        // Inicializar flatpickr para fecha final
+        const pickerFinal = flatpickr("#fechaFinal", {
+            dateFormat: "Y-m-d",
+            minDate: null // Se actualizará dinámicamente
+        });
+
+        document.getElementById('btnCalendario6').addEventListener('click', function () {
+            pickerFinal.open();
+        });
+
+        // Actualizar minDate de fechaFinal al cambiar la fechaInicial
+        inputFechaInicial.addEventListener('change', function () {
+            const fechaInicio = inputFechaInicial.value;
+            pickerFinal.set('minDate', fechaInicio); // prevenir fechas anteriores
+
+            // También limpiar fecha final si quedó inválida
+            if (inputFechaFinal.value && inputFechaFinal.value < fechaInicio) {
+                inputFechaFinal.value = "";
+            }
+        });
+
+        // Validar que la fecha final no sea menor que la inicial
+        inputFechaFinal.addEventListener('change', function () {
+            const fechaInicio = inputFechaInicial.value;
+            const fechaFin = inputFechaFinal.value;
+
+            if (fechaInicio && fechaFin < fechaInicio) {
+               // alert("La fecha final no puede ser menor que la fecha inicial.");
+                inputFechaFinal.value = "";
+            }
+        });
+    });
+
+
+</script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        document.querySelector('form').addEventListener('submit', function (e) {
+            const accion = document.activeElement.value;
+
+            if (accion === 'buscar') {
+                e.preventDefault();
+                return;
+            }
+
+            let hasError = false;
+
+            // ✅ Validar campos obligatorios
+            const fields = [
+                { id: 'numeroActivo', name: 'Número de Activo' },
+                { id: 'descripcionLarga', name: 'Descripción Larga' },
+                { id: 'fechaCompra', name: 'Fecha de Compra' }
+            ];
+
+            fields.forEach(field => {
+                const input = document.getElementById(field.id);
+                const errorDiv = document.getElementById(field.id + 'Error');
+
+                if (!input.value.trim()) {
+                    errorDiv.textContent = `Requerido*`;
+                    hasError = true;
+                } else {
+                    errorDiv.textContent = '';
+                }
+            });
+
+            // ✅ Limitar longitud de descripciones
+            const descripcionCorta = document.getElementById('descripcionCorta');
+            const descripcionCortaError = document.getElementById('descripcionCortaError');
+
+            if (descripcionCorta && descripcionCorta.value.length > 40) {
+                descripcionCortaError.textContent = 'Máximo 40 caracteres.';
+                hasError = true;
+            } else if (descripcionCortaError) {
+                descripcionCortaError.textContent = '';
+            }
+
+            const descripcionLarga = document.getElementById('descripcionLarga');
+            const descripcionLargaError = document.getElementById('descripcionLargaError');
+
+            if (descripcionLarga && descripcionLarga.value.length > 80) {
+                descripcionLargaError.textContent = 'Máximo 80 caracteres.';
+                hasError = true;
+            } else if (descripcionLargaError && descripcionLarga.value.trim()) {
+                descripcionLargaError.textContent = '';
+            }
+
+            // ✅ Validar fechas
+            const hoy = new Date();
+            hoy.setHours(0, 0, 0, 0);
+
+            const fechaCompra = document.getElementById('fechaCompra');
+            const fechaCapitalizacion = document.getElementById('fechaCapitalizacion');
+            const fechaCompraError = document.getElementById('fechaCompraError');
+            const fechaCapitalizacionError = document.getElementById('fechaCapitalizacionError');
+
+            const validarFecha = (input, errorDiv) => {
+                if (!input.value.trim()) return;
+
+                const valor = new Date(input.value);
+                valor.setHours(0, 0, 0, 0);
+
+                if (valor > hoy) {
+                    errorDiv.textContent = 'No puede ser mayor a hoy.';
+                    hasError = true;
+                } else {
+                    errorDiv.textContent = '';
+                }
+            };
+
+            if (fechaCompra && fechaCompraError) validarFecha(fechaCompra, fechaCompraError);
+            if (fechaCapitalizacion && fechaCapitalizacionError) validarFecha(fechaCapitalizacion, fechaCapitalizacionError);
+
+            // ✅ Validar número de activo (solo enteros)
+            const numeroActivo = document.getElementById('numeroActivo');
+            const numeroActivoError = document.getElementById('numeroActivoError');
+
+            if (numeroActivo && !/^\d+$/.test(numeroActivo.value.trim())) {
+                numeroActivoError.textContent = 'Solo se permiten números enteros.';
+                hasError = true;
+            } else if (numeroActivoError && numeroActivo.value.trim()) {
+                numeroActivoError.textContent = '';
+            }
+
+            // ✅ Validar decimales para costo y valorResidual
+            const validarDecimal = (valor) => {
+                const normalizado = valor.replace(',', '.');
+                return !isNaN(normalizado) && isFinite(normalizado);
+            };
+
+            const costo = document.getElementById('costo');
+            const costoError = document.getElementById('costoError');
+
+            if (costo && !validarDecimal(costo.value.trim())) {
+                costoError.textContent = 'Debe ser un número válido.';
+                hasError = true;
+            } else if (costoError) {
+                costoError.textContent = '';
+            }
+
+            const valorResidual = document.getElementById('valorResidual');
+            const valorResidualError = document.getElementById('valorResidualError');
+
+            if (valorResidual && !validarDecimal(valorResidual.value.trim())) {
+                valorResidualError.textContent = 'Debe ser un número válido.';
+                hasError = true;
+            } else if (valorResidualError) {
+                valorResidualError.textContent = '';
+            }
+
+            // ✅ Cancelar si hay errores
+            if (hasError) {
+                e.preventDefault();
+                return;
+            }
+
+            // ✅ Asignar fecha de hoy si no se eligieron
+            const hoyFormateado = new Date().toLocaleDateString('en-US'); // mm/dd/yyyy
+            const fechaGarantia = document.getElementById('fechaGarantia');
+
+            if (fechaCapitalizacion && !fechaCapitalizacion.value.trim()) {
+                fechaCapitalizacion.value = hoyFormateado;
+            }
+
+            if (fechaGarantia && !fechaGarantia.value.trim()) {
+                fechaGarantia.value = hoyFormateado;
+            }
+
+            // ✅ Normalizar valores decimales
+            if (costo && costo.value.trim()) {
+                costo.value = costo.value.replace(',', '.');
+            }
+
+            if (valorResidual && valorResidual.value.trim()) {
+                valorResidual.value = valorResidual.value.replace(',', '.').toFixed(2);
+            }
+        });
+    });
+</script>
+
+
+
+
+
+
+
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // Cargar empresas desde el backend
+        fetch('@Url.Content("~/Administration/ObtenerEmpresas")')
+            .then(response => response.json())
+            .then(data => {
+                const select = document.getElementById('selectEmpresa');
+                data.forEach(item => {
+                    const option = document.createElement('option');
+                    option.value = item.id;
+                    option.textContent = item.nombre;
+                    select.appendChild(option);
+                });
+            });
+    });
+</script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // Cargar marcas desde el backend
+        fetch('@Url.Content("~/Administration/ObtenerMarcas")')
+            .then(response => response.json())
+            .then(data => {
+                const select = document.getElementById('selectMarca');
+                data.forEach(item => {
+                    const option = document.createElement('option');
+                    option.value = item.id;
+                    option.textContent = item.nombre;
+                    select.appendChild(option);
+                });
+            });
+    });
+</script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        fetch('@Url.Content("~/Administration/ObtenerCuentasContables")')
+            .then(response => response.json())
+            .then(data => {
+                const select = document.getElementById('selectCuentaContableDepreciacion');
+                data.forEach(item => {
+                    const option = document.createElement('option');
+                    option.value = item.id;
+                    option.textContent = item.nombre;
+                    select.appendChild(option);
+                });
+            });
+    });
+</script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        fetch('@Url.Content("~/Administration/ObtenerCentrosCostos")')
+            .then(response => response.json())
+            .then(data => {
+                const select = document.getElementById('selectCentroCosto');
+                data.forEach(item => {
+                    const option = document.createElement('option');
+                    option.value = item.id;
+                    option.textContent = item.nombre;
+                    select.appendChild(option);
+                });
+            });
+    });
+</script>
+
+
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        fetch('@Url.Content("~/Administration/ObtenerUbicacionesA")')
+            .then(response => response.json())
+            .then(data => {
+                const select = document.getElementById('selectUbicacionATomaFisica');
+                data.forEach(item => {
+                    const option = document.createElement('option');
+                    option.value = item.id;
+                    option.textContent = item.texto;
+                    select.appendChild(option);
+                });
+            });
+    });
+</script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        fetch('@Url.Content("~/Administration/ObtenerUnidadOrganizativa")')
+            .then(response => response.json())
+            .then(data => {
+                const select = document.getElementById('selectUnidadOrganizativaTomaFisica');
+                data.forEach(item => {
+                    const option = document.createElement('option');
+                    option.value = item.id;
+                    option.textContent = item.texto;
+                    select.appendChild(option);
+                });
+            });
+    });
+</script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const selectA = document.getElementById('selectUbicacionATomaFisica');
+        const selectB = document.getElementById('selectUbicacionBTomaFisica');
+
+        selectA.addEventListener('change', function () {
+            const companyId = this.value;
+
+            // Reset y deshabilita el select B
+            selectB.innerHTML = '<option value="">Seleccione un elemento</option>';
+            //selectB.disabled = true;
+
+            if (companyId) {
+                fetch(`@Url.Content("~/Administration/ObtenerUbicacionesB")?idCompany=${companyId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        data.forEach(item => {
+                            const option = document.createElement('option');
+                            option.value = item.id;
+                            option.textContent = item.texto;
+                            selectB.appendChild(option);
+                        });
+                        //selectB.disabled = false;
+                    });
+            }
+        });
+    });
+</script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const selectA = document.getElementById('selectUbicacionATomaFisica');
+        const selectB = document.getElementById('selectUbicacionBTomaFisica');
+        const selectC = document.getElementById('selectUbicacionCTomaFisica');
+
+        function cargarUbicacionC() {
+            const companyId = selectA.value;
+            const buildingId = selectB.value;
+
+            // Resetear y desactivar el selectC
+            selectC.innerHTML = '<option value="">Seleccione un elemento</option>';
+           // selectC.disabled = true;
+
+            if (companyId && buildingId) {
+                const url = `@Url.Content("~/Administration/ObtenerUbicacionesC")?idCompany=${companyId}&idBuilding=${buildingId}`;
+
+                fetch(url)
+                    .then(response => response.json())
+                    .then(data => {
+                        data.forEach(item => {
+                            const option = document.createElement('option');
+                            option.value = item.id;
+                            option.textContent = item.texto;
+                            selectC.appendChild(option);
+                        });
+                        //selectC.disabled = false;
+                    });
+            }
+        }
+
+        // Escuchar cambios en A y B para cargar C
+        selectA.addEventListener('change', cargarUbicacionC);
+        selectB.addEventListener('change', cargarUbicacionC);
+    });
+</script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const selectA = document.getElementById('selectUbicacionATomaFisica');
+        const selectB = document.getElementById('selectUbicacionBTomaFisica');
+        const selectC = document.getElementById('selectUbicacionCTomaFisica');
+        const selectD = document.getElementById('selectUbicacionDTomaFisica');
+
+        function cargarUbicacionD() {
+            const companyId = selectA.value;
+            const buildingId = selectB.value;
+            const floorId = selectC.value;
+
+            // Reset y desactivar selectD
+            selectD.innerHTML = '<option value="">Seleccione un elemento</option>';
+           // selectD.disabled = true;
+
+            if (companyId && buildingId && floorId) {
+                const url = `@Url.Content("~/Administration/ObtenerUbicacionesD")?idCompany=${companyId}&idBuilding=${buildingId}&idFloor=${floorId}`;
+
+                fetch(url)
+                    .then(response => response.json())
+                    .then(data => {
+                        data.forEach(item => {
+                            const option = document.createElement('option');
+                            option.value = item.id;
+                            option.textContent = item.texto;
+                            selectD.appendChild(option);
+                        });
+                      //  selectD.disabled = false;
+                    });
+            }
+        }
+
+        // Escuchar cambios en A, B y C
+        selectA.addEventListener('change', cargarUbicacionD);
+        selectB.addEventListener('change', cargarUbicacionD);
+        selectC.addEventListener('change', cargarUbicacionD);
+    });
+</script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        fetch('@Url.Content("~/Administration/ObtenerUbicacionesSecundarias")')
+            .then(response => response.json())
+            .then(data => {
+                const select = document.getElementById('selectUbicacionSecundaria');
+                data.forEach(item => {
+                    const option = document.createElement('option');
+                    option.value = item.id;
+                    option.textContent = item.texto;
+                    select.appendChild(option);
+                });
+            });
+    });
+</script>
+
+
+
+
+<script>
+    function actualizarDepreciado() {
+        const valorResidualInput = document.getElementById("valorResidual");
+        const checkDepreciado = document.getElementById("checkDepreciado");
+        const depreciadoHidden = document.getElementById("depreciadoValue");
+
+        const valor = parseFloat(valorResidualInput.value.replace(',', '.')) || 0;
+
+        if (valor === 0) {
+            checkDepreciado.checked = true;
+            depreciadoHidden.value = "Depreciado";
+        } else {
+            checkDepreciado.checked = false;
+            depreciadoHidden.value = "No depreciado";
+        }
+    }
+
+
+    document.addEventListener("DOMContentLoaded", function () {
+        const valorResidualInput = document.getElementById("valorResidual");
+        const checkDepreciado = document.getElementById("checkDepreciado");
+        const depreciadoHidden = document.getElementById("depreciadoValue");
+
+        valorResidualInput.addEventListener("input", actualizarDepreciado);
+
+        checkDepreciado.addEventListener("change", function () {
+            depreciadoHidden.value = this.checked ? "Depreciado" : "No depreciado";
+        });
+
+        actualizarDepreciado();
+    });
+</script>
+
+<script>
+    function mostrarModal(tipo, mensaje) {
+        const deleteModal = document.getElementById('deleteModal');
+        const deleteModalLabel = document.getElementById('deleteModalLabel');
+        const deleteModalBody = document.getElementById('deleteModalBody');
+        const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+        const modalHeader = deleteModal.querySelector('.modal-header');
+
+        deleteModalLabel.textContent = (tipo === "success") ? "Éxito" : "Error";
+        deleteModalBody.innerHTML = mensaje;
+
+        // Estilos dinámicos según el tipo
+        if (tipo === "success") {
+            modalHeader.style.backgroundColor = "transparent";
+            deleteModalLabel.style.color = "#606060";
+        } else {
+            modalHeader.style.backgroundColor = "#FF5100";
+            deleteModalLabel.style.color = "white";
+        }
+
+        confirmDeleteBtn.classList.add('d-none');
+
+        const modal = new bootstrap.Modal(deleteModal);
+        modal.show();
+
+        deleteModal.addEventListener('hidden.bs.modal', function () {
+            history.replaceState(null, '', window.location.pathname);
+        });
+    }
+</script>
+
+
+<script>
+
+
+    function cargarMarcaYModelo(marcaId, modeloId) {
+        // Asignar la marca
+        $('#selectMarca').val(marcaId).trigger('change');
+
+        // Esperar a que los modelos se carguen (puedes usar setTimeout o mejor, una promesa si adaptas el código)
+        setTimeout(function () {
+            $('#selectModelo').val(modeloId);
+        }, 500); // tiempo suficiente para que cargue, ajustable
+    }
+
+    document.querySelector('.btn.btn-orange').addEventListener('click', function () {
+        const tipoBusqueda = document.getElementById('selectBusquedaActivo').value;
+        const valorBusqueda = document.getElementById('busqueda').value;
+
+        if (!tipoBusqueda || !valorBusqueda.trim()) {
+            mostrarModal("error", "Debe seleccionar un tipo de búsqueda y escribir un valor.");
+            return;
+        }
+
+        const url = '@Url.Content("~/Administration/BuscarActivo")' + `?tipo=${tipoBusqueda}&valor=${encodeURIComponent(valorBusqueda)}`;
+
+        fetch(url)
+            .then(response => response.json())
+                .then(data => {
+        console.log("Datos recibidos:", data);
+        if (data && data.idActivo) {
+          document.getElementById('EstadoFormulario').value = 'Editar';
+
+          habilitarBotonesDocumentos();
+
+            document.getElementById('activoGuid').value = data.idActivo ?? '';
+            verificarDocumento(1, "btnDocAsoc1");
+            verificarDocumento(2, "btnDocAsoc2");
+            cargarFotosActivo();
+
+            document.getElementById('numeroActivo').value = data.numeroActivo ?? '';
+            document.getElementById('numeroEtiqueta').value = data.numeroEtiqueta ?? '';
+            document.getElementById('descripcionCorta').value = data.descripcionCorta ?? '';
+            document.getElementById('descripcionLarga').value = data.descripcionLarga ?? '';
+            document.getElementById('selectCategoriaTomaFisica').value = data.categoria ?? '';
+            document.getElementById('selectEstadoActivo').value = data.estado ?? '';
+            document.getElementById('selectEmpresa').value = data.empresa ?? '';
+
+
+            cargarMarcaYModelo(data.marca, data.modelo);
+
+            document.getElementById('numeroFactura').value = data.numeroFactura ?? '';
+            document.getElementById('costo').value = data.costo ?? '';
+            document.getElementById('color').value = data.color ?? '';
+            document.getElementById('fechaCompra').value = data.fechaCompra ?? '';
+            document.getElementById('fechaCapitalizacion').value = data.fechaCapitalizacion ?? '';
+            document.getElementById('valorResidual').value = data.valorResidual ?? '';
+            document.getElementById('numParteFabricante').value = data.numeroParteFabricante ?? '';
+            const checkDepreciado = document.getElementById('checkDepreciado');
+    const valorDepreciado = data.depreciado ?? '';
+
+    document.getElementById('depreciadoValue').value = valorDepreciado;
+     //cargarFotosActivo();
+
+    if (valorDepreciado === "Depreciado") {
+        checkDepreciado.checked = true;
+    } else {
+        checkDepreciado.checked = false;
+    }
+
+            document.getElementById('descripcionDepreciado').value = data.descripcionDepreciado ?? '';
+            document.getElementById('anosVidaUtil').value = data.anosVidaUtil ?? '';
+            document.getElementById('selectCuentaContableDepreciacion').value = data.cuentaContableDepresiacion ?? '';
+            document.getElementById('selectCentroCosto').value = data.centroCostos ?? '';
+            document.getElementById('descripcionEstadoUltimoInventario').value = data.descripcionEstadoUltimoInventario ?? '';
+            document.getElementById('TagEPC').value = data.tagEPC ?? '';
+            $('#selectUsusarioAsignadoTomaFisica').val(data.empleado ?? '').trigger('change');
+
+             document.getElementById('selectUsusarioAsignadoTomaFisica').value = data.empleado ?? '';
+            document.getElementById('selectUbicacionATomaFisica').value = data.ubicacionA ?? '';
+            document.getElementById('selectUnidadOrganizativaTomaFisica').value = data.ubicacionA ?? '';
+            document.getElementById('selectUbicacionBTomaFisica').value = data.ubicacionB ?? '';
+            document.getElementById('fechaGarantia').value = data.fechaGarantia ?? '';
+            document.getElementById('selectUbicacionCTomaFisica').value = data.ubicacionC ?? '';
+            document.getElementById('selectUbicacionDTomaFisica').value = data.ubicacionD ?? '';
+            document.getElementById('selectUbicacionSecundaria').value = data.ubicacionSecundaria ?? '';
+            document.getElementById('numeroSerie').value = data.numeroSerie ?? '';
+            document.getElementById('tamanioMedida').value = data.tamanioMedida ?? '';
+            document.getElementById('observaciones').value = data.observaciones ?? '';
+            document.getElementById('Estado_Activo').value = data.estado_Activo ?? '0';
+            actualizarVisual();
+
+            cargarUbicaciones(data.ubicacionA, data.ubicacionB, data.ubicacionC, data.ubicacionD);
+
+
+            $('#selectCategoriaTomaFisica').trigger('change');
+            $('#selectEstadoActivo').trigger('change');
+
+
+        } else {
+         mostrarModal("error", "Activo no encontrado.");
+        }
+    })
+
+            .catch(error => {
+                console.error('Error al buscar activo:', error);
+          mostrarModal("error", "Ocurrió un error al buscar el activo.");
+            });
+    });
+
+
+</script>
+<script>
+      function verificarDocumento(tipo, botonId) {
+        const idActivo = document.getElementById("activoGuid").value;
+        if (!idActivo) return;
+
+        const url = '@Url.Action("ObtenerDocumentoActivo", "Administration")';
+
+        fetch(`${url}?id=${idActivo}&tipo=${tipo}`)
+            .then(response => response.json())
+            .then(data => {
+                const boton = document.getElementById(botonId);
+                boton.style.backgroundColor = data.success ? "#dddddd" : "#f2f2f2";
+            })
+            .catch(err => console.error("Error al verificar documento:", err));
+    }
+
+</script>
+<script>
+    function actualizarVisual() {
+        const botonEstado = document.getElementById("activoInactivo");
+        const hiddenEstado = document.getElementById("Estado_Activo");
+
+        const estado = hiddenEstado.value;
+
+        if (estado === "1") {
+            botonEstado.textContent = "Activo";
+            botonEstado.style.color = "#898989";
+        } else {
+            botonEstado.textContent = "Inactivo";
+            botonEstado.style.color = "#45bdcb";
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        const botonEstado = document.getElementById("activoInactivo");
+        const hiddenEstado = document.getElementById("Estado_Activo");
+
+        botonEstado.addEventListener("click", function (e) {
+            e.preventDefault();
+            hiddenEstado.value = hiddenEstado.value === "0" ? "1" : "0";
+            actualizarVisual();
+        });
+
+        actualizarVisual(); // Estado inicial
+    });
+</script>
+
+<script>
+    async function cargarUbicaciones(ubicacionA, ubicacionB, ubicacionC, ubicacionD) {
+        const selectA = document.getElementById('selectUbicacionATomaFisica');
+        const selectB = document.getElementById('selectUbicacionBTomaFisica');
+        const selectC = document.getElementById('selectUbicacionCTomaFisica');
+        const selectD = document.getElementById('selectUbicacionDTomaFisica');
+
+        // Asignar A y cargar B
+        selectA.value = ubicacionA;
+        await fetch(`@Url.Content("~/Administration/ObtenerUbicacionesB")?idCompany=${ubicacionA}`)
+            .then(response => response.json())
+            .then(data => {
+                selectB.innerHTML = '<option value="">Seleccione un elemento</option>';
+                data.forEach(item => {
+                    const option = document.createElement('option');
+                    option.value = item.id;
+                    option.textContent = item.texto;
+                    selectB.appendChild(option);
+                });
+                selectB.value = ubicacionB;
+            });
+
+        // Cargar C
+        await fetch(`@Url.Content("~/Administration/ObtenerUbicacionesC")?idCompany=${ubicacionA}&idBuilding=${ubicacionB}`)
+            .then(response => response.json())
+            .then(data => {
+                selectC.innerHTML = '<option value="">Seleccione un elemento</option>';
+                data.forEach(item => {
+                    const option = document.createElement('option');
+                    option.value = item.id;
+                    option.textContent = item.texto;
+                    selectC.appendChild(option);
+                });
+                selectC.value = ubicacionC;
+            });
+
+        // Cargar D
+        await fetch(`@Url.Content("~/Administration/ObtenerUbicacionesD")?idCompany=${ubicacionA}&idBuilding=${ubicacionB}&idFloor=${ubicacionC}`)
+            .then(response => response.json())
+            .then(data => {
+                selectD.innerHTML = '<option value="">Seleccione un elemento</option>';
+                data.forEach(item => {
+                    const option = document.createElement('option');
+                    option.value = item.id;
+                    option.textContent = item.texto;
+                    selectD.appendChild(option);
+                });
+                selectD.value = ubicacionD;
+            });
+    }
+</script>
+
+<script>
+    document.getElementById("btnDocAsoc1").addEventListener("click", function () {
+        document.getElementById("tipoDoc").value = "1";
+        cargarDocumentoExistente(1);
+        new bootstrap.Modal(document.getElementById("modalDocumento")).show();
+    });
+
+    document.getElementById("btnDocAsoc2").addEventListener("click", function () {
+        document.getElementById("tipoDoc").value = "2";
+        cargarDocumentoExistente(2);
+        new bootstrap.Modal(document.getElementById("modalDocumento")).show();
+    });
+
+</script>
+<script>
+    document.getElementById("formDocumento").addEventListener("submit", function (e) {
+        e.preventDefault();
+
+        const archivoInput = document.getElementById("archivoDocumento");
+        const archivo = archivoInput.files[0];
+
+        // Validar que se haya seleccionado un archivo
+        if (!archivo) {
+            mostrarModal("error", "Debe seleccionar un archivo.");
+            return;
+        }
+
+        // Validar tipo de archivo
+        const extensionesPermitidas = [".pdf", ".doc", ".docx"];
+        const nombreArchivo = archivo.name.toLowerCase();
+        const extensionValida = extensionesPermitidas.some(ext => nombreArchivo.endsWith(ext));
+    if (!extensionValida) {
+        const modalEl = document.getElementById("modalDocumento");
+        const modalInstance = bootstrap.Modal.getInstance(modalEl);
+
+        // Esperar a que se cierre el modal para mostrar el mensaje
+        modalEl.addEventListener('hidden.bs.modal', function handler() {
+            mostrarModal("error", "Solo se permiten archivos PDF o Word (.pdf, .doc, .docx).");
+            modalEl.removeEventListener('hidden.bs.modal', handler);
+        });
+
+        modalInstance.hide(); // Cierra el modal
+        archivoInput.value = ""; // Limpia el input
+
+        return;
+    }
+
+
+        // ✅ Si pasa la validación, continuar
+        const formData = new FormData(this);
+        formData.append("idActivo", document.getElementById("activoGuid").value);
+        formData.append("tipoDoc", document.getElementById("tipoDoc").value);
+
+        fetch('@Url.Action("SubirDocumentoActivo", "Administration")', {
+            method: "POST",
+            body: formData
+        })
+        .then(resp => resp.json())
+            .then(data => {
+        const modalEl = document.getElementById("modalDocumento");
+        const modalInstance = bootstrap.Modal.getInstance(modalEl);
+
+        const tipo = document.getElementById("tipoDoc").value;
+
+        if (data.success) {
+            modalInstance.hide();
+            archivoInput.value = "";
+            document.getElementById("visorDocumento").innerHTML = "";
+            mostrarModal("success", "Documento guardado.");
+
+            // ✅ Actualizar color del botón correspondiente automáticamente
+            if (tipo === "1") verificarDocumento(1, "btnDocAsoc1");
+            else if (tipo === "2") verificarDocumento(2, "btnDocAsoc2");
+        } else {
+            modalInstance.hide();
+            archivoInput.value = "";
+            document.getElementById("visorDocumento").innerHTML = "";
+            mostrarModal("error", "Error al guardar el documento.");
+        }
+    })
+        .catch(err => {
+            const modalEl = document.getElementById("modalDocumento");
+            const modalInstance = bootstrap.Modal.getInstance(modalEl);
+            modalInstance.hide();
+
+            archivoInput.value = "";
+            document.getElementById("visorDocumento").innerHTML = "";
+            console.error(err);
+            mostrarModal("error", "El documento está dañado.");
+        });
+    });
+</script>
+
+
+<script>
+    const verDocumentoUrl = '@Url.Action("VerDocumento", "Administration")';
+
+    function cargarDocumentoExistente(tipo) {
+        const idActivo = document.getElementById("activoGuid").value;
+        if (!idActivo) {
+            document.getElementById("visorDocumento").innerHTML = "<p>Activo no válido.</p>";
+            return;
+        }
+
+        fetch(`@Url.Action("ObtenerDocumentoActivo", "Administration")?id=${idActivo}&tipo=${tipo}`)
+            .then(response => response.json())
+            .then(data => {
+                const visor = document.getElementById("visorDocumento");
+
+                if (data.success && data.url) {
+                    const extension = data.url.split('.').pop().toLowerCase();
+                    const urlDocumento = `${verDocumentoUrl}?ruta=${encodeURIComponent(data.url)}`;
+
+                    if (extension === "pdf") {
+                        visor.innerHTML = `<iframe src="${urlDocumento}" width="100%" height="500px" frameborder="0"></iframe>`;
+                    } else if (extension === "doc" || extension === "docx") {
+                        visor.innerHTML = `
+                            <p>Este documento no se puede visualizar directamente aquí.</p>
+                            <a href="${urlDocumento}" target="_blank" class="btn btn-outline-primary">Descargar documento</a>`;
+                    } else {
+                        visor.innerHTML = "<p>Tipo de documento no soportado para vista previa.</p>";
+                    }
+                } else {
+                    visor.innerHTML = "<p>No hay documento asociado</p>";
+                }
+            })
+            .catch(error => {
+                console.error("Error al cargar documento:", error);
+                document.getElementById("visorDocumento").innerHTML = "<p>Error al cargar el documento.</p>";
+            });
+    }
+</script>
+
+<script>
+    // document.addEventListener("DOMContentLoaded", function () {
+    //     const estado = document.getElementById("EstadoFormulario").value;
+    //     if (estado === "Insertar") {
+    //         document.getElementById("btnDocAsoc1").disabled = true;
+    //         document.getElementById("btnDocAsoc2").disabled = true;
+    //     }
+    // });
+
+    function habilitarBotonesDocumentos() {
+        document.getElementById("btnDocAsoc1").disabled = false;
+        document.getElementById("btnDocAsoc2").disabled = false;
+    }
+
+
+
+
+</script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+
+        const modalElemento = document.getElementById("modalDocumento");
+        const instanciaModal = new bootstrap.Modal(modalElemento);
+
+        document.getElementById("btnDocAsoc1").addEventListener("click", function () {
+            const estado = document.getElementById("EstadoFormulario").value;
+
+            if (estado !== "Editar") {
+                mostrarModal("error", "Solo puede gestionar documentos en modo edición.");
+                return;
+            }
+
+            document.getElementById("tipoDoc").value = "1";
+            cargarDocumentoExistente(1);
+            instanciaModal.show();
+        });
+
+        document.getElementById("btnDocAsoc2").addEventListener("click", function () {
+            const estado = document.getElementById("EstadoFormulario").value;
+
+            if (estado !== "Editar") {
+                mostrarModal("error", "Solo puede gestionar documentos en modo edición.");
+                return;
+            }
+
+            document.getElementById("tipoDoc").value = "2";
+            cargarDocumentoExistente(2);
+            instanciaModal.show();
+        });
+
+        // 🔒 Evitar que se abra manualmente o por error
+        modalElemento.addEventListener('show.bs.modal', function (event) {
+            const estado = document.getElementById("EstadoFormulario").value;
+            if (estado !== "Editar") {
+                event.preventDefault();
+            }
+        });
+    });
+</script>
+
+
+
+
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // Asignar evento a cada div para abrir modal
+        document.querySelectorAll(".foto-preview").forEach(function (div) {
+            div.addEventListener("click", function () {
+                const slot = this.getAttribute("data-slot");
+                document.getElementById("slotSeleccionado").value = slot;
+                const estado = document.getElementById("EstadoFormulario").value;
+
+                if (estado === "Editar") {
+                    const modal = new bootstrap.Modal(document.getElementById("modalSubirFoto"));
+                    modal.show();
+                } else {
+                         mostrarModal("error", "Solo puede subir las fotos en modo edición.");
+                }
+            });
+        });
+
+            // Enviar foto al backend
+    document.getElementById("formSubirFoto").addEventListener("submit", function (e) {
+        e.preventDefault();
+
+        const idActivo = document.getElementById("activoGuid").value;
+        const slot = document.getElementById("slotSeleccionado").value;
+        const archivoInput = document.getElementById("fotoArchivo");
+        const archivo = archivoInput.files[0];
+
+        if (!idActivo) {
+            mostrarModal("error", "Debe guardar el activo antes de subir fotos.");
+            return;
+        }
+
+        if (!archivo) {
+            mostrarModal("error", "Debe seleccionar una foto.");
+            return;
+        }
+
+        // ✅ Validación de extensión de imagen
+        const extensionesPermitidas = [".jpg", ".jpeg"];
+        const nombreArchivo = archivo.name.toLowerCase();
+        const extensionValida = extensionesPermitidas.some(ext => nombreArchivo.endsWith(ext));
+
+        if (!extensionValida) {
+            const modalEl = document.getElementById("modalSubirFoto");
+            const modalInstance = bootstrap.Modal.getInstance(modalEl);
+
+            modalEl.addEventListener("hidden.bs.modal", function handler() {
+                mostrarModal("error", "Solo se permiten imágenes JPG o JPEG.");
+                modalEl.removeEventListener("hidden.bs.modal", handler);
+            });
+
+            modalInstance.hide();
+            archivoInput.value = "";
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append("archivoFoto", archivo); // Nombre esperado por el backend
+        formData.append("tipoDoc", slot);        // Número del slot
+        formData.append("idActivo", idActivo);   // ID del activo
+
+        fetch('@Url.Action("SubirFotoActivo", "Administration")', {
+            method: 'POST',
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            try {
+                if (data.success) {
+                    mostrarModal("success", "Foto subida correctamente.");
+                    archivoInput.value = "";
+
+                    const divFoto = document.getElementById(`foto${slot}`);
+                    if (divFoto) {
+                      divFoto.style.backgroundColor = "#dddddd"; // ✅ Color de slot con foto
+                    }
+
+
+                    else {
+                        console.warn(`No se encontró el div foto${slot}`);
+                    }
+                } else {
+                    mostrarModal("error", "No se pudo subir la foto.");
+                    archivoInput.value = "";
+                }
+            } catch (error) {
+                console.error("Error al procesar la respuesta:", error);
+                archivoInput.value = "";
+            }
+        })
+        .catch(err => {
+            console.error("Error al enviar la solicitud:", err);
+            mostrarModal("error", "Error al subir la foto.");
+            archivoInput.value = "";
+        });
+
+        bootstrap.Modal.getInstance(document.getElementById("modalSubirFoto")).hide();
+    });
+
+    });
+</script>
+
+<script>
+    // Parte Razor procesada en el servidor, al cargar la página
+    const baseUrlVerFoto = '@Url.Action("VerFotoExistente", "Administration")';
+
+    document.addEventListener("DOMContentLoaded", function () {
+        document.querySelectorAll(".foto-preview").forEach(function (div) {
+            div.addEventListener("click", function () {
+                const slot = this.getAttribute("data-slot");
+                document.getElementById("slotSeleccionado").value = slot;
+                const estado = document.getElementById("EstadoFormulario").value;
+                const idActivo = document.getElementById("activoGuid").value;
+
+                const preview = document.getElementById("previewFoto");
+                const mensaje = document.getElementById("mensajeNoFoto");
+
+                if (estado !== "Editar") {
+                    mostrarModal("error", "Solo puede subir fotos en modo edición.");
+                    return;
+                }
+
+                // URL final armada en JS con parámetros
+                const url = `${baseUrlVerFoto}?idActivo=${idActivo}&slot=${slot}`;
+
+                fetch(url)
+                    .then(response => {
+                        if (!response.ok) throw new Error("No encontrada");
+                        return response.blob();
+                    })
+                    .then(blob => {
+                        const urlBlob = URL.createObjectURL(blob);
+                        preview.src = urlBlob;
+                        preview.style.display = "block";
+                        mensaje.style.display = "none";
+                    })
+                    .catch(() => {
+                        preview.src = "";
+                        preview.style.display = "none";
+                        mensaje.style.display = "block";
+                    });
+
+                const modal = new bootstrap.Modal(document.getElementById("modalSubirFoto"));
+                modal.show();
+            });
+        });
+    });
+</script>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script>
+    $.getScript("https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js", function () {
+        $('head').append('<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />');
+
+        // Estilos visuales para que Select2 parezca un form-select Bootstrap
+          const select2CustomStyle = `
+    <style>
+        /* Estilo del contenedor principal */
+        #selectUsusarioAsignadoTomaFisica.select2-hidden-accessible + .select2-container--default .select2-selection--single {
+            background-color: #eeeeee !important;
+            border: 1px solid #d1d0d4 !important;
+            border-radius: 6px !important;
+            height: 38px !important;
+            padding: 6px 14px !important;
+            font-size: 15px !important;
+            font-family: "Public Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif !important;
+            color: #606060 !important;
+            box-sizing: border-box !important;
+            display: flex !important;
+            align-items: center !important;
+        }
+
+        /* Texto renderizado (placeholder y valor) */
+        #selectUsusarioAsignadoTomaFisica.select2-hidden-accessible + .select2-container--default .select2-selection--single .select2-selection__rendered {
+            color: #606060 !important;
+            font-size: 15px !important;
+            line-height: 24px !important;
+            padding-left: 0 !important;
+        }
+
+        /* Flechita */
+        #selectUsusarioAsignadoTomaFisica.select2-hidden-accessible + .select2-container--default .select2-selection__arrow {
+            height: 38px !important;
+            top: 0 !important;
+            right: 10px !important;
+            width: 20px !important;
+        }
+
+        /* Al hacer focus */
+        #selectUsusarioAsignadoTomaFisica.select2-hidden-accessible + .select2-container--default.select2-container--focus .select2-selection--single {
+            border-color: #b3b3b3 !important;
+            box-shadow: none !important;
+        }
+
+        /* Opciones del dropdown */
+        .select2-dropdown {
+            background-color: #ffffff;
+            color: #606060;
+            font-size: 15px;
+            border: 1px solid #d1d0d4;
+        }
+
+        .select2-results__option--highlighted {
+            background-color: #e0e0e0;
+            color: #000;
+        }
+    </style>
+    `;
+    $('head').append(select2CustomStyle);
+
+
+
+
+
+
+        $(document).ready(function () {
+            fetch('@Url.Content("~/Administration/ObtenerEmpleados")')
+                .then(res => res.json())
+                .then(data => {
+                    const $select = $('#selectUsusarioAsignadoTomaFisica');
+                    $select.empty().append('<option></option>');
+
+                    data.forEach(item => {
+                        const option = new Option(item.nombre, item.id, false, false);
+                        $select.append(option);
+                    });
+
+                    $select.select2({
+                        placeholder: "Seleccione un empleado",
+                        allowClear: true,
+                        width: '100%'
+                    });
+                });
+        });
+    });
+</script>
+
+
+
+
+<script>
+    $(document).ready(function () {
+        // Cargar categorías desde el backend
+        $.getJSON('@Url.Content("~/Administration/ObtenerCategorias")', function (data) {
+            data.forEach(function (item) {
+                $('#selectCategoriaTomaFisica').append(
+                    $('<option>', {
+                        value: item.id,
+                        text: item.nombre,
+                        'data-descripcion': item.descripcion
+                    })
+                );
+            });
+        });
+
+        // Mostrar descripción al seleccionar
+        $('#selectCategoriaTomaFisica').on('change', function () {
+            var descripcion = $('option:selected', this).data('descripcion') || '';
+            $('#descripcionCategoria').val(descripcion);
+        });
+    });
+</script>
+<script>
+    $(document).ready(function () {
+        // Cargar estados desde el servidor
+        $.getJSON('@Url.Content("~/Administration/ObtenerEstados")', function (data) {
+            data.forEach(function (item) {
+                $('#selectEstadoActivo').append(
+                    $('<option>', {
+                        value: item.id,
+                        text: item.nombre,
+                        'data-descripcion': item.descripcion
+                    })
+                );
+            });
+        });
+
+        // Mostrar descripción cuando se cambia el estado
+        $('#selectEstadoActivo').on('change', function () {
+            var descripcion = $('option:selected', this).data('descripcion') || '';
+            $('#descripcionEstado').val(descripcion);
+        });
+    });
+</script>
+
+<script>
+    $(document).ready(function () {
+        // Cargar marcas
+        $.getJSON('@Url.Content("~/Administration/ObtenerMarcas")', function (data) {
+            data.forEach(function (item) {
+                $('#selectMarca').append(
+                    $('<option>', {
+                        value: item.id,
+                        text: item.nombre
+                    })
+                );
+            });
+        });
+
+        // Cuando se seleccione una marca, cargar los modelos correspondientes
+        $('#selectMarca').on('change', function () {
+            const marcaId = $(this).val();
+            const $selectModelo = $('#selectModelo');
+
+            // Resetear y deshabilitar mientras carga
+            $selectModelo.html('<option value="">Seleccione un elemento</option>');
+            // $selectModelo.prop('disabled', true); // Descomenta si quieres deshabilitarlo mientras carga
+
+            if (marcaId) {
+                $.getJSON(`@Url.Content("~/Administration/ObtenerModelosPorMarca")?idMarca=${marcaId}`, function (data) {
+                    data.forEach(function (item) {
+                        $selectModelo.append(
+                            $('<option>', {
+                                value: item.id,
+                                text: item.nombre
+                            })
+                        );
+                    });
+                    $selectModelo.prop('disabled', false);
+                });
+            }
+        });
+    });
+</script>

@@ -1,0 +1,1688 @@
+@{
+    ViewData["Title"] = "Importar Activos";
+}
+
+@section PageStyles {
+    <link href="@Url.Content("~/vendor/css/ImportarData2.css")" rel="stylesheet" />
+}
+
+
+<div class="container-xxl py-4">
+
+    <!-- ===== Paso 1 (dos cards) ===== -->
+    <div id="panel-1" class="step-panel">
+
+        <!-- Card 1: Título + Stepper + Texto -->
+        <div class="card imp-card mb-3">
+            <div class="card-body p-4">
+                <h1 class="imp-title mb-2">Importar Activos</h1>
+
+                <!-- Stepper -->
+                <div class="wizard" id="wizard">
+                    <div class="line"></div>
+                    <div class="steps">
+                        <div class="step is-active" data-step="1"><div class="circle"></div></div>
+                        <div class="step" data-step="2"><div class="circle"></div></div>
+                        <div class="step" data-step="3"><div class="circle"></div></div>
+                    </div>
+                </div>
+
+                <div class="lead-ques">¿Primera importación de Activos?</div>
+                <ul class="bullets mb-0">
+                    <li>Toda la información debe de estar contenida en un solo archivo.</li>
+                    <li>La primera línea del archivo debe contener el título de cada columna.</li>
+                    <li>El número de activo es el único campo obligatorio.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Card 2: Uploader + Continuar -->
+        <div class="card imp-card">
+            <div class="card-body p-4">
+                <h3 class="section-title mb-3">Seleccione el archivo CSV o Excel a subir</h3>
+
+                <div class="row g-3 align-items-stretch uploader-layout">
+                    <!-- Izquierda: panel con input + buscar + link -->
+                    <div class="col-12 col-xl-9">
+                        <div class="upload-panel p-3">
+                            <div class="upload-row">
+                                <div class="file-box">
+                                    <div id="fileName" class="file-name">Seleccione un archivo...</div>
+                                    <input id="fileInput" class="file-input" type="file" accept=".csv,.xls,.xlsx" />
+                                </div>
+                                <button type="button" class="btn-orange" id="btnBuscar">Buscar</button>
+                            </div>
+
+                            <a class="mt-2 d-inline-block sample-link"
+                               href="@Url.Content("~/plantillas/Plantilla_Activos_Importacion.xlsx")"
+                               download>
+                                Bajar ejemplo del Archivo ⬇
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Derecha: botón Continuar -->
+                    <div class="col-12 col-xl-3 d-flex flex-column align-items-end">
+                        <button type="button" class="btn-orange btn-continue mt-auto" id="btnContinuar1">
+                            Continuar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ===== Paso 2 ===== -->
+    <div id="panel-2" class="step-panel d-none">
+
+        <!-- Card superior: título + stepper + subtítulo -->
+        <div class="card" style="padding: 1rem 1rem 1rem 1rem;">
+            <div class="card-body p-4">
+                <h1 class="imp-title mb-2">Importar Activos</h1>
+
+                <!-- Stepper (paso 2 activo) -->
+                <div class="wizard">
+                    <div class="line"></div>
+                    <div class="steps">
+                        <div class="step"><div class="circle"></div></div>
+                        <div class="step"><div class="circle"></div></div>
+                        <div class="step"><div class="circle"></div></div>
+                    </div>
+                </div>
+
+
+                <div class="lead-ques mt-1 pt-3">
+                    Defina el mapa de importación de campos en Signus ID
+                </div>
+            </div>
+
+            <div class="card-datatable table-responsive border" style="padding: 0.5rem 0.5rem 0.5rem 0.5rem;">
+                <style>
+                    .card-datatable {
+                        border: 1px solid #dee2e6;
+                        border-radius: 8px;
+                        overflow: hidden;
+                        background-color: #fff;
+                    }
+
+                        .card-datatable #table2 {
+                            border-bottom: 1px solid #dee2e6;
+                        }
+                </style>
+                <div class="map-table" id="table2">
+
+                    <!-- Encabezado -->
+                    <div class="map-row map-header">
+                        <div class="map-col col-label">Campo Signus ID</div>
+                        <div class="map-col col-input">Sus Campos</div>
+                        <div class="map-col col-status"></div>
+                    </div>
+
+                    <!-- Filas -->
+                    <div class="map-row">
+                        <div class="map-col col-label">Número de Activo</div>
+                        <div class="map-col col-input">
+                            <select id="numeroActivo" class="form-select select-soft w-100">
+                            </select>
+                        </div>
+                        <div class="map-col col-status"><span class="status ok">✓</span></div>
+                    </div>
+
+                    <div class="map-row">
+                        <div class="map-col col-label">Número de Etiqueta</div>
+                        <div class="map-col col-input">
+                            <select id="numeroEtiqueta" class="form-select select-soft w-100">
+                            </select>
+                        </div>
+                        <div class="map-col col-status"><span class="status bad">✕</span></div>
+                    </div>
+
+                    <div class="map-row">
+                        <div class="map-col col-label">Descripción Corta</div>
+                        <div class="map-col col-input">
+                            <select id="descripcionCorta" class="form-select select-soft w-100">
+                            </select>
+                        </div>
+                        <div class="map-col col-status"><span class="status ok">✓</span></div>
+                    </div>
+
+                    <div class="map-row">
+                        <div class="map-col col-label">Descripción Larga</div>
+                        <div class="map-col col-input">
+                            <select id="descripcionLarga" class="form-select select-soft w-100">
+                            </select>
+                        </div>
+                        <div class="map-col col-status"><span class="status ok">✓</span></div>
+                    </div>
+
+                    <div class="map-row">
+                        <div class="map-col col-label">Categoría</div>
+                        <div class="map-col col-input">
+                            <select id="categoria" class="form-select select-soft w-100">
+                            </select>
+                        </div>
+                        <div class="map-col col-status"><span class="status ok">✓</span></div>
+                    </div>
+
+                    <div class="map-row">
+                        <div class="map-col col-label">Descripción Categoría</div>
+                        <div class="map-col col-input">
+                            <select id="descripcionCategoria" class="form-select select-soft w-100">
+                            </select>
+                        </div>
+                        <div class="map-col col-status"><span class="status ok">✓</span></div>
+                    </div>
+
+                    <div class="map-row">
+                        <div class="map-col col-label">Estado</div>
+                        <div class="map-col col-input">
+                            <select id="estado" class="form-select select-soft w-100">
+                            </select>
+                        </div>
+                        <div class="map-col col-status"><span class="status ok">✓</span></div>
+                    </div>
+
+                    <div class="map-row">
+                        <div class="map-col col-label">Descripción de Estado</div>
+                        <div class="map-col col-input">
+                            <select id="descripcionEstado" class="form-select select-soft w-100">
+                            </select>
+                        </div>
+                        <div class="map-col col-status"><span class="status ok">✓</span></div>
+                    </div>
+
+                    <div class="map-row">
+                        <div class="map-col col-label">Empresa</div>
+                        <div class="map-col col-input">
+                            <select id="empresa" class="form-select select-soft w-100">
+                            </select>
+                        </div>
+                        <div class="map-col col-status"><span class="status ok">✓</span></div>
+                    </div>
+
+                    <div class="map-row">
+                        <div class="map-col col-label">Marca</div>
+                        <div class="map-col col-input">
+                            <select id="marca" class="form-select select-soft w-100">
+                            </select>
+                        </div>
+                        <div class="map-col col-status"><span class="status ok">✓</span></div>
+                    </div>
+
+                    <div class="map-row">
+                        <div class="map-col col-label">Modelo</div>
+                        <div class="map-col col-input">
+                            <select id="modelo" class="form-select select-soft w-100">
+                            </select>
+                        </div>
+                        <div class="map-col col-status"><span class="status ok">✓</span></div>
+                    </div>
+
+                    <div class="map-row">
+                        <div class="map-col col-label">Número Serie</div>
+                        <div class="map-col col-input">
+                            <select id="numeroSerie" class="form-select select-soft w-100">
+                            </select>
+                        </div>
+                        <div class="map-col col-status"><span class="status ok">✓</span></div>
+                    </div>
+
+                    <div class="map-row">
+                        <div class="map-col col-label">Costo</div>
+                        <div class="map-col col-input">
+                            <select id="costo" class="form-select select-soft w-100">
+                            </select>
+                        </div>
+                        <div class="map-col col-status"><span class="status ok">✓</span></div>
+                    </div>
+
+                    <div class="map-row">
+                        <div class="map-col col-label">Número Factura</div>
+                        <div class="map-col col-input">
+                            <select id="numeroFactura" class="form-select select-soft w-100">
+                            </select>
+                        </div>
+                        <div class="map-col col-status"><span class="status ok">✓</span></div>
+                    </div>
+
+                    <div class="map-row">
+                        <div class="map-col col-label">Fecha Compra</div>
+                        <div class="map-col col-input">
+                            <select id="fechaCompra" class="form-select select-soft w-100">
+                            </select>
+                        </div>
+                        <div class="map-col col-status"><span class="status ok">✓</span></div>
+                    </div>
+
+                    <div class="map-row">
+                        <div class="map-col col-label">Fecha Capitalización</div>
+                        <div class="map-col col-input">
+                            <select id="fechaCapitalizacion" class="form-select select-soft w-100">
+                            </select>
+                        </div>
+                        <div class="map-col col-status"><span class="status ok">✓</span></div>
+                    </div>
+
+                    <div class="map-row">
+                        <div class="map-col col-label">Valor Residual</div>
+                        <div class="map-col col-input">
+                            <select id="valorResidual" class="form-select select-soft w-100">
+                            </select>
+                        </div>
+                        <div class="map-col col-status"><span class="status ok">✓</span></div>
+                    </div>
+
+                    <div class="map-row">
+                        <div class="map-col col-label">Numero de Parte del Fabricante</div>
+                        <div class="map-col col-input">
+                            <select id="numeroParteFabricante" class="form-select select-soft w-100">
+                            </select>
+                        </div>
+                        <div class="map-col col-status"><span class="status ok">✓</span></div>
+                    </div>
+
+                    <div class="map-row">
+                        <div class="map-col col-label">Depreciado</div>
+                        <div class="map-col col-input">
+                            <select id="depreciado" class="form-select select-soft w-100">
+                            </select>
+                        </div>
+                        <div class="map-col col-status"><span class="status ok">✓</span></div>
+                    </div>
+
+                    <div class="map-row">
+                        <div class="map-col col-label">Descripción Depreciado</div>
+                        <div class="map-col col-input">
+                            <select id="descripcionDepreciado" class="form-select select-soft w-100">
+                            </select>
+                        </div>
+                        <div class="map-col col-status"><span class="status ok">✓</span></div>
+                    </div>
+
+                    <div class="map-row">
+                        <div class="map-col col-label">Años de Vida Util</div>
+                        <div class="map-col col-input">
+                            <select id="anosVidaUtil" class="form-select select-soft w-100">
+                            </select>
+                        </div>
+                        <div class="map-col col-status"><span class="status ok">✓</span></div>
+                    </div>
+
+                    <div class="map-row">
+                        <div class="map-col col-label">Cuenta Contable Depresiación</div>
+                        <div class="map-col col-input">
+                            <select id="cuentaContableDepresiasion" class="form-select select-soft w-100">
+                            </select>
+                        </div>
+                        <div class="map-col col-status"><span class="status ok">✓</span></div>
+                    </div>
+
+                    <div class="map-row">
+                        <div class="map-col col-label">Centro Costos</div>
+                        <div class="map-col col-input">
+                            <select id="centroCostos" class="form-select select-soft w-100">
+                            </select>
+                        </div>
+                        <div class="map-col col-status"><span class="status ok">✓</span></div>
+                    </div>
+
+                    <div class="map-row">
+                        <div class="map-col col-label">Descripción del Estado del Ultimo Inventario</div>
+                        <div class="map-col col-input">
+                            <select id="descripcionEstadoUInventario" class="form-select select-soft w-100">
+                            </select>
+                        </div>
+                        <div class="map-col col-status"><span class="status ok">✓</span></div>
+                    </div>
+
+                    <div class="map-row">
+                        <div class="map-col col-label">Tag EPC</div>
+                        <div class="map-col col-input">
+                            <select id="tagEPC" class="form-select select-soft w-100">
+                            </select>
+                        </div>
+                        <div class="map-col col-status"><span class="status ok">✓</span></div>
+                    </div>
+
+                    <div class="map-row">
+                        <div class="map-col col-label">Empleado</div>
+                        <div class="map-col col-input">
+                            <select id="empleado" class="form-select select-soft w-100">
+                            </select>
+                        </div>
+                        <div class="map-col col-status"><span class="status ok">✓</span></div>
+                    </div>
+
+                    <div class="map-row">
+                        <div class="map-col col-label">Apellidos del Empleado</div>
+                        <div class="map-col col-input">
+                            <select id="apellidosEmpleado" class="form-select select-soft w-100">
+                            </select>
+                        </div>
+                        <div class="map-col col-status"><span class="status ok">✓</span></div>
+                    </div>
+
+                    <div class="map-row">
+                        <div class="map-col col-label">Ubicación A</div>
+                        <div class="map-col col-input">
+                            <select id="ubicacionA" class="form-select select-soft w-100">
+                            </select>
+                        </div>
+                        <div class="map-col col-status"><span class="status ok">✓</span></div>
+                    </div>
+
+                    <div class="map-row">
+                        <div class="map-col col-label">Ubicación B</div>
+                        <div class="map-col col-input">
+                            <select id="ubicacionB" class="form-select select-soft w-100">
+                            </select>
+                        </div>
+                        <div class="map-col col-status"><span class="status ok">✓</span></div>
+                    </div>
+
+                    <div class="map-row">
+                        <div class="map-col col-label">Ubicación C</div>
+                        <div class="map-col col-input">
+                            <select id="ubicacionC" class="form-select select-soft w-100">
+                            </select>
+                        </div>
+                        <div class="map-col col-status"><span class="status ok">✓</span></div>
+                    </div>
+
+                    <div class="map-row">
+                        <div class="map-col col-label">Ubicación D</div>
+                        <div class="map-col col-input">
+                            <select id="ubicacionD" class="form-select select-soft w-100">
+                            </select>
+                        </div>
+                        <div class="map-col col-status"><span class="status ok">✓</span></div>
+                    </div>
+
+                    <div class="map-row">
+                        <div class="map-col col-label">Ubicación Secundaria</div>
+                        <div class="map-col col-input">
+                            <select id="ubicacionSecundaria" class="form-select select-soft w-100">
+                            </select>
+                        </div>
+                        <div class="map-col col-status"><span class="status ok">✓</span></div>
+                    </div>
+
+                    <div class="map-row">
+                        <div class="map-col col-label">Fecha Garantía</div>
+                        <div class="map-col col-input">
+                            <select id="fechaGarantia" class="form-select select-soft w-100">
+                            </select>
+                        </div>
+                        <div class="map-col col-status"><span class="status ok">✓</span></div>
+                    </div>
+
+                    <div class="map-row">
+                        <div class="map-col col-label">Color</div>
+                        <div class="map-col col-input">
+                            <select id="color" class="form-select select-soft w-100">
+                            </select>
+                        </div>
+                        <div class="map-col col-status"><span class="status ok">✓</span></div>
+                    </div>
+
+                    <div class="map-row">
+                        <div class="map-col col-label">Tamaño/Medida</div>
+                        <div class="map-col col-input">
+                            <select id="tamanioMedida" class="form-select select-soft w-100">
+                            </select>
+                        </div>
+                        <div class="map-col col-status"><span class="status ok">✓</span></div>
+                    </div>
+
+                    <div class="map-row">
+                        <div class="map-col col-label">Observaciones</div>
+                        <div class="map-col col-input">
+                            <select id="observaciones" class="form-select select-soft w-100">
+                            </select>
+                        </div>
+                        <div class="map-col col-status"><span class="status ok">✓</span></div>
+                    </div>
+
+                    <div class="map-row">
+                        <div class="map-col col-label">Estado del Activo</div>
+                        <div class="map-col col-input">
+                            <select id="estadoActivo" class="form-select select-soft w-100">
+                            </select>
+                        </div>
+                        <div class="map-col col-status"><span class="status ok">✓</span></div>
+                    </div>
+                </div>
+            </div>
+            <!-- Footer botones -->
+            <div class="p-3 d-flex justify-content-between align-items-center">
+                <button type="button" class="btn btn-back" id="btnBack2">Atrás</button>
+                <button type="button" class="btn-orange" id="btnContinuar2">Continuar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== Paso 3 ===== -->
+    <div id="panel-3" class="step-panel d-none">
+
+
+        <div class="card imp-card" style="padding: 1rem 1rem 1rem 1rem;">
+            <div class="card-body p-4">
+                <h1 class="imp-title mb-2">Importar Activos</h1>
+
+                <div class="wizard">
+                    <div class="line"></div>
+                    <div class="steps">
+                        <div class="step"><div class="circle"></div></div>
+                        <div class="step"><div class="circle"></div></div>
+                        <div class="step"><div class="circle"></div></div>
+                    </div>
+                </div>
+
+
+            </div>
+            <div id="assets-import-table" class="card-datatable table-responsive border" style="padding: .5rem;">
+                <style>
+                    /* ===== SOLO afecta a #assets-import-table ===== */
+                    #assets-import-table {
+                        border: 1px solid #dee2e6;
+                        border-radius: 8px;
+                        overflow-x: auto; /* scroll horizontal solo aquí */
+                        overflow-y: hidden;
+               
+                        max-width: 100%;
+                    }
+
+                        #assets-import-table #table2 {
+                            border-collapse: collapse;
+                            width: 100%;
+                            min-width: 2000px; /* ajústalo a tu gusto */
+                            table-layout: auto;
+                            border-bottom: 1px solid #dee2e6;
+                        }
+
+                            #assets-import-table #table2 th,
+                            #assets-import-table #table2 td {
+                                border-bottom: 1px solid #eee;
+                                padding: 10px 12px;
+                                text-align: left;
+                                white-space: nowrap;
+                                background: #fff;
+                            }
+
+                            #assets-import-table #table2 thead th {
+                                position: sticky;
+                                top: 0;
+                            
+                                font-weight: 600;
+                                z-index: 3;
+                            }
+
+                            #assets-import-table #table2 .col-check {
+                                position: sticky;
+                                left: 0;
+                                z-index: 4;
+                                background: #fff;
+                                width: 48px;
+                            }
+
+                            #assets-import-table #table2 thead .col-check {
+                              
+                            }
+
+                        #assets-import-table .big-check {
+                            transform: scale(1.4);
+                            accent-color: #ff5100;
+                            cursor: pointer;
+                        }
+
+                        #assets-import-table #table2 tbody tr:nth-child(even) td {
+                        
+                        }
+                </style>
+
+                <table id="table2">
+                    <thead>
+                        <tr>
+                            <th class="col-check"><input class="big-check" type="checkbox" id="select_all"></th>
+                            <th>Número de Activo</th>
+                            <th>Número de Etiqueta</th>
+                            <th>Descripción Corta</th>
+                            <th>Descripción Larga</th>
+                            <th>Categoría</th>
+                            <th>Descripción de Categoría</th>
+                            <th>Estado</th>
+                            <th>Descripción de Estado</th>
+                            <th>Empresa</th>
+                            <th>Marca</th>
+                            <th>Modelo</th>
+                            <th>Número Serie</th>
+                            <th>Costo</th>
+                            <th>Número Factura</th>
+                            <th>Fecha Compra</th>
+                            <th>Fecha Capitalización</th>
+                            <th>Valor Residual</th>
+                            <th>Número de Parte del Fabricante</th>
+                            <th>Depreciado</th>
+                            <th>Descripción Depreciado</th>
+                            <th>Años de Vida Útil</th>
+                            <th>Cuenta Contable Depreciación</th>
+                            <th>Centro Costos</th>
+                            <th>Descripción del Estado del Último Inventario</th>
+                            <th>Tag EPC</th>
+                            <th>Empleado</th>
+                            <th>Apellidos del Empleado</th>
+                            <th>Ubicación A</th>
+                            <th>Ubicación B</th>
+                            <th>Ubicación C</th>
+                            <th>Ubicación D</th>
+                            <th>Ubicación Secundaria</th>
+                            <th>Fecha Garantía</th>
+                            <th>Color</th>
+                            <th>Tamaño/Medida</th>
+                            <th>Observaciones</th>
+                            <th>Estado del Activo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="col-check"><input class="big-check row-check" type="checkbox"></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <!-- Footer botones -->
+            <div class="pt-3 px-2 pb-2 d-flex justify-content-between align-items-center">
+                <button type="button" class="btn btn-back" id="btnBack3">Atrás</button>
+                <button type="button" class="btn-orange" id="btnImportarFinal">Finalizar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<script>
+    // Selección masiva
+    (function () {
+      const selectAll = document.getElementById('select_all');
+      const getRowChecks = () => document.querySelectorAll('#table2 .row-check');
+
+      selectAll?.addEventListener('change', () => {
+        getRowChecks().forEach(cb => cb.checked = selectAll.checked);
+      });
+
+      // Si se desmarca cualquiera, apaga el "select all"
+      document.addEventListener('change', (e) => {
+        if (e.target.classList?.contains('row-check')) {
+          const all = getRowChecks();
+          const allChecked = Array.from(all).every(cb => cb.checked);
+          selectAll.checked = allChecked;
+        }
+      });
+    })();
+</script>
+
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Confirmar eliminación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="deleteModalBody">
+                <!-- Este texto se actualizará dinámicamente -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <a id="confirmDeleteBtn" class="btn btn-danger d-none" href="#">Borrar</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function mostrarModal(tipo, mensaje) {
+        const deleteModal = document.getElementById('deleteModal');
+        const deleteModalLabel = document.getElementById('deleteModalLabel');
+        const deleteModalBody = document.getElementById('deleteModalBody');
+        const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+        const modalHeader = deleteModal.querySelector('.modal-header');
+
+        deleteModalLabel.textContent = (tipo === "success") ? "Éxito" : "Error";
+        deleteModalBody.innerHTML = mensaje;
+
+        // Estilos dinámicos según el tipo
+        if (tipo === "success") {
+            modalHeader.style.backgroundColor = "transparent";
+            deleteModalLabel.style.color = "#606060";
+        } else {
+            modalHeader.style.backgroundColor = "#FF5100";
+            deleteModalLabel.style.color = "white";
+        }
+
+        confirmDeleteBtn.classList.add('d-none');
+
+        const modal = new bootstrap.Modal(deleteModal);
+        modal.show();
+
+        deleteModal.addEventListener('hidden.bs.modal', function () {
+            history.replaceState(null, '', window.location.pathname);
+        });
+    }
+</script>
+
+<style>
+    /* Duplicado dentro del mismo archivo (batch) */
+    #assets-import-table #table2 tbody tr.row-dup-file td {
+        background: #fde2e1; /* rojo suave */
+    }
+    /* Duplicado ya existente en BD */
+    #assets-import-table #table2 tbody tr.row-dup-db td {
+        background: #fff3cd; /* amarillo suave */
+    }
+    /* Otros errores de inserción */
+    #assets-import-table #table2 tbody tr.row-error td {
+        background: #ffdede; /* rojo */
+    }
+</style>
+
+
+
+@section PageScripts {
+    <!-- Librerías necesarias -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+
+    <script>
+        // ====== CONFIG ======
+        // Pon unique:true en los campos que deban ser únicos.
+        const FIELD_RULES = {
+          numeroActivo:            { required: true,  unique: true,  type: 'number'  },
+          numeroEtiqueta:          { required: false, unique: true, type: 'string'  },
+          descripcionCorta:        { required: false, unique: false, type: 'string'  },
+          descripcionLarga:        { required: true,  unique: false, type: 'string'  },
+          categoria:               { required: false, unique: false, type: 'string'  },
+          descripcionCategoria:    { required: false, unique: false, type: 'string'  },
+          estado:                  { required: false, unique: false, type: 'string'  },
+          descripcionEstado:       { required: false, unique: false, type: 'string'  },
+          empresa:                 { required: false, unique: false, type: 'string'  },
+          marca:                   { required: false, unique: false, type: 'string'  },
+          modelo:                  { required: false, unique: false, type: 'string'  },
+          numeroSerie:             { required: false, unique: false, type: 'string'  },
+          costo:                   { required: false, unique: false, type: 'number'  },
+          numeroFactura:           { required: false, unique: false, type: 'string'  },
+          fechaCompra:             { required: true,  unique: false, type: 'date', format:'dd/MM/yyyy' },
+          fechaCapitalizacion:     { required: false, unique: false, type: 'date', format:'dd/MM/yyyy' },
+          valorResidual:           { required: false, unique: false, type: 'number'  },
+          numeroParteFabricante:   { required: false, unique: false, type: 'string'  },
+          depreciado:              { required: false, unique: false, type: 'string'  },
+          descripcionDepreciado:   { required: false, unique: false, type: 'string'  },
+          anosVidaUtil:            { required: false, unique: false, type: 'number'  },
+          cuentaContableDepresiasion: { required: false, unique: false, type: 'string' },
+          centroCostos:            { required: false, unique: false, type: 'string'  },
+          descripcionEstadoUInventario: { required: false, unique: false, type: 'string' },
+          tagEPC:                  { required: false, unique: false, type: 'string'  },
+          empleado:                { required: false, unique: false, type: 'string'  },
+          apellidosEmpleado:                { required: false, unique: false, type: 'string'  },
+          ubicacionA:              { required: false, unique: false, type: 'string'  },
+          ubicacionB:              { required: false, unique: false, type: 'string'  },
+          ubicacionC:              { required: false, unique: false, type: 'string'  },
+          ubicacionD:              { required: false, unique: false, type: 'string'  },
+          ubicacionSecundaria:     { required: false, unique: false, type: 'string'  },
+          fechaGarantia:           { required: false, unique: false, type: 'date', format:'dd/MM/yyyy' },
+          color:                   { required: false, unique: false, type: 'string'  },
+          tamanioMedida:           { required: false, unique: false, type: 'string'  },
+          observaciones:           { required: false, unique: false, type: 'string'  },
+          estadoActivo:            { required: false, unique: false, type: 'string'  }
+        };
+
+        // ====== STATE ======
+        let FILE_STATE = { file:null, headers:[], rows:[] };
+
+        // ====== HELPERS ======
+        const normalize = s => (s||'').toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim().toLowerCase();
+
+        function lastUsedIndex(arr){
+          for (let i=arr.length-1;i>=0;i--){
+            const v = arr[i];
+            if (v!==undefined && v!==null && String(v).trim()!=='') return i;
+          }
+          return -1;
+        }
+        function emptyIndices(arr, upto){
+          const out=[];
+          for (let i=0;i<upto;i++){
+            const v = arr[i];
+            if (v===undefined || v===null || String(v).trim()==='') out.push(i+3); // +2 (encabezado+guía) +1 1-based
+          }
+          return out;
+        }
+
+        // --- Unicidad: devuelve índices duplicados (1-based con offset +2) y ejemplos de valores ---
+        function duplicateInfo(values, upto, type){
+          const map = new Map(); // key -> [idx,...]
+          const samples = [];
+          for (let i=0;i<upto;i++){
+            const raw = values[i];
+            const s = String(raw ?? '').trim();
+            if (!s) continue; // ignora vacíos
+            let key;
+            if (type === 'number'){
+              const n = Number(s.replace(',', '.'));
+              key = Number.isFinite(n) ? 'n:'+n : 's:'+s;
+            } else {
+              // Para strings usamos case-sensitive por defecto. Si quieres ignorar mayúsculas, usa s.toLowerCase().
+              key = 's:'+s;
+            }
+            if (!map.has(key)) map.set(key, []);
+            map.get(key).push(i);
+          }
+          const dupIdx = [];
+          map.forEach((list, key) => {
+            if (list.length > 1) {
+              // añade todas las filas donde se repite (con offset +3)
+              list.forEach(idx => dupIdx.push(idx + 3));
+              // ejemplo de valor mostrado
+              const firstRowIndex = list[0];
+              samples.push(String(values[firstRowIndex] ?? '').trim());
+            }
+          });
+          // ordena y limita samples a 3 para el mensaje
+          dupIdx.sort((a,b)=>a-b);
+          return { indexes: dupIdx, samples: samples.slice(0,3) };
+        }
+
+        // ====== FILE READING ======
+        async function readMatrixFromFile(file){
+          return new Promise((resolve, reject) => {
+            const ext = file.name.split('.').pop().toLowerCase();
+            if (ext === 'csv'){
+              Papa.parse(file, {
+                skipEmptyLines:false,
+                complete:(res)=>{
+                  const rows = res.data || [];
+                  const headers = (rows[0]||[]).map(String);
+                  const body = rows.slice(2);
+                  resolve({ headers, rows: body });
+                },
+                error:(err)=>reject(err?.message||'No se pudo leer el CSV.')
+              });
+            } else if (ext === 'xlsx'){
+              const reader = new FileReader();
+              reader.onload = e => {
+                try{
+                  const wb = XLSX.read(new Uint8Array(e.target.result), {type:'array'});
+                  const ws = wb.Sheets[wb.SheetNames[0]];
+                  const mat = XLSX.utils.sheet_to_json(ws, {header:1, blankRows:true});
+                  const headers = (mat[0]||[]).map(String);
+                  const body = mat.slice(2);
+                  resolve({ headers, rows: body });
+                }catch(err){ reject(err?.message||'No se pudo leer el Excel.'); }
+              };
+              reader.onerror = ()=>reject('No se pudo abrir el archivo.');
+              reader.readAsArrayBuffer(file);
+            } else {
+              reject('Formato no soportado.');
+            }
+          });
+        }
+
+        // ====== UI NAV ======
+        const panels = [1,2,3].map(n => document.getElementById('panel-' + n));
+        function paintWizards(step){
+          document.querySelectorAll('.wizard').forEach(wz=>{
+            wz.querySelectorAll('.step').forEach((s,i)=>{
+              s.classList.toggle('is-active',   i+1===step);
+              s.classList.toggle('is-complete', i+1<step);
+            });
+          });
+        }
+        function render(step){
+          paintWizards(step);
+          panels.forEach((p,i)=>p.classList.toggle('d-none', i+1!==step));
+          document.querySelector('.container-xxl')?.scrollIntoView({behavior:'smooth', block:'start'});
+        }
+        paintWizards(1);
+
+        // ====== Paso 2: selects ======
+        function populateStep2Selects(headers){
+          const uniq = [...new Set(headers.filter(Boolean).map(h=>h.trim()))];
+          const selects = document.querySelectorAll('#panel-2 .map-table select.form-select');
+          selects.forEach(sel=>{
+            const row = sel.closest('.map-row');
+            const fieldLabel = row?.querySelector('.col-label')?.textContent?.trim()||'';
+            sel.innerHTML='';
+            sel.append(new Option('— Selecciona —','', true, false));
+            uniq.forEach(h=>sel.append(new Option(h, h)));
+            const target = normalize(fieldLabel);
+            const best = uniq.find(h => normalize(h)===target) ||
+                         uniq.find(h => normalize(h).includes((target.split(' ')[0]||'')));
+            if (best) sel.value = best;
+          });
+        }
+        function lockSelectedOptions(){
+          const all = Array.from(document.querySelectorAll('#panel-2 .map-table select.form-select'));
+          const chosen = new Set(all.map(s=>s.value).filter(Boolean));
+          all.forEach(sel=>{
+            Array.from(sel.options).forEach(opt=>{
+              if (opt.value==='') return;
+              opt.disabled = chosen.has(opt.value) && sel.value!==opt.value;
+            });
+          });
+        }
+        function setRowStatusBySelectId(selectId, ok){
+          const sel = document.getElementById(selectId);
+          if (!sel) return;
+          const row = sel.closest('.map-row');
+          const badge = row?.querySelector('.col-status .status');
+          if (!badge) return;
+          badge.classList.toggle('ok', !!ok);
+          badge.classList.toggle('bad', !ok);
+          badge.textContent = ok ? '✓' : '✕';
+        }
+
+        // ---- mapeo y rango global ----
+        function buildMappingFromSelects(){
+          const nameToIndex = new Map(FILE_STATE.headers.map((h,i)=>[h,i]));
+          const selects = document.querySelectorAll('#panel-2 .map-table select.form-select');
+          const byFieldId = {};
+          const chosenHeaders = [];
+
+          selects.forEach(sel=>{
+            const fieldId = sel.id;
+            const header = sel.value || '';
+            let values = [];
+            if (header && nameToIndex.has(header)){
+              const col = nameToIndex.get(header);
+              values = FILE_STATE.rows.map(r=>r[col]);
+              chosenHeaders.push(header);
+            }
+            byFieldId[fieldId] = { header, values };
+          });
+
+          let globalLast = 0;
+          chosenHeaders.forEach(h=>{
+            const colIdx = nameToIndex.get(h);
+            const arr = FILE_STATE.rows.map(r=>r[colIdx]);
+            const lu = lastUsedIndex(arr);
+            if (lu+1>globalLast) globalLast = lu+1;
+          });
+
+          return { byFieldId, globalLast };
+        }
+
+        // ====== FECHAS ======
+        // Estricto dd/MM/yyyy o serial/Date
+        function isValidDateDDMMStrict(v){
+          if (v instanceof Date && !isNaN(v)) return true;
+          if (typeof v === 'number' && Number.isFinite(v)) {
+            try {
+              if (window.XLSX && XLSX.SSF && typeof XLSX.SSF.parse_date_code === 'function') {
+                const o = XLSX.SSF.parse_date_code(v);
+                if (o && o.y && o.m && o.d) return true;
+              }
+            } catch {}
+            const base = new Date(Date.UTC(1899, 11, 30));
+            const days = Math.floor(v);
+            const ms   = Math.round((v - days) * 86400000);
+            base.setUTCDate(base.getUTCDate() + days);
+            base.setTime(base.getTime() + ms);
+            return !isNaN(base.getTime());
+          }
+          const s = String(v ?? '').trim();
+          if (!s) return false;
+          const main = s.split(/[ T]/)[0];
+          const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(main);
+          if (!m) return false;
+          const d = +m[1], mo = +m[2] - 1, y = +m[3];
+          const dt = new Date(y, mo, d);
+          return dt.getFullYear() === y && dt.getMonth() === mo && dt.getDate() === d;
+        }
+        function isValidDateFlexible(v){
+          // opcional para otros formatos si algún día agregas distintos a dd/MM/yyyy
+          return isValidDateDDMMStrict(v);
+        }
+
+        // ---- VALIDACIÓN COMPLETA (para botón Continuar) ----
+        function validateMapping(){
+          const { byFieldId, globalLast } = buildMappingFromSelects();
+          const errs = [];
+          const perFieldOk = {};
+
+          const someSelected = Object.values(byFieldId).some(x=>x.header);
+          if (!someSelected) errs.push('No has seleccionado ninguna columna. Asigna al menos una columna del archivo.');
+
+          Object.keys(FIELD_RULES).forEach(selectId=>{
+            const rule  = FIELD_RULES[selectId];
+            const entry = byFieldId[selectId] || { header:'', values:[] };
+            const { header, values } = entry;
+
+            if (!header){
+              if (rule.required){ errs.push(`El campo <b>${selectId}</b> es obligatorio. Selecciona la columna correspondiente.`); perFieldOk[selectId]=false; }
+              else perFieldOk[selectId]=true;
+              return;
+            }
+
+            if (rule.required){
+              const empties = emptyIndices(values, globalLast);
+              if (empties.length){ errs.push(`En <b>${header}</b>: hay <b>filas vacías</b> en: <b>${empties.join(', ')}</b>.`); perFieldOk[selectId]=false; }
+            }
+
+            if (rule.type==='number'){
+              const bad=[];
+              for (let i=0;i<globalLast;i++){
+                const v = values[i];
+                if (v===undefined||v===null||String(v).trim()==='') continue;
+                const n = Number(String(v).toString().replace(',', '.'));
+                if (!Number.isFinite(n)) bad.push(i+3);
+              }
+              if (bad.length){ errs.push(`"${header}": valores no numéricos en filas: <b>${bad.slice(0,10).join(', ')}${bad.length>10?'…':''}</b>.`); perFieldOk[selectId]=false; }
+            }
+
+            if (rule.type === 'date') {
+              const bad = [];
+              for (let i = 0; i < globalLast; i++) {
+                const v = values[i];
+                const sv = String(v ?? '').trim();
+                if (!sv) continue;
+                const ok = rule.format === 'dd/MM/yyyy'
+                  ? isValidDateDDMMStrict(v)
+                  : isValidDateFlexible(v);
+                if (!ok) bad.push(i + 3);
+              }
+              if (bad.length) {
+                errs.push(
+                  `"${header}": formato de fecha inválido (usa <b>${rule.format || 'dd/MM/yyyy'}</b>) en filas: ` +
+                  `<b>${bad.slice(0, 20).join(', ')}${bad.length > 20 ? '…' : ''}</b>.`
+                );
+                perFieldOk[selectId] = false;
+              }
+            }
+
+            // --- Unicidad ---
+            if (rule.unique) {
+              const dup = duplicateInfo(values, globalLast, rule.type);
+              if (dup.indexes.length) {
+                const sampleTxt = dup.samples.length ? ` (ej.: <b>${dup.samples.join('</b>, <b>')}</b>)` : '';
+                errs.push(`"${header}": contiene <b>valores duplicados</b>${sampleTxt} en filas: <b>${dup.indexes.slice(0, 20).join(', ')}${dup.indexes.length > 20 ? '…' : ''}</b>.`);
+                perFieldOk[selectId] = false;
+              }
+            }
+
+            if (!(selectId in perFieldOk)) perFieldOk[selectId]=true;
+          });
+
+          Object.keys(FIELD_RULES).forEach(id=>setRowStatusBySelectId(id, !!perFieldOk[id]));
+          return errs;
+        }
+
+        // ---- SOLO recalcula estados (sin modal) para vista inicial y onChange ----
+        function recomputeStatusesSilent(){
+          const { byFieldId, globalLast } = buildMappingFromSelects();
+
+          Object.keys(FIELD_RULES).forEach(selectId=>{
+            const rule  = FIELD_RULES[selectId];
+            const entry = byFieldId[selectId] || { header:'', values:[] };
+            const { header, values } = entry;
+            let ok = true;
+
+            if (!header) {
+              ok = !rule.required;
+            } else {
+              if (rule.required){
+                const empties = emptyIndices(values, globalLast);
+                if (empties.length) ok = false;
+              }
+
+              if (ok && rule.type==='number'){
+                for (let i=0;i<globalLast;i++){
+                  const v = values[i];
+                  if (v===undefined||v===null||String(v).trim()==='') continue;
+                  const n = Number(String(v).toString().replace(',', '.'));
+                  if (!Number.isFinite(n)){ ok=false; break; }
+                }
+              }
+
+              if (ok && rule.type === 'date') {
+                for (let i = 0; i < globalLast; i++) {
+                  const v = values[i];
+                  if (v === undefined || v === null || String(v).trim() === '') continue;
+                  const okDate = rule.format === 'dd/MM/yyyy'
+                    ? isValidDateDDMMStrict(v)
+                    : isValidDateFlexible(v);
+                  if (!okDate) { ok = false; break; }
+                }
+              }
+
+              if (ok && rule.unique) {
+                const dup = duplicateInfo(values, globalLast, rule.type);
+                if (dup.indexes.length) ok = false;
+              }
+            }
+
+            setRowStatusBySelectId(selectId, ok);
+          });
+        }
+
+        // ====== WIRING ======
+        (function init(){
+          const input = document.getElementById('fileInput');
+          const box   = document.getElementById('fileName');
+
+          document.getElementById('btnBuscar')?.addEventListener('click', ()=>input?.click());
+          input?.addEventListener('change', ()=>{ box.textContent = input.files?.[0]?.name || 'Seleccione un archivo…'; });
+
+          // Paso 1 → cargar archivo y preparar Paso 2
+          document.getElementById('btnContinuar1')?.addEventListener('click', async ()=>{
+            try{
+              const file = input?.files?.[0];
+              if (!file) return mostrarModal('error','Selecciona un archivo <b>.xlsx</b> o <b>.csv</b>.');
+              const ext = file.name.split('.').pop().toLowerCase();
+              if (!['xlsx','csv'].includes(ext)) return mostrarModal('error','Formato inválido. Solo se permite <b>.xlsx</b> o <b>.csv</b>.');
+
+              const { headers, rows } = await readMatrixFromFile(file);
+              if (!headers.length) return mostrarModal('error','No se encontraron encabezados en la primera fila del archivo.');
+
+              FILE_STATE = { file, headers, rows };
+              populateStep2Selects(headers);
+              lockSelectedOptions();
+              render(2);
+
+              // Al entrar al paso 2, calcular estados reales de inmediato
+              recomputeStatusesSilent();
+
+              // En cambios, volver a bloquear opciones y recalcular estados reales
+              document.querySelectorAll('#panel-2 .map-table select.form-select')
+                .forEach(sel => sel.addEventListener('change', ()=>{
+                  lockSelectedOptions();
+                  recomputeStatusesSilent();
+                }));
+
+            }catch(err){
+              mostrarModal('error', err?.toString() || 'Ocurrió un error al procesar el archivo.');
+            }
+          });
+
+          // Paso 2 → Validar y continuar
+        document.getElementById('btnContinuar2')?.addEventListener('click', ()=>{
+          const errors = validateMapping();
+          if (errors.length){
+            const html = `<ul class="mb-0">${errors.map(e=>`<li>${e}</li>`).join('')}</ul>`;
+            mostrarModal('error', `<p>Revisa los siguientes problemas antes de continuar:</p>${html}`);
+            return;
+          }
+          // Genera la tabla con el mapeo confirmado
+          renderStep3Table();
+          render(3);
+        });
+
+          document.getElementById('btnBack2')?.addEventListener('click', ()=>render(1));
+          document.getElementById('btnBack3')?.addEventListener('click', ()=>render(2));
+
+          document.querySelectorAll('.wizard').forEach(wz=>{
+            wz.querySelectorAll('.step').forEach((s,i)=> s.addEventListener('click', ()=>render(i+1)));
+          });
+
+          document.getElementById('btnImportarFinal')?.addEventListener('click', ()=>{
+            console.log('Finalizar importación');
+          });
+        })();
+    </script>
+    <script>
+        // Orden de columnas del Paso 3 (después de la columna del checkbox)
+        const FIELD_ORDER = [
+          'numeroActivo','numeroEtiqueta','descripcionCorta','descripcionLarga',
+          'categoria','descripcionCategoria','estado','descripcionEstado','empresa',
+          'marca','modelo','numeroSerie','costo','numeroFactura','fechaCompra',
+          'fechaCapitalizacion','valorResidual','numeroParteFabricante','depreciado',
+          'descripcionDepreciado','anosVidaUtil','cuentaContableDepresiasion',
+          'centroCostos','descripcionEstadoUInventario','tagEPC','empleado','apellidosEmpleado',
+          'ubicacionA','ubicacionB','ubicacionC','ubicacionD','ubicacionSecundaria',
+          'fechaGarantia','color','tamanioMedida','observaciones','estadoActivo'
+        ];
+
+        // --- helpers de fechas para mostrar dd/MM/yyyy en la tabla ---
+        function parseDDMMString(s){
+          const main = String(s ?? '').trim().split(/[ T]/)[0];
+          const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(main);
+          if (!m) return null;
+          const d = +m[1], mo = +m[2]-1, y = +m[3];
+          const dt = new Date(y, mo, d);
+          return (dt.getFullYear()===y && dt.getMonth()===mo && dt.getDate()===d) ? dt : null;
+        }
+        function toDateFromAny(v){
+          if (v instanceof Date && !isNaN(v)) return v;
+          if (typeof v === 'number' && Number.isFinite(v)) {
+            try {
+              if (window.XLSX?.SSF?.parse_date_code) {
+                const o = XLSX.SSF.parse_date_code(v);
+                if (o && o.y && o.m && o.d) return new Date(o.y, o.m-1, o.d);
+              }
+            } catch {}
+            const base = new Date(Date.UTC(1899, 11, 30));
+            const days = Math.floor(v);
+            const ms   = Math.round((v - days) * 86400000);
+            base.setUTCDate(base.getUTCDate() + days);
+            base.setTime(base.getTime() + ms);
+            return isNaN(base) ? null : new Date(base.getUTCFullYear(), base.getUTCMonth(), base.getUTCDate());
+          }
+          const s = String(v ?? '').trim();
+          if (!s) return null;
+          // dd/MM/yyyy primero (porque validamos eso)
+          let dt = parseDDMMString(s);
+          if (dt) return dt;
+          // ISO: yyyy-mm-dd / yyyy/mm/dd
+          const iso = /^(\d{4})[\/\-\.](\d{1,2})[\/\-\.](\d{1,2})$/.exec(s.split(/[ T]/)[0]);
+          if (iso) {
+            const y=+iso[1], mo=+iso[2]-1, d=+iso[3];
+            dt = new Date(y,mo,d);
+            return (dt.getFullYear()===y && dt.getMonth()===mo && dt.getDate()===d) ? dt : null;
+          }
+          return null;
+        }
+        function fmtDDMMYYYY(dt){
+          const pad = n => String(n).padStart(2,'0');
+          return `${pad(dt.getDate())}/${pad(dt.getMonth()+1)}/${dt.getFullYear()}`;
+        }
+
+        // --- pinta la tabla del paso 3 con el mapeo seleccionado ---
+        function renderStep3Table() {
+          const { byFieldId, globalLast } = buildMappingFromSelects();
+          const tbody = document.querySelector('#panel-3 #table2 tbody');
+          if (!tbody) return;
+          tbody.innerHTML = '';
+
+          for (let i = 0; i < globalLast; i++) {
+            const tr = document.createElement('tr');
+
+            // checkbox de fila
+            const tdChk = document.createElement('td');
+            tdChk.className = 'col-check';
+            tdChk.innerHTML = '<input class="big-check row-check" type="checkbox">';
+            tr.appendChild(tdChk);
+
+            // columnas mapeadas
+            FIELD_ORDER.forEach(fid => {
+              const cell = document.createElement('td');
+              const rule = FIELD_RULES[fid] || {};
+              const val  = (byFieldId[fid]?.values[i] ?? '');
+              let txt = '';
+
+              if (rule.type === 'date' && String(val).trim() !== '') {
+                const dt = toDateFromAny(val);
+                txt = dt ? fmtDDMMYYYY(dt) : String(val);
+              } else {
+                txt = String(val ?? '');
+              }
+              cell.textContent = txt;
+              tr.appendChild(cell);
+            });
+
+            tbody.appendChild(tr);
+          }
+
+          // seleccionar/deseleccionar todo
+          const all = document.getElementById('select_all');
+          if (all) {
+            all.checked = false;
+            all.addEventListener('change', () => {
+              document.querySelectorAll('#panel-3 .row-check').forEach(cb => cb.checked = all.checked);
+            });
+          }
+        }
+    </script>
+
+
+
+    <script>
+        // === títulos visibles de las columnas del Paso 3 (en el mismo orden que FIELD_ORDER) ===
+        const FIELD_TO_TITLE = {
+          numeroActivo: 'Número de Activo',
+          numeroEtiqueta: 'Número de Etiqueta',
+          descripcionCorta: 'Descripción Corta',
+          descripcionLarga: 'Descripción Larga',
+          categoria: 'Categoría',
+          descripcionCategoria: 'Descripción de Categoría',
+          estado: 'Estado',
+          descripcionEstado: 'Descripción de Estado',
+          empresa: 'Empresa',
+          marca: 'Marca',
+          modelo: 'Modelo',
+          numeroSerie: 'Número Serie',
+          costo: 'Costo',
+          numeroFactura: 'Número Factura',
+          fechaCompra: 'Fecha Compra',
+          fechaCapitalizacion: 'Fecha Capitalización',
+          valorResidual: 'Valor Residual',
+          numeroParteFabricante: 'Número de Parte del Fabricante',
+          depreciado: 'Depreciado',
+          descripcionDepreciado: 'Descripción Depreciado',
+          anosVidaUtil: 'Años de Vida Útil',
+          cuentaContableDepresiasion: 'Cuenta Contable Depreciación',
+          centroCostos: 'Centro Costos',
+          descripcionEstadoUInventario: 'Descripción del Estado del Último Inventario',
+          tagEPC: 'Tag EPC',
+          empleado: 'Empleado',
+          apellidosEmpleado: 'Apellidos del Empleado',
+          ubicacionA: 'Ubicación A',
+          ubicacionB: 'Ubicación B',
+          ubicacionC: 'Ubicación C',
+          ubicacionD: 'Ubicación D',
+          ubicacionSecundaria: 'Ubicación Secundaria',
+          fechaGarantia: 'Fecha Garantía',
+          color: 'Color',
+          tamanioMedida: 'Tamaño/Medida',
+          observaciones: 'Observaciones',
+          estadoActivo: 'Estado del Activo'
+        };
+
+        // acá guardaremos los objetos listos para mandar al server (uno por fila)
+        let PREVIEW_ROWS = [];
+
+        // formatea dd/MM/yyyy (ya lo usas arriba)
+        function fmtDDMMYYYY(dt){
+          const pad = n => String(n).padStart(2,'0');
+          return `${pad(dt.getDate())}/${pad(dt.getMonth()+1)}/${dt.getFullYear()}`;
+        }
+
+        // convier­te de Excel serial / Date / string a Date (ya validaste formato)
+        function toDateFromAny(v){
+          if (v instanceof Date && !isNaN(v)) return v;
+          if (typeof v === 'number' && Number.isFinite(v)) {
+            try {
+              if (window.XLSX?.SSF?.parse_date_code) {
+                const o = XLSX.SSF.parse_date_code(v);
+                if (o && o.y && o.m && o.d) return new Date(o.y, o.m-1, o.d);
+              }
+            } catch {}
+            const base = new Date(Date.UTC(1899, 11, 30));
+            const days = Math.floor(v);
+            const ms   = Math.round((v - days) * 86400000);
+            base.setUTCDate(base.getUTCDate() + days);
+            base.setTime(base.getTime() + ms);
+            return isNaN(base) ? null : new Date(base.getUTCFullYear(), base.getUTCMonth(), base.getUTCDate());
+          }
+          const s = String(v ?? '').trim().split(/[ T]/)[0];
+          const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(s);
+          if (m) {
+            const d=+m[1], mo=+m[2]-1, y=+m[3];
+            const dt = new Date(y,mo,d);
+            return (dt.getFullYear()===y && dt.getMonth()===mo && dt.getDate()===d) ? dt : null;
+          }
+          const iso = /^(\d{4})[\/\-\.](\d{1,2})[\/\-\.](\d{1,2})$/.exec(s);
+          if (iso) {
+            const y=+iso[1], mo=+iso[2]-1, d=+iso[3];
+            const dt = new Date(y,mo,d);
+            return (dt.getFullYear()===y && dt.getMonth()===mo && dt.getDate()===d) ? dt : null;
+          }
+          return null;
+        }
+
+        // Reemplaza tu renderStep3Table por esta versión (además construye PREVIEW_ROWS)
+        function renderStep3Table() {
+          const { byFieldId, globalLast } = buildMappingFromSelects();
+          const tbody = document.querySelector('#panel-3 #table2 tbody');
+          if (!tbody) return;
+
+          PREVIEW_ROWS = [];
+          tbody.innerHTML = '';
+
+          for (let i = 0; i < globalLast; i++) {
+            const tr = document.createElement('tr');
+            tr.dataset.rowIndex = String(i);
+
+            // checkbox de fila
+            const tdChk = document.createElement('td');
+            tdChk.className = 'col-check';
+            tdChk.innerHTML = '<input class="big-check row-check" type="checkbox">';
+            tr.appendChild(tdChk);
+
+            // objeto que se enviará al servidor (clave= título visible)
+            const rowObj = {};
+
+            FIELD_ORDER.forEach(fid => {
+              const cell = document.createElement('td');
+              const rule = FIELD_RULES[fid] || {};
+              const title = FIELD_TO_TITLE[fid] || fid;
+
+              let raw = byFieldId[fid]?.values[i] ?? '';
+              let txt = '';
+
+              if (rule.type === 'date' && String(raw).trim() !== '') {
+                const dt = toDateFromAny(raw);
+                txt = dt ? fmtDDMMYYYY(dt) : String(raw ?? '');
+              } else {
+                txt = String(raw ?? '');
+              }
+
+              cell.textContent = txt;
+              tr.appendChild(cell);
+
+              // mismo valor al payload
+              rowObj[title] = txt;
+            });
+
+            PREVIEW_ROWS.push(rowObj);
+            tbody.appendChild(tr);
+          }
+
+          // seleccionar/deseleccionar todo
+          const selectAll = document.getElementById('select_all');
+          if (selectAll) {
+            selectAll.checked = false;
+            selectAll.onchange = () => {
+              document.querySelectorAll('#panel-3 .row-check')
+                .forEach(cb => cb.checked = selectAll.checked);
+            };
+          }
+        }
+
+        // util para mostrar JSON en modal sin riesgos
+        function escapeHtml(s){
+          return String(s).replace(/[&<>"']/g, c =>
+            ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])
+          );
+        }
+
+               // Limpia marcas previas en la tabla del paso 3
+        function clearRowMarks() {
+          document.querySelectorAll('#panel-3 tbody tr').forEach(tr => {
+            tr.classList.remove('row-dup-file', 'row-dup-db', 'row-error');
+            tr.removeAttribute('title');
+          });
+        }
+
+        // Vuelve a evaluar el estado del "select all"
+        function syncSelectAllCheckbox() {
+          const selectAll = document.getElementById('select_all');
+          if (!selectAll) return;
+          const all = document.querySelectorAll('#panel-3 .row-check');
+          selectAll.checked = all.length > 0 && Array.from(all).every(cb => cb.checked);
+        }
+
+              // === enviar filas seleccionadas ===
+        const POST_URL = '@Url.Action("ImportarSeleccion", "Activos")' || '/Activos/ImportarSeleccion';
+        document.getElementById('btnImportarFinal')?.addEventListener('click', async () => {
+          // índices seleccionados (según data-row-index)
+          const selectedIdx = Array.from(document.querySelectorAll('#panel-3 tbody tr'))
+            .filter(tr => tr.querySelector('.row-check')?.checked)
+            .map(tr => parseInt(tr.dataset.rowIndex, 10))
+            .filter(n => Number.isFinite(n));
+
+          if (!selectedIdx.length) {
+            mostrarModal('error', 'Selecciona al menos una fila para importar.');
+            return;
+          }
+
+          const payload = selectedIdx.map(i => PREVIEW_ROWS[i]);
+
+          // ——— CONFIRMAR antes de enviar ———
+          const okGo = await confirmDialog({
+            title: 'Confirmar importación',
+            message: `Vas a importar <b>${payload.length}</b> fila(s) a la base de datos.<br>
+                      Este proceso es <b>irreversible</b>. ¿Deseas continuar?`,
+            okText: 'Sí, importar',
+            cancelText: 'No, cancelar'
+          });
+          if (!okGo) return;
+
+          clearRowMarks();
+
+          try {
+            const btn = document.getElementById('btnImportarFinal');
+            if (btn) btn.disabled = true;
+
+            const res = await fetch(POST_URL, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ items: payload })
+            });
+
+            if (!res.ok) throw new Error('Respuesta no OK del servidor');
+            const data = await res.json();
+
+            // === Marcar duplicados/errores en la tabla ===
+            if (Array.isArray(data.errors) && data.errors.length) {
+              data.errors.forEach(err => {
+                // err.row = orden 1-based dentro del batch enviado → mapeamos a selectedIdx
+                const orderIdx = (err.row ?? 0) - 1;
+                if (orderIdx < 0 || orderIdx >= selectedIdx.length) return;
+
+                const tableRowIndex = selectedIdx[orderIdx]; // índice de la tabla (data-row-index)
+                const tr = document.querySelector(`#panel-3 tbody tr[data-row-index="${tableRowIndex}"]`);
+                if (!tr) return;
+
+                const msg = String(err.message || '');
+                const low = msg.toLowerCase();
+                let cls = 'row-error';
+                if (low.includes('duplicado en el archivo')) cls = 'row-dup-file';
+                else if (low.includes('duplicado en bd'))    cls = 'row-dup-db';
+
+                tr.classList.add(cls);
+                tr.title = msg;
+
+                // desmarcar fila con problema
+                const cb = tr.querySelector('.row-check');
+                if (cb) cb.checked = false;
+              });
+
+              // Re-sincroniza el "select all"
+              syncSelectAllCheckbox();
+            }
+
+            // === Resumen amigable ===
+            function escapeHtml(s){
+              return String(s).replace(/[&<>"']/g, c =>
+                ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])
+              );
+            }
+
+            function buildImportSummary(data, payloadLen) {
+              const total     = payloadLen;
+              const inserted  = Number(data?.inserted ?? 0);
+              const skipped   = Number(data?.skippedDuplicates ?? 0);
+              const errs      = Array.isArray(data?.errors) ? data.errors : [];
+
+              // Clasificar errores
+              const dupFile = [], dupDb = [], otherErrs = [];
+              errs.forEach(e => {
+                const msg = String(e?.message || '');
+                const low = msg.toLowerCase();
+                if (low.includes('duplicado en el archivo')) dupFile.push(e);
+                else if (low.includes('duplicado en bd'))    dupDb.push(e);
+                else                                         otherErrs.push(e);
+              });
+
+              const listRows = (arr) =>
+                arr.slice(0, 20).map(x => `Fila ${x?.excelRow || x?.row || '-'}`).join(', ')
+                + (arr.length > 20 ? '…' : '');
+
+              return `
+                <div class="mb-2">Se procesaron <b>${total}</b> fila(s).</div>
+                <ul class="mb-3">
+                  <li><b>Insertadas:</b> ${inserted}</li>
+                  <li><b>Omitidas por duplicado:</b> ${skipped}</li>
+                  <li><b>Con error:</b> ${otherErrs.length}</li>
+                </ul>
+                ${
+                  (dupFile.length || dupDb.length || otherErrs.length)
+                    ? `<div class="mb-1"><b>Detalles:</b></div>
+                       <ul class="mb-2">
+                         ${dupFile.length ? `<li><b>Duplicados en el archivo:</b> ${listRows(dupFile)}</li>` : ''}
+                         ${dupDb.length   ? `<li><b>Duplicados ya existentes (revisar archivo Excel):</b> ${listRows(dupDb)}</li>`   : ''}
+                         ${
+                           otherErrs.length
+                             ? `<li><b>Errores:</b>
+                                  <ul>
+                                    ${otherErrs.slice(0,10).map(e => `
+                                      <li>Fila ${e?.excelRow || e?.row || '-'}: ${escapeHtml(String(e?.message || 'Error'))}</li>
+                                    `).join('')}
+                                    ${otherErrs.length > 10 ? '<li>…</li>' : ''}
+                                  </ul>
+                                </li>`
+                             : ''
+                         }
+                       </ul>`
+                    : ''
+                }
+                <details style="margin-top:8px;">
+                  <summary>Ver datos técnicos</summary>
+                  <pre style="white-space:pre-wrap;margin:8px 0 0 0;">${escapeHtml(JSON.stringify(data, null, 2))}</pre>
+                </details>
+              `;
+            }
+
+            // Tono y encabezado según status del backend
+            const status  = data.status || (data.ok ? 'success' : 'error');
+            const tone    = (status === 'success')   ? 'success'
+                            : (status === 'partial') ? 'success'
+                            : (status === 'duplicate') ? 'warning'
+                            : 'error';
+            const heading =
+              status === 'success'   ? 'Acción Exitosa' :
+              status === 'partial'   ? 'Importación parcial' :
+              status === 'duplicate' ? 'Sin cambios' :
+                                        'Error';
+
+            mostrarModal(
+              tone,
+              `<h4 class="mb-2">${heading}</h4>` + buildImportSummary(data, payload.length)
+            );
+
+          } catch (err) {
+            mostrarModal('error', 'No se pudo enviar la importación: ' + (err?.message || err));
+          } finally {
+            const btn = document.getElementById('btnImportarFinal');
+            if (btn) btn.disabled = false;
+          }
+        });
+    </script>
+
+
+}
+<style>
+    /* Modal de confirmación liviano */
+    .confirm-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,.35);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 5000;
+    }
+
+    .confirm-card {
+        background: #fff;
+        width: min(520px,92%);
+        border-radius: 10px;
+        box-shadow: 0 10px 30px rgba(0,0,0,.18);
+        padding: 20px 20px 16px;
+    }
+
+    .confirm-title {
+        font-weight: 600;
+        font-size: 18px;
+        margin: 0 0 6px;
+    }
+
+    .confirm-msg {
+        color: #333;
+        line-height: 1.45;
+    }
+
+    .confirm-actions {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+        margin-top: 16px;
+    }
+
+        .confirm-actions .btn {
+            padding: .5rem .9rem;
+            border-radius: 8px;
+            cursor: pointer;
+            border: none;
+        }
+
+        .confirm-actions .btn-cancel {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .confirm-actions .btn-ok {
+            background: #ff6a2b;
+            color: #fff;
+        }
+</style>
+<script>
+    // Promesa de confirmación
+    function confirmDialog({ title='Confirmación', message='', okText='Sí, continuar', cancelText='Cancelar' }){
+      return new Promise(resolve=>{
+        const o = document.createElement('div');
+        o.className = 'confirm-overlay';
+        o.innerHTML = `
+          <div class="confirm-card" role="dialog" aria-modal="true">
+            <h4 class="confirm-title">${title}</h4>
+            <div class="confirm-msg">${message}</div>
+            <div class="confirm-actions">
+              <button type="button" class="btn btn-cancel">${cancelText}</button>
+              <button type="button" class="btn btn-ok">${okText}</button>
+            </div>
+          </div>`;
+        document.body.appendChild(o);
+
+        const cleanup = (val)=>{ document.body.removeChild(o); resolve(val); };
+        o.querySelector('.btn-ok').addEventListener('click', ()=>cleanup(true));
+        o.querySelector('.btn-cancel').addEventListener('click', ()=>cleanup(false));
+        // Esc/Enter
+        const onKey = (e)=>{
+          if (e.key === 'Escape') { e.preventDefault(); cleanup(false); }
+          if (e.key === 'Enter')  { e.preventDefault(); cleanup(true);  }
+        };
+        document.addEventListener('keydown', onKey, { once:true });
+        // foco
+        setTimeout(()=>o.querySelector('.btn-ok').focus(), 0);
+      });
+    }
+</script>
+
+

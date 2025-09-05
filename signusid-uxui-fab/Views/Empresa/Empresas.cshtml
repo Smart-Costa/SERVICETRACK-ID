@@ -1,0 +1,555 @@
+@* Empresas.cshtml *@
+@{
+    ViewData["Title"] = "Empresas";
+}
+
+
+@model AspnetCoreMvcFull.Models.Empresa.EmpresaIndexVm
+
+
+<div class="card" style="padding: 1rem 1rem 1rem 1rem;">
+    <div class="col-12 col-md-auto">
+        <h4 class="mb-0" style="color:#606060">Empresas</h4>
+    </div>
+
+    <div class="p-3 rounded mb-4" style="border: 1px solid #d6d6d6;">
+
+        @* <-- borde suave que encierra TODO menos el título *@
+        <form asp-action="GuardarEmpresa" method="post">
+            <input type="hidden" name="estadoFomrulario" value="Insertar" />
+            <input type="hidden" name="IdEmpresa" value="Insertar" />
+            @Html.AntiForgeryToken()
+
+            <div class="row g-4">
+                <!-- Fila 1: Nombre / Dirección -->
+                <div class="col-12 col-md-6">
+                    <label for="Nombre" class="form-label">Nombre de la Empresa</label>
+                    <input id="Nombre" name="Nombre" class="form-control  " />
+                </div>
+                <div class="col-12 col-md-6">
+                    <label for="DireccionEmpresa" class="form-label">Dirección</label>
+                    <input id="DireccionEmpresa" name="DireccionEmpresa" class="form-control  " />
+                </div>
+
+                <!-- Fila 2: Identificación / Empresa Relacionada / Dirección (opcional) -->
+                <div class="col-12 col-md-3">
+                    <label for="IdentificacionERelacionada" class="form-label">Identificación</label>
+                    <input id="IdentificacionERelacionada" name="IdentificacionERelacionada" class="form-control  " />
+                </div>
+                <div class="col-12 col-md-3">
+                    <label for="EmpresaRelacionada" class="form-label">Empresa Relacionada</label>
+                    <input id="EmpresaRelacionada" name="EmpresaRelacionada" class="form-control  " />
+                </div>
+                <div class="col-12 col-md-6">
+                    <label for="DireccionERelacionada" class="form-label">Dirección (opcional)</label>
+                    <input id="DireccionERelacionada" name="DireccionERelacionada" class="form-control  " />
+                </div>
+
+                <!-- Fila 3: Email / Teléfono / Ciudad / Estado -->
+                <div class="col-12 col-md-3">
+                    <label for="Email" class="form-label">Email</label>
+                    <input id="Email" name="Email" type="email" class="form-control  " />
+                </div>
+                <div class="col-12 col-md-3">
+                    <label for="Telefono" class="form-label">Teléfono</label>
+                    <input id="Telefono" name="Telefono" class="form-control  " />
+                </div>
+                <div class="col-12 col-md-3">
+                    <label for="Ciudad" class="form-label">Ciudad</label>
+                    <select id="Ciudad" name="Ciudad" class="form-select select-light">
+                        <option value="">Seleccione un elemento</option>
+                    </select>
+                </div>
+                <div class="col-12 col-md-3">
+                    <label for="Estado" class="form-label">Estado</label>
+                    <select id="Estado" name="Estado" class="form-select select-light">
+                        <option value="">Seleccione un elemento</option>
+                    </select>
+                </div>
+
+                <!-- Fila 4: Forma de Pago / Condición Financiera / Código Postal / País -->
+                <!-- Forma de Pago -->
+                <div class="col-12 col-md-3">
+                    <label for="FormaPago" class="form-label">Forma de Pago<span class="text-danger">*</span></label>
+                    <select id="FormaPago" name="FormaPago" class="form-select select-light">
+                        <option value="">Seleccione un elemento</option>
+                        <option value="Prepago" selected="@(Model?.FormData?.FormaPago == "Prepago" ? "selected" : null)">Prepago</option>
+                        <option value="5 dias Credito" selected="@(Model?.FormData?.FormaPago == "5 dias Credito" ? "selected" : null)">5 dias Credito</option>
+                        <option value="15 dias Credito" selected="@(Model?.FormData?.FormaPago == "15 dias Credito" ? "selected" : null)">15 dias Credito</option>
+                        <option value="60 dias Credito" selected="@(Model?.FormData?.FormaPago == "60 dias Credito" ? "selected" : null)">60 dias Credito</option>
+                    </select>
+                </div>
+
+                <!-- Condición Financiera de Servicio -->
+                <div class="col-12 col-md-3">
+                    <label for="CondicionFinanciera" class="form-label">Condición Financiera de Servicio<span class="text-danger">*</span></label>
+                    <select id="CondicionFinanciera" name="CondicionFinanciera" class="form-select select-light">
+                        <option value="">Seleccione un elemento</option>
+                        <option value="Activa" selected="@(Model?.FormData?.CondicionFinanciera == "Activa" ? "selected" : null)">Activa</option>
+                        <option value="Bloqueada por pago" selected="@(Model?.FormData?.CondicionFinanciera == "Bloqueada por pago" ? "selected" : null)">Bloqueada por pago</option>
+                    </select>
+                </div>
+                <div class="col-12 col-md-3">
+                    <label for="CodigoPostal" class="form-label">Código Postal</label>
+                    <input id="CodigoPostal" name="CodigoPostal" class="form-control  " />
+                </div>
+                <div class="col-12 col-md-3">
+                    <label for="Pais" class="form-label">País*</label>
+                    <select id="Pais" name="Pais" class="form-select select-light">
+                        <option value="">Seleccione un elemento</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Fila final: Estatus + Identificación (total col-md-3) | Botón a la derecha -->
+            <div class="row g-3 align-items-end mt-3">
+                <!-- IZQUIERDA: total col-md-3 -->
+                <div class="col-12 col-md-3">
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <select id="Estatus" name="Estatus" class="form-select">
+                                <option value="" selected disabled hidden>Estatus</option>
+                                <option value="Prepago" selected="@(Model?.FormData?.Estatus == "Activo" ? "selected" : null)">Activo</option>
+                                <option value="5 dias Credito" selected="@(Model?.FormData?.Estatus == "Inactivo" ? "selected" : null)">Inactivo</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <input id="Identificacion"
+                                   name="Identificacion"
+                                   class="form-control"
+                                   placeholder="Identificación" />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DERECHA: Botón Registrar Contacto alineado al borde derecho -->
+                <div class="col-12 col-md-9 d-grid d-md-flex justify-content-md-end">
+                    <a asp-action="RegistrarContacto"
+                       class="btn text-white"
+                       style="background-color:#FF5100;border-color:#FF5100;">
+                        <span class="fw-bold me-2">+</span> Registrar Contacto
+                    </a>
+                </div>
+            </div>
+
+
+
+            <!-- Acciones -->
+            <div class="d-flex justify-content-center gap-3 mt-4">
+                <button type="submit" class="btn text-white"
+                        style="background-color:#FF5100;border-color:#FF5100;">
+                    Guardar
+                </button>
+                <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
+            </div>
+        </form>
+    </div>
+
+
+    <form asp-controller="GestionServicio" asp-action="ControlTrafico" method="get">
+
+        <!-- AQUI DEBERIAN DE IR LOS FILTROS -->
+        <!-- FILTROS: Fila 1 -->
+        <div class="row gx-2 gy-2 align-items-center mb-2">
+            <!-- IZQUIERDA (más ancha) -->
+            <div class="col-12 col-lg-9">
+                <div class="row gx-2 gy-2 align-items-center">
+                    <!-- Empresa (se expande) -->
+                    <div class="col">
+                        <input type="text" name="q" class="form-control" placeholder="Empresa" />
+                    </div>
+
+                    <!-- Buscar (tamaño contenido) -->
+                    <div class="col-auto">
+                        <button type="submit" name="cmd" value="buscar"
+                                class="btn text-white"
+                                style="background-color:#FF5100;border-color:#FF5100; white-space:nowrap;">
+                            Buscar
+                        </button>
+                    </div>
+
+                    <!-- ---Todos--- (se expande igual que Empresa) -->
+                    <div class="col">
+                        <input type="text" name="todos" class="form-control" placeholder="---Todos---" />
+                    </div>
+                </div>
+            </div>
+
+            <!-- DERECHA: Filtrar + Limpiar alineados a la derecha -->
+            <div class="col-12 col-lg-3">
+                <div class="d-flex justify-content-lg-end align-items-center gap-2">
+                    <button type="submit" name="cmd" value="filtrar"
+                            class="btn text-white"
+                            style="background-color:#FF5100;border-color:#FF5100;">
+                        Filtrar
+                    </button>
+                    <button type="reset" class="btn btn-secondary">Limpiar Filtro</button>
+                </div>
+            </div>
+        </div>
+
+
+
+
+        <!-- FILTROS: Fila 2 (alineada con la fila 1: 9/3) -->
+        <div class="row align-items-center mb-2">
+            <div class="col-12 col-lg-9 d-flex flex-wrap align-items-center gap-2">
+                <span>Mostrar</span>
+                <select id="pageSize" name="pageSize" class="form-select form-select-sm w-auto">
+                    <option value="1">1</option>
+                    <option value="5" selected>5</option>
+                    <option value="10">10</option>
+                    <option value="20">20</option>
+                </select>
+                <span>Empresa</span>
+            </div>
+
+            <div class="col-12 col-lg-3 d-flex justify-content-lg-end mt-2 mt-lg-0">
+                <a asp-action="RegistrarEmpresa"
+                   class="btn text-white"
+                   style="background-color:#FF5100;border-color:#FF5100;">
+                    <span class="fw-bold me-2">+</span> Registrar Empresa
+                </a>
+            </div>
+        </div>
+
+
+
+
+        <!-- AQUI DEBERIAN DE IR LOS FILTROS -->
+
+        <div class="card-datatable table-responsive border" style="padding: .5rem;">
+            <style>
+                .card-datatable {
+                    border: 1px solid #dee2e6;
+                    border-radius: 8px;
+                    overflow: hidden;
+                    background: #fff
+                }
+
+                    .card-datatable table {
+                        border-bottom: 1px solid #dee2e6
+                    }
+                /* ancho y centrado del checkbox */
+                .w-5 {
+                    width: 5%
+                }
+
+                .w-10 {
+                    width: 10%
+                }
+
+                .w-20 {
+                    width: 20%
+                }
+
+                .w-35 {
+                    width: 35%
+                }
+
+                .w-50 {
+                    width: 50%
+                }
+
+                .text-center {
+                    text-align: center
+                }
+
+                table th,
+                table td {
+                    white-space: nowrap; /* No permite saltos de línea dentro de la celda */
+                    overflow: visible !important;
+                    text-overflow: unset !important;
+                    max-width: none !important; /* Evita que se limite el ancho */
+                }
+
+                .table-responsive {
+                    overflow-x: auto;
+                }
+
+            </style>
+            <div class="table-responsive table-scroll">
+                <table class="datatables-basic table table-stretch">
+                    <thead>
+                        <tr>
+                            <th>Nombre de empresa</th>
+                            <th>País</th>
+                            <th>Forma Pago</th>
+                            <th>Condicion financiera de sericios</th>
+                            <th>telefono</th>
+                            <th class="text-end">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model?.Items != null && Model.Items.Any())
+                        {
+                            foreach (var item in Model.Items)
+                            {
+                                <tr>
+                                    <td class="text-truncate" style="font-size:12.5px">@item.Nombre</td>
+                                    <td class="text-truncate d-none d-sm-table-cell" style="font-size:12.5px">@item.Pais</td>
+                                    <td class="text-truncate d-none d-md-table-cell" style="font-size:12.5px">@item.FormaPago</td>
+                                    <td class="text-truncate d-none d-lg-table-cell" style="font-size:12.5px">@item.CondicionFinanciera</td>
+                                    <td class="text-truncate d-none d-sm-table-cell" style="font-size:12.5px">@item.Telefono</td>
+                                    <td class="text-end">
+                                        <div class="d-inline-flex gap-2">
+                                            <a class="btn d-flex align-items-center justify-content-center p-1 px-2"
+                                               title="Editar"
+                                               asp-action="Editar" asp-route-id="@item.IdEmpresa"
+                                               style="background-color:#00A5B8;border:none;border-radius:6px;height:28px;min-width:40px;">
+                                                <img src="~/img/editar_icono.svg" alt="Editar" style="width:16px;height:16px;">
+                                            </a>
+                                            <button type="button" class="btn d-flex align-items-center justify-content-center p-1 px-2"
+                                                    title="Borrar"
+                                                    data-bs-toggle="modal" data-bs-target="#empresaDeleteModal"
+                                                    data-id="@item.IdEmpresa"
+                                                    style="background-color:#666;border:none;border-radius:6px;height:28px;min-width:40px;">
+                                                <img src="~/img/eliminar_icono.svg" alt="Eliminar" style="width:16px;height:16px;">
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-4">Sin resultados.</td>
+                            </tr>
+                        }
+                    </tbody>
+
+                </table>
+            </div>
+
+
+            @{
+                var page = Model?.CurrentPage ?? 1;
+                var pageSize = Model?.PageSize ?? 5;
+                var total = Model?.TotalItems ?? 0;
+                var totalPages = Math.Max(1, (int)Math.Ceiling((double)total / Math.Max(1, pageSize)));
+                var q = Model?.Query ?? "";
+
+                // Si tienes más filtros en el querystring, captúralos aquí para preservarlos:
+                var todos = Context?.Request?.Query["todos"].ToString() ?? "";
+
+                var from = total == 0 ? 0 : ((page - 1) * pageSize + 1);
+                var to = total == 0 ? 0 : Math.Min(page * pageSize, total);
+            }
+
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mt-2 gap-2">
+           
+
+                <nav aria-label="Paginación">
+                    <ul class="pagination flex-wrap mb-0">
+
+                        <!-- Primero / Anterior -->
+                        <li class="page-item @(page <= 1 ? "disabled" : "")">
+                            <a class="page-link"
+                               href="@Url.Action("Empresas", new { page = 1, pageSize, q, todos })">««</a>
+                        </li>
+                        <li class="page-item @(page <= 1 ? "disabled" : "")">
+                            <a class="page-link"
+                               href="@Url.Action("Empresas", new { page = Math.Max(1, page - 1), pageSize, q, todos })">«</a>
+                        </li>
+
+                        <!-- Números (bordes + ventana alrededor de la actual) -->
+                        @for (var i = 1; i <= totalPages; i++)
+                        {
+                            if (totalPages == 1 || i == 1 || i == totalPages || (i >= page - 2 && i <= page + 2))
+                            {
+                                <li class="page-item @(i == page ? "active" : "")">
+                                    <a class="page-link"
+                                       href="@Url.Action("Empresas", new { page = i, pageSize, q, todos })">@i</a>
+                                </li>
+                            }
+                            else if (i == page - 3 || i == page + 3)
+                            {
+                                <li class="page-item disabled"><span class="page-link">…</span></li>
+                            }
+                        }
+
+                        <!-- Siguiente / Último -->
+                        <li class="page-item @(page >= totalPages ? "disabled" : "")">
+                            <a class="page-link"
+                               href="@Url.Action("Empresas", new { page = Math.Min(totalPages, page + 1), pageSize, q, todos })">»</a>
+                        </li>
+                        <li class="page-item @(page >= totalPages ? "disabled" : "")">
+                            <a class="page-link"
+                               href="@Url.Action("Empresas", new { page = totalPages, pageSize, q, todos })">»»</a>
+                        </li>
+
+                    </ul>
+                </nav>
+            </div>
+
+        </div>
+    </form>
+</div>
+
+<!-- Modal de alerta (arriba) -->
+<!-- Modal de alerta (compacto y arriba) -->
+<div class="modal fade" id="alertModal" tabindex="-1" aria-labelledby="alertModalLabel" aria-hidden="true">
+    <div class="modal-dialog mt-3">
+        @* sin modal-lg; más pegado arriba *@
+        <div class="modal-content">
+            <div class="modal-header py-2 px-3">
+                <h6 class="modal-title mb-0" id="alertModalLabel">Éxito</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body py-2 px-3" id="alertModalBody">
+                Empresa registrada correctamente
+            </div>
+            <div class="modal-footer py-2 px-3">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+@* Si viene TempData, mostrar modal al cargar *@
+@if (TempData["Alert"] != null)
+{
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+          const msg   = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(TempData["Alert"]));
+          const title = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(TempData["AlertTitle"] ?? "Aviso"));
+
+          const bodyEl  = document.getElementById('alertModalBody');
+          const titleEl = document.getElementById('alertModalLabel');
+          if (bodyEl)  bodyEl.textContent  = msg || '';
+          if (titleEl) titleEl.textContent = title || 'Aviso';
+
+          const m = new bootstrap.Modal(document.getElementById('alertModal'));
+          m.show();
+        });
+    </script>
+}
+
+
+
+<style>
+
+    .select-light {
+        background-color: #eeeeee;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const selPais   = document.getElementById('Pais');
+      const selEstado = document.getElementById('Estado');
+      const selCiudad = document.getElementById('Ciudad');
+
+      // Valores iniciales para modo edición (o "" si insert)
+    const paisInicial   = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model?.FormData?.Pais ?? ""));
+    const estadoInicial = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model?.FormData?.Estado ?? ""));
+    const ciudadInicial = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model?.FormData?.Ciudad ?? ""));
+
+
+      const setOptions = (select, items, placeholder = "Seleccione un elemento") => {
+        select.innerHTML = "";
+        const opt0 = new Option(placeholder, "");
+        select.appendChild(opt0);
+        for (const it of items) {
+          select.appendChild(new Option(it.texto, it.id));
+        }
+      };
+
+      const disableAll = () => {
+        selEstado.disabled = true;
+        selCiudad.disabled = true;
+      };
+
+      const loadPaises = async () => {
+        try {
+          const r = await fetch('@Url.Action("ObtenerPaises", "Empresa")');
+          const data = await r.json(); // [{id,texto}]
+          setOptions(selPais, data);
+          if (paisInicial) {
+            selPais.value = paisInicial;
+            selPais.dispatchEvent(new Event('change')); // dispara carga de estados
+          }
+        } catch (e) {
+          console.error('Paises error', e);
+        }
+      };
+
+      const loadEstados = async (pais) => {
+        try {
+          selEstado.disabled = true;
+          selCiudad.disabled = true;
+          setOptions(selEstado, [], "Cargando...");
+          setOptions(selCiudad, [], "Seleccione un elemento");
+
+          const url = '@Url.Action("ObtenerEstados", "Empresa")' + '?pais=' + encodeURIComponent(pais || '');
+          const r = await fetch(url);
+          const data = await r.json(); // [{id,texto}] o []
+
+          if (data.length === 0) {
+            // No hay estados para ese país → habilita ciudad directa (algunas APIs no soportan ciudades sin estado)
+            setOptions(selEstado, [], "Sin estados");
+            selEstado.disabled = true;
+            selCiudad.disabled = true; // la API de ciudades requiere estado; si quieres, aquí podrías poner otra fuente
+          } else {
+            setOptions(selEstado, data);
+            selEstado.disabled = false;
+            if (estadoInicial) {
+              selEstado.value = estadoInicial;
+              selEstado.dispatchEvent(new Event('change'));
+            }
+          }
+        } catch (e) {
+          console.error('Estados error', e);
+          setOptions(selEstado, [], "Error al cargar");
+        }
+      };
+
+      const loadCiudades = async (pais, estado) => {
+        try {
+          selCiudad.disabled = true;
+          setOptions(selCiudad, [], "Cargando...");
+
+          const url = '@Url.Action("ObtenerCiudades", "Empresa")'
+                    + '?pais=' + encodeURIComponent(pais || '')
+                    + '&estado=' + encodeURIComponent(estado || '');
+          const r = await fetch(url);
+          const data = await r.json(); // [{id,texto}] o []
+
+          if (data.length === 0) {
+            setOptions(selCiudad, [], "Sin ciudades");
+            selCiudad.disabled = true;
+          } else {
+            setOptions(selCiudad, data);
+            selCiudad.disabled = false;
+            if (ciudadInicial) selCiudad.value = ciudadInicial;
+          }
+        } catch (e) {
+          console.error('Ciudades error', e);
+          setOptions(selCiudad, [], "Error al cargar");
+        }
+      };
+
+      // Eventos
+      selPais.addEventListener('change', () => {
+        const pais = selPais.value;
+        if (!pais) { disableAll(); setOptions(selEstado, [], "Seleccione un elemento"); setOptions(selCiudad, [], "Seleccione un elemento"); return; }
+        estadoInicial && (selEstado.value = ""); ciudadInicial && (selCiudad.value = "");
+        loadEstados(pais);
+      });
+
+      selEstado.addEventListener('change', () => {
+        const pais = selPais.value;
+        const estado = selEstado.value;
+        if (!estado) { setOptions(selCiudad, [], "Seleccione un elemento"); selCiudad.disabled = true; return; }
+        loadCiudades(pais, estado);
+      });
+
+      // Inicio
+      disableAll();
+      await loadPaises();
+    });
+</script>

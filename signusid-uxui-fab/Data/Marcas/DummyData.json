@@ -1,0 +1,129 @@
+{
+  "Brands": [
+    {
+      "name": "Intel",
+      "description": "Marca de tecnología avanzada",
+      "actives": 0
+    },
+    {
+      "name": "HyperX",
+      "description": "Fabricante de periféricos de gaming",
+      "actives": 0
+    },
+    {
+      "name": "Amazon",
+      "description": "Plataforma de comercio electrónico",
+      "actives": 0
+    },
+    {
+      "name": "Converse",
+      "description": "Fabricante de calzado y ropa",
+      "actives": 0
+    },
+    {
+      "name": "Sony",
+      "description": "Empresa de productos electrónicos y entretenimiento",
+      "actives": 0
+    },
+    {
+      "name": "Samsung",
+      "description": "Líder en dispositivos tecnológicos",
+      "actives": 1
+    },
+    {
+      "name": "Apple",
+      "description": "Desarrollador de productos innovadores",
+      "actives": 9
+    },
+    {
+      "name": "Microsoft",
+      "description": "Líder en software y hardware",
+      "actives": 3
+    },
+    {
+      "name": "Nike",
+      "description": "Marca de ropa y accesorios deportivos",
+      "actives": 2
+    },
+    {
+      "name": "Adidas",
+      "description": "Fabricante de productos deportivos",
+      "actives": 2
+    },
+    {
+      "name": "Coca-Cola",
+      "description": "Bebida refrescante popular",
+      "actives": 9
+    },
+    {
+      "name": "Pepsi",
+      "description": "Competencia de Coca-Cola",
+      "actives": 3
+    },
+    {
+      "name": "Dell",
+      "description": "Fabricante de computadoras y tecnología",
+      "actives": 7
+    },
+    {
+      "name": "HP",
+      "description": "Proveedor de soluciones tecnológicas",
+      "actives": 7
+    },
+    {
+      "name": "Acer",
+      "description": "Especialista en portátiles y monitores",
+      "actives": 3
+    },
+    {
+      "name": "Lenovo",
+      "description": "Líder en dispositivos de computación",
+      "actives": 4
+    },
+    {
+      "name": "LG",
+      "description": "Fabricante de electrodomésticos y pantallas",
+      "actives": 8
+    },
+    {
+      "name": "Asus",
+      "description": "Innovador en hardware de computación",
+      "actives": 2
+    },
+    {
+      "name": "Razer",
+      "description": "Marca líder en periféricos gaming",
+      "actives": 4
+    },
+    {
+      "name": "Logitech",
+      "description": "Fabricante de accesorios para PC",
+      "actives": 7
+    },
+    {
+      "name": "Puma",
+      "description": "Competidor en ropa y calzado deportivo",
+      "actives": 6
+    },
+    {
+      "name": "Reebok",
+      "description": "Marca de ropa deportiva reconocida",
+      "actives": 8
+    },
+    {
+      "name": "Red Bull",
+      "description": "Energizante para atletas y más",
+      "actives": 1
+    },
+    {
+      "name": "Monster",
+      "description": "Energizante popular en el mercado",
+      "actives": 6
+    },
+    {
+      "name": "Spotify",
+      "description": "Plataforma de streaming de música",
+      "actives": 6
+    }
+  ]
+}

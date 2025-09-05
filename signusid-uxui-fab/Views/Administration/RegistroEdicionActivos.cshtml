@@ -1,0 +1,2145 @@
+@using AspnetCoreMvcFull.Models.Mensajes
+@{
+    ViewBag.Title = "Registro y Edición de Activos";
+}
+
+
+<head>
+
+    <!-- Select2 CSS -->
+
+
+    <!-- Select2 JS (después de jQuery) -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <link rel="stylesheet" href="~/css/registroEdicion.css" />
+
+
+
+
+
+</head>
+
+<h4 style="color:#606060" class="mb-4">
+    Registro y Edición de Activos
+</h4>
+
+<div class="card p-4 shadow-sm">
+
+
+
+    <form method="post" asp-action="RegistroActivos" asp-controller="Administration">
+        <input type="hidden" id="EstadoFormulario" name="EstadoFormulario" value="Insertar" />
+
+
+        <input id="activoGuid" type="hidden" name="IdActivo" />
+
+        <div class="p-3 rounded mb-4" style="border: 1px solid #d6d6d6;">
+            <!-- Fila 1: Búsqueda -->
+            <div class="row mb-3 align-items-end">
+                <div class="col-md-3">
+                    <label style="color:#606060" class="form-label">Buscar activos</label>
+                    <select id="selectBusquedaActivo" class="form-select select-light">
+                        <option style="color:#C6C6C6" selected disabled>Seleccione su búsqueda</option>
+                        <option value="numeroActivo">Número de Activo</option>
+                        <option value="numeroEtiqueta">Número de Etiqueta</option>
+                    </select>
+                </div>
+
+                <div class="col-md-6">
+                    <input id="busqueda" type="text" class="form-control" placeholder="..." />
+                </div>
+
+
+                <div class="col-md-3 d-flex justify-content-end gap-2">
+                    <button type="submit" name="accion" value="buscar" class="btn btn-orange w-auto px-4" style="min-width: 100px;">
+                        Buscar
+                    </button>
+
+                    <a href="#" id="activoInactivo"
+                       class="btn btn-outline-custom text-center"
+                       style="color: #00A5B8; background-color: white; border: 1px solid transparent; min-width: 100px;">
+                        <span id="estadoTexto">Inactivo</span>
+                    </a>
+
+                    <input type="hidden" id="Estado_Activo" name="Estado_Activo" value="0" />
+                </div>
+
+            </div>
+
+            <div class="custom-divider mb-3"></div>
+
+            <style>
+                .custom-divider {
+                    border-top: 1px solid #ddd;
+                    margin-top: 10px; /* Aumenta espacio superior */
+                    margin-bottom: 20px; /* Conserva espacio inferior */
+                }
+            </style>
+
+
+            <!-- Fila 2 -->
+            <div class="row mb-3">
+                <div class="col-12 col-md-3 d-flex gap-2">
+                    <div style="flex: 1;">
+                        <label class="form-label" style="color:#606060; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Número de Activo</label>
+                        <input id="numeroActivo" name="NumeroActivo" type="text" class="form-control" value="@ViewBag.SiguienteNumeroActivo" />
+                        <div id="numeroActivoError" class="text-danger" style="font-size: 0.85em;"></div>
+                    </div>
+                    <div style="flex: 1;">
+                        <label class="form-label" style="color:#606060; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Número de Etiquetas*</label>
+                        <input id="numeroEtiqueta" name="NumeroEtiqueta" type="text" class="form-control" />
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-3 d-flex gap-2">
+                    <div style="flex: 0 0 30px; display: flex; align-items: center; padding-top: 1.8rem;">
+                        <input type="checkbox" id="checkCopiarNumero" class="form-check-input" />
+                    </div>
+
+                    <div style="flex: 1;">
+                        <label style="color:#606060" class="form-label">Descripción Corta</label>
+                        <input id="descripcionCorta" name="DescripcionCorta" type="text" class="form-control" />
+                        <div id="descripcionCortaError" class="text-danger" style="font-size: 0.85em;"></div>
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-6">
+                    <label style="color:#606060" class="form-label">Descripción Larga</label>
+                    <input id="descripcionLarga" name="DescripcionLarga" type="text" class="form-control" />
+                    <div id="descripcionLargaError" class="text-danger" style="font-size: 0.85em;"></div>
+                </div>
+            </div>
+
+
+            <script>
+                document.addEventListener("DOMContentLoaded", function () {
+                    const chk = document.getElementById("checkCopiarNumero");
+                    const numeroActivo = document.getElementById("numeroActivo");
+                    const numeroEtiqueta = document.getElementById("numeroEtiqueta");
+
+                    chk.addEventListener("change", function () {
+                        if (chk.checked) {
+                            numeroEtiqueta.value = numeroActivo.value;
+                        } else {
+                            numeroEtiqueta.value = "";
+                        }
+                    });
+
+                    numeroActivo.addEventListener("input", function () {
+                        if (chk.checked) {
+                            numeroEtiqueta.value = numeroActivo.value;
+                        }
+                    });
+                });
+            </script>
+
+
+
+            <!-- Fila 3 -->
+            <div class="row mb-3">
+                <div class="col-md-3">
+                    <label style="color:#606060" class="form-label">Categoría*</label>
+                    <select id="selectCategoria" name="Categoria" class="form-select select-light">
+                        <option value="">Seleccione un elemento</option>
+                    </select>
+                </div>
+                <div class="col-md-9">
+                    <label class="form-label">Descripción de Categoría</label>
+                    <input id="descripcionCategoria" type="text" class="form-control" readonly />
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-3">
+                    <label style="color:#606060" class="form-label">Estado*</label>
+                    <select id="selectEstado" name="Estado" class="form-select select-light">
+                        <option>Seleccione un elemento</option>
+                    </select>
+                </div>
+                <div class="col-md-9">
+                    <label style="color:#606060" class="form-label">Descripción de Estado</label>
+                    <input id="descripcionEstado" type="text" class="form-control" />
+                </div>
+            </div>
+
+            <!-- Fila 4 -->
+            <div class="row mb-3">
+                <div class="col-md-3">
+                    <label style="color:#606060" class="form-label">Empresa*</label>
+                    <select id="selectEmpresa" name="Empresa" class="form-select select-light">
+                        <option>Seleccione un elemento</option>
+                    </select>
+                </div>
+
+                <div class="col-md-9 d-flex gap-2">
+                    <div style="flex: 1;">
+                        <label style="color:#606060" class="form-label">Marca</label>
+                        <select id="selectMarca" name="Marca" class="form-select select-light">
+                            <option value="">Seleccione un elemento</option>
+                        </select>
+                    </div>
+
+                    <div style="flex: 1;">
+                        <label style="color:#606060" class="form-label">Modelo</label>
+                        <select id="selectModelo" name="Modelo" class="form-select select-light">
+                            <option value="">Seleccione un elemento</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="p-3 rounded mb-4" style="border: 1px solid #d6d6d6;">
+            <!-- Fila 5 -->
+            <div class="row mb-3">
+                <div class="col-md-3">
+                    <label style="color:#606060" class="form-label">Número de Factura</label>
+                    <input id="numeroFactura" name="NumeroFactura" type="text" class="form-control" />
+                </div>
+                <div class="col-md-3">
+                    <label style="color:#606060" class="form-label">Costo</label>
+                    <div class="input-group">
+                        <span class="input-group-text" id="monedaSimbolo">₡</span>
+                        <input id="costo" name="Costo" type="text"
+                               class="form-control" aria-describedby="monedaSimbolo"
+                               value="@ViewBag.Costo" />
+
+                    </div>
+                    <div id="costoError" class="text-danger" style="font-size: 0.85em;"></div>
+                </div>
+
+
+                <div class="col-md-3">
+                    <label style="color:#606060" class="form-label">Color</label>
+                    <select id="color" name="Color" class="form-select">
+                        <option disabled selected value="">Seleccione un color</option>
+                        <option value="Negro">Negro</option>
+                        <option value="Blanco">Blanco</option>
+                        <option value="Gris">Gris</option>
+                        <option value="Rojo">Rojo</option>
+                        <option value="Azul">Azul</option>
+                        <option value="Verde">Verde</option>
+                        <option value="Amarillo">Amarillo</option>
+                        <option value="Anaranjado">Anaranjado</option>
+                        <option value="Beige">Beige</option>
+                        <option value="Plateado">Plateado</option>
+                        <option value="Dorado">Dorado</option>
+                        <option value="Café">Café</option>
+                    </select>
+                </div>
+
+
+                <div class="col-md-3">
+                    <label style="color:#606060" class="form-label">Fecha de compra</label>
+                    <div class="d-flex align-items-center gap-2">
+                        <input type="text" class="form-control" id="fechaCompra" name="FechaCompra" placeholder="mm/dd/yy" readonly />
+                        <button class="btn btn-outline-orange" type="button" id="btnCalendario">
+                            <img src="@Url.Content("~/img/calendario_icono.svg")" alt="Calendario" width="20" height="20" />
+                        </button>
+                    </div>
+
+                    <div id="fechaCompraError" class="text-danger" style="font-size: 0.85em;"></div>
+                </div>
+            </div>
+
+            <!-- Fila 6 -->
+            <div class="row mb-3">
+                <div class="col-md-3">
+                    <label style="color:#606060" class="form-label">Fecha de Capitalización</label>
+                    <div class="d-flex align-items-center gap-2">
+                        <input type="text" class="form-control" id="fechaCapitalizacion" name="FechaCapitalizacion" placeholder="mm/dd/yy" readonly />
+                        <button class="btn btn-outline-orange" type="button" id="btnCalendario2">
+                            <img src="@Url.Content("~/img/calendario_icono.svg")" style="filter: brightness(0) invert(1);" alt="Calendario" width="20" height="20" />
+
+                        </button>
+                    </div>
+                    <div id="fechaCapitalizacionError" class="text-danger" style="font-size: 0.85em;"></div>
+                </div>
+                <div class="col-md-3">
+                    <label style="color:#606060" class="form-label">Valor Residual</label>
+                    <input id="valorResidual" name="ValorResidual" type="text" class="form-control" />
+                    <div id="valorResidualError" class="text-danger" style="font-size: 0.85em;"></div>
+                </div>
+                <div class="col-md-3">
+                    <label style="color:#606060" class="form-label">Documentos Asociados</label><br />
+                    <button type="button" id="btnDocAsoc1" class="btn btn-sm me-1" style="background-color: #dddddd; color: transparent; border: none;">
+                        PDF
+                    </button>
+
+
+                    <button type="button" id="btnDocAsoc2" class="btn btn-sm" style="background-color: #dddddd; color: transparent; border: none;">
+                        DOC
+                    </button>
+
+                    <input type="hidden" id="tipoDoc" name="tipoDoc" />
+
+
+                </div>
+                <div class="col-md-3">
+                    <label style="color:#606060" class="form-label">Fotos del Activo</label><br />
+                    <div class="d-flex">
+                        @for (int i = 1; i <= 5; i++)
+                        {
+                            <div id="foto@(i)" class="foto-preview border p-1 me-2"
+                                 data-slot="@i"
+                                 style="width: 65px; height: 40px; border-radius: 5px; cursor: pointer; background-color: #dddddd;">
+                            </div>
+                        }
+                    </div>
+
+                    <input type="hidden" name="Fotos" id="Fotos" />
+                </div>
+
+ @*                <div class="col-md-3">
+                    <label class="form-label">Fotos del Activo</label><br />
+                    <div class="d-flex">
+                        <div id="foto1" class="border p-1 bg-light me-5" style="width: 65px; height: 40px; border-radius: 5px;"></div>
+                        <div id="foto2" class="border p-1 bg-light me-5" style="width: 65px; height: 40px; border-radius: 5px;"></div>
+                        <div id="foto3" class="border p-1 bg-light me-5" style="width: 65px; height: 40px; border-radius: 5px;"></div>
+                        <div id="foto4" class="border p-1 bg-light me-5" style="width: 65px; height: 40px; border-radius: 5px;"></div>
+                        <div id="foto5" class="border p-1 bg-light" style="width: 65px; height: 40px; border-radius: 5px;"></div>
+                    </div>
+                    <input type="hidden" name="Fotos" id="Fotos" />
+                </div> *@
+
+            </div>
+
+            <!-- Fila 7 -->
+            <div class="row mb-3">
+                <div class="col-md-3">
+                    <label style="color:#606060" class="form-label">Número de parte del Fabricante del Activo</label>
+                    <input id="numParteFabricante" name="NumeroParteFabricante" type="text" class="form-control" />
+                </div>
+                <div class="col-md-2">
+                    <div class="form-check mt-4">
+                        <input class="form-check-input" type="checkbox" id="checkDepreciado" />
+                        <label style="color:#606060" class="form-check-label" for="depreciado">Depreciado</label>
+                    </div>
+                    <!-- Campo oculto que sí se envía al controlador -->
+                    <input type="hidden" id="depreciadoValue" name="Depreciado" value="No depreciado" />
+                </div>
+                <div class="col-md-7">
+                    <label style="color:#606060" class="form-label">Descripción</label>
+                    <input id="descripcionDepreciado" name="DescripcionDepreciado" type="text" class="form-control" />
+                </div>
+            </div>
+
+            <!-- Fila 8 -->
+            <div class="row mb-3">
+                <div class="col-md-3">
+                    <label style="color:#606060" class="form-label">Años de Vida Útil</label>
+                    <input id="anosVidaUtil" name="AnosVidaUtil" type="number" class="form-control" />
+                </div>
+
+                <div class="col-md-9 d-flex gap-2">
+                    <div style="flex: 1;">
+                        <label style="color:#606060" class="form-label">Cuenta contable Depreciación</label>
+                        <select id="selectCuentaContableDepreciacion" name="CuentaContableDepresiacion" class="form-select select-light">
+                            <option>Seleccione un elemento</option>
+                        </select>
+                    </div>
+
+                    <div style="flex: 1;">
+                        <label style="color:#606060" class="form-label">Centro de Costo</label>
+                        <select id="selectCentroCosto" name="CentroCostos" class="form-select select-light">
+                            <option>Seleccione un elemento</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+       
+        <div class="p-3 rounded mb-4" style="border: 1px solid #d6d6d6;">
+            <!-- Fila 9 -->
+            <div class="row mb-3">
+                <div class="col-md-7">
+                    <label style="color:#606060" class="form-label">Descripción Estado de Último Inventario</label>
+                    <input id="descripcionEstadoUltimoInventario" name="DescripcionEstadoUltimoInventario" type="text" class="form-control" />
+                </div>
+                <div class="col-md-5">
+                    <label style="color:#606060" class="form-label">Tag/ECP</label>
+                    <input id="TagEPC" name="TagEPC" type="text" value="Sin Asignar" class="form-control" />
+                </div>
+            </div>
+
+            <!-- Fila 10: Ubicaciones y Empleado -->
+            <div class="row mb-3">
+                <div class="col-md-3">
+                    <label style="color:#606060" class="form-label">Empleado</label>
+                    <select id="selectEmpleado" name="Empleado" style="width: 100%;">
+                        <option>Seleccione un elemento</option>
+                    </select>
+
+
+                </div>
+                <div class="col-md-3">
+                    <label style="color:#606060" class="form-label">Ubicación A</label>
+                    <select id="selectUbicacionA" name="UbicacionA" class="form-select select-light">
+                        <option>Seleccione un elemento</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label style="color:#606060" class="form-label">Ubicación B</label>
+                    <select id="selectUbicacionB" name="UbicacionB" class="form-select select-light">
+                        <option>Seleccione un elemento</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label style="color:#606060" class="form-label">Fecha de Garantía</label>
+                    <div class="d-flex align-items-center gap-2">
+                        <input type="text" class="form-control" name="FechaGarantia" id="fechaGarantia" placeholder="mm/dd/yy" readonly />
+                        <button class="btn btn-outline-orange" type="button" id="btnCalendario3">
+                            <img src="@Url.Content("~/img/calendario_icono.svg")" alt="Calendario" width="20" height="20" />
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-3">
+                    <label style="color:#606060" class="form-label">Ubicación C</label>
+                    <select id="selectUbicacionC" name="UbicacionC" class="form-select select-light">
+                        <option>Seleccione un elemento</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label style="color:#606060" class="form-label">Ubicación D</label>
+                    <select id="selectUbicacionD" name="UbicacionD" class="form-select select-light">
+                        <option>Seleccione un elemento</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label style="color:#606060" class="form-label">Ubicación Secundaria</label>
+                    <select id="selectUbicacionSecundaria" name="UbicacionSecundaria" class="form-select select-light">
+                        <option>Seleccione un elemento</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label style="color:#606060" class="form-label">Número de Serie</label>
+                    <input id="numeroSerie" name="NumeroSerie" type="text" class="form-control" />
+                </div>
+            </div>
+
+            <!-- Fila 12: Observaciones -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <label style="color:#606060" class="form-label">Tamaño/Medida</label>
+                    <div class="input-group">
+                        <input id="tamanioMedida" name="TamanioMedida" type="text" class="form-control" aria-describedby="unidadMedida" />
+                        <span class="input-group-text" id="unidadMedida">cm</span>
+                    </div>
+                </div>
+
+
+                <div class="col-md-9">
+                    <label style="color:#606060" class="form-label">Observaciones</label>
+                    <input id="observaciones" name="Observaciones" type="text" class="form-control select-light" />
+                </div>
+            </div>
+        </div>
+
+        <!-- Botones -->
+        <div class="row">
+            <div class="col-md-12 text-center">
+                <button type="submit" name="accion" value="guardar" class="btn btn-orange me-2">Guardar</button>
+
+             <button type="button" id="btnBorrar" class="btn btn-secondary">Borrar</button>
+
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Modal de confirmación -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Confirmar eliminación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="deleteModalBody">
+                <!-- Este texto se actualizará dinámicamente -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <a id="confirmDeleteBtn" class="btn btn-danger d-none" href="#">Borrar</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalDocumento" tabindex="-1" aria-labelledby="modalDocumentoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form id="formDocumento" enctype="multipart/form-data">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalDocumentoLabel">Documento Asociado</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                 
+                    <input type="file" required id="archivoDocumento" name="archivoDocumento" class="form-control" accept=".pdf,.doc,.docx" />
+                    <br />
+                    <div id="visorDocumento"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Subir</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+<div class="modal fade" id="modalSubirFoto" tabindex="-1" aria-labelledby="modalSubirFotoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+
+        <div class="modal-content">
+            <form id="formSubirFoto" enctype="multipart/form-data">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalSubirFotoLabel">Foto Asociada</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="file" name="fotoArchivo" id="fotoArchivo" accept="image/*" class="form-control" required />
+                    <br />
+                    <div id="visorFoto" class="d-flex justify-content-center">
+                        <img id="previewFoto" src="" alt="Previsualización"
+                             style="max-height: 400px; max-width: 100%; border: 1px solid #ddd; border-radius: 8px; object-fit: contain;" />
+                        <div id="mensajeNoFoto" class="text-muted mt-2" style="display: none;">Imagen no encontrada</div>
+                    </div>
+                    <input type="hidden" id="slotSeleccionado" name="slotSeleccionado" />
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Subir</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Confirmación -->
+<div class="modal fade" id="modalConfirmarEnvio" tabindex="-1" aria-labelledby="modalConfirmarEnvioLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title" id="modalConfirmarEnvioLabel">Campos incompletos</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                No se han completado todos los campos, ¿Desea continuar con el envío?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="cancelarEnvio">No, completar</button>
+                <button type="button" class="btn btn-primary" id="confirmarEnvio">Sí, enviar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    form input {
+        color: #606060;
+        border: 1px solid #C6C6C6;
+    }
+    
+
+</style>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        try {
+            const region = new Intl.DateTimeFormat().resolvedOptions().locale;
+
+            // Algunos mapeos comunes
+            const unidadPorRegion = {
+                "US": "in",
+                "GB": "in",
+                "LR": "in",
+                "MM": "in", // Myanmar
+
+                // Resto del mundo, sistema métrico
+                "default": "cm"
+            };
+
+            let codigoPais = region.split("-")[1] || "default";
+            let unidad = unidadPorRegion[codigoPais] || unidadPorRegion["default"];
+
+            document.getElementById("unidadMedida").textContent = unidad;
+        } catch (e) {
+            console.warn("No se pudo determinar la región, se usará cm por defecto.");
+        }
+    });
+</script>
+
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        try {
+            const moneda = new Intl.NumberFormat(navigator.language, {
+                style: "currency",
+                currencyDisplay: "symbol",
+                currency: "USD" // valor por defecto si falla
+            }).resolvedOptions().currency;
+
+            // Mapeo personalizado si querés cambiar ciertos países a otras monedas
+            const mapaMonedas = {
+                "CRC": "₡",
+                "USD": "$",
+                "EUR": "€",
+                "GBP": "£",
+                "JPY": "¥"
+                // Agregá más si querés
+            };
+
+            const simbolo = mapaMonedas[moneda] || "$"; // Fallback
+
+            document.getElementById("monedaSimbolo").textContent = simbolo;
+        } catch (error) {
+            console.warn("No se pudo detectar la moneda, se usará $ por defecto.");
+        }
+    });
+</script>
+
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // Solo números enteros - numeroActivo
+        document.getElementById("numeroActivo").addEventListener("keydown", function (e) {
+            const tecla = e.key;
+
+            if (
+                tecla === "Backspace" ||
+                tecla === "Tab" ||
+                tecla === "ArrowLeft" ||
+                tecla === "ArrowRight" ||
+                tecla === "Delete"
+            ) return;
+
+            if (!/^\d$/.test(tecla)) {
+                e.preventDefault();
+            }
+        });
+
+        // Solo números y un punto - costo
+        document.getElementById("costo").addEventListener("keydown", function (e) {
+            const tecla = e.key;
+
+            if (
+                tecla === "Backspace" ||
+                tecla === "Tab" ||
+                tecla === "ArrowLeft" ||
+                tecla === "ArrowRight" ||
+                tecla === "Delete"
+            ) return;
+
+            if (tecla === "." && this.value.includes(".")) {
+                e.preventDefault();
+                return;
+            }
+
+            if (!/^\d$/.test(tecla) && tecla !== ".") {
+                e.preventDefault();
+            }
+        });
+
+        // Solo números y un punto - valorResidual
+        document.getElementById("valorResidual").addEventListener("keydown", function (e) {
+            const tecla = e.key;
+
+            if (
+                tecla === "Backspace" ||
+                tecla === "Tab" ||
+                tecla === "ArrowLeft" ||
+                tecla === "ArrowRight" ||
+                tecla === "Delete"
+            ) return;
+
+            if (tecla === "." && this.value.includes(".")) {
+                e.preventDefault();
+                return;
+            }
+
+            if (!/^\d$/.test(tecla) && tecla !== ".") {
+                e.preventDefault();
+            }
+        });
+    });
+</script>
+
+
+
+
+<script>
+    document.getElementById("btnBorrar").addEventListener("click", function () {
+        // Establece el valor de EstadoFormulario como "Insertar"
+        document.getElementById("EstadoFormulario").value = "Insertar";
+
+        // Redirige al método RegistroEdicionActivos del controlador Administration
+        window.location.href = '@Url.Action("RegistroEdicionActivos", "Administration")';
+    });
+</script>
+
+
+<script>
+    function calcularValorResidual() {
+        const costoInput = document.getElementById('costo');
+        const vidaUtilInput = document.getElementById('anosVidaUtil');
+        const valorResidualInput = document.getElementById('valorResidual');
+
+        const costo = parseFloat(costoInput.value.replace(',', '.'));
+        const vidaUtil = parseFloat(vidaUtilInput.value.replace(',', '.'));
+
+        if (!isNaN(costo) && costo > 0 && !isNaN(vidaUtil) && vidaUtil > 0) {
+            const depreciacionAnual = costo / vidaUtil;
+            const valorResidual = costo - depreciacionAnual;
+            valorResidualInput.value = valorResidual.toFixed(2);
+
+            // ✅ Forzar actualización del checkbox después del cálculo
+            actualizarDepreciado();
+        } else {
+            valorResidualInput.value = 0;
+            actualizarDepreciado(); // también aquí por si lo deja en blanco
+        }
+    }
+
+    document.getElementById('costo').addEventListener('input', calcularValorResidual);
+    document.getElementById('anosVidaUtil').addEventListener('input', calcularValorResidual);
+</script>
+
+
+
+<script>
+    let formularioPendiente = null;
+
+    document.querySelector('form').addEventListener('submit', function (e) {
+        const accion = document.activeElement.value;
+
+        if (accion === 'buscar') {
+            e.preventDefault();
+            return;
+        }
+
+        let hasError = false;
+
+        const requiredFields = [
+            { id: 'numeroActivo', name: 'Número de Activo' },
+            { id: 'descripcionLarga', name: 'Descripción Larga' },
+            { id: 'fechaCompra', name: 'Fecha de Compra' }
+        ];
+
+        requiredFields.forEach(field => {
+            const input = document.getElementById(field.id);
+            const errorDiv = document.getElementById(field.id + 'Error');
+
+            if (!input.value.trim()) {
+                errorDiv.textContent = `Requerido*`;
+                hasError = true;
+            } else {
+                errorDiv.textContent = '';
+            }
+
+        });
+
+        if (hasError) {
+            e.preventDefault();
+            return;
+        }
+
+        const allFieldsIds = [
+            'numeroActivo', 'numeroEtiqueta', 'descripcionCorta', 'descripcionLarga',
+            'selectCategoria', 'descripcionCategoria', 'selectEstado', 'descripcionEstado',
+            'selectEmpresa', 'selectMarca', 'selectModelo', 'numeroFactura', 'costo',
+            'color', 'fechaCompra', 'fechaCapitalizacion', 'valorResidual',
+            'numParteFabricante', 'descripcionDepreciado',
+            'anosVidaUtil', 'selectCuentaContableDepreciacion', 'selectCentroCosto',
+            'descripcionEstadoUltimoInventario', 'TagEPC', 'selectEmpleado', 'selectUbicacionA',
+            'selectUbicacionB', 'fechaGarantia', 'selectUbicacionC', 'selectUbicacionD',
+            'selectUbicacionSecundaria', 'numeroSerie', 'tamanioMedida', 'observaciones'
+        ];
+
+        const vacios = allFieldsIds.filter(id => {
+            const el = document.getElementById(id);
+            if (!el) return false;
+            if (el.type === 'checkbox') return !el.checked;
+            return !el.value.trim();
+        });
+
+        if (vacios.length > 0) {
+            e.preventDefault();
+            formularioPendiente = this;
+            const modal = new bootstrap.Modal(document.getElementById('modalConfirmarEnvio'));
+            modal.show();
+        }
+    });
+
+    document.getElementById('confirmarEnvio').addEventListener('click', function () {
+        if (formularioPendiente) {
+            const modal = bootstrap.Modal.getInstance(document.getElementById('modalConfirmarEnvio'));
+            modal.hide();
+            formularioPendiente.submit();
+        }
+    });
+
+    document.getElementById('cancelarEnvio').addEventListener('click', function () {
+        const modal = bootstrap.Modal.getInstance(document.getElementById('modalConfirmarEnvio'));
+        modal.hide();
+    });
+</script>
+
+
+@{
+    AlertMessage? alertMessage = null;
+
+    if (TempData["Alert"] is string alertJson)
+    {
+        try
+        {
+            alertMessage = System.Text.Json.JsonSerializer.Deserialize<AlertMessage>(alertJson);
+            TempData.Remove("Alert");
+        }
+        catch { alertMessage = null; }
+    }
+}
+
+@if (alertMessage != null)
+{
+    var jsonAlert = Json.Serialize(alertMessage); // serializa para usarlo en JS
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            var alertData = @Html.Raw(jsonAlert);
+            console.log("SCRIPT DE ALERTA ACTIVADO");
+            console.log(alertData);
+
+            var deleteModal = document.getElementById('deleteModal');
+            var deleteModalLabel = document.getElementById('deleteModalLabel');
+            var deleteModalBody = document.getElementById('deleteModalBody');
+            var confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+            var modalHeader = deleteModal.querySelector('.modal-header');
+
+            deleteModalLabel.textContent = (alertData.tipo.toLowerCase() === "success") ? "Éxito" : "Error";
+            deleteModalBody.innerHTML = alertData.mensaje;
+
+            // Aplicar colores por defecto según tipo
+            if (alertData.tipo.toLowerCase() === "success") {
+                modalHeader.style.backgroundColor = "transparent";
+                deleteModalLabel.style.color = "#606060";
+            } else {
+                modalHeader.style.backgroundColor = "#FF5100";
+                deleteModalLabel.style.color = "white";
+            }
+
+            confirmDeleteBtn.classList.add('d-none');
+
+            var modal = new bootstrap.Modal(deleteModal);
+            modal.show();
+
+            deleteModal.addEventListener('hidden.bs.modal', function () {
+                history.replaceState(null, '', window.location.pathname);
+            });
+        });
+    </script>
+
+}
+
+<style>
+    /* body {
+        background-color: #FFE2DA;
+
+    } */
+
+
+    .btn-orange {
+        background-color: #FF5100;
+        color: white;
+    }
+
+        .btn-orange:hover {
+            background-color: #e46b0f;
+            color: white;
+        }
+
+    .btn-outline-orange {
+        background-color: #FF5100;
+        color: white;
+        border: none;
+        transition: background-color 0.2s ease, color 0.2s ease;
+    }
+
+        .btn-outline-orange:hover {
+            border: 1px solid #FFA45B;
+            color: white;
+            background-color: #FFA45B;
+        }
+
+
+    .select-light {
+        background-color: #eeeeee;
+    }
+
+    h4{
+      color: #353535;
+    }
+
+    
+</style>
+<script>
+    const baseVerFoto = '@Url.Action("VerFotoPorRuta", "Administration")';
+
+              function cargarFotosActivo() {
+        const idActivo = document.getElementById("activoGuid").value;
+        if (!idActivo) return;
+
+        const urlObtener = '@Url.Action("ObtenerFotosActivo", "Administration")' + `?idActivo=${idActivo}`;
+
+        fetch(urlObtener)
+            .then(res => res.json())
+            .then(data => {
+                const slotsConFoto = new Set();
+
+                data.forEach(foto => {
+                    const div = document.getElementById(`foto${foto.slot}`);
+                    if (div) {
+                        div.style.backgroundColor = "#dddddd"; // ✅ Tiene foto
+                        slotsConFoto.add(foto.slot);
+                    }
+                });
+
+                // Asignar gris claro a los slots sin foto
+                for (let i = 1; i <= 5; i++) {
+                    if (!slotsConFoto.has(i)) {
+                        const div = document.getElementById(`foto${i}`);
+                        if (div) {
+                            div.style.backgroundColor = "#f2f2f2"; // ✅ No tiene foto
+                        }
+                    }
+                }
+            })
+            .catch(err => {
+                console.error("Error cargando fotos:", err);
+            });
+    }
+
+
+
+</script>
+
+<script>
+    document.getElementById('modalSubirFoto').addEventListener('hidden.bs.modal', function () {
+        // Remover backdrop si queda
+        const backdrops = document.querySelectorAll('.modal-backdrop');
+        backdrops.forEach(b => b.remove());
+
+        // Limpiar clase del body que bloquea el scroll
+        document.body.classList.remove('modal-open');
+        document.body.style = ''; // por si queda overflow: hidden
+
+        // También eliminá el padding-right que Bootstrap a veces agrega
+        document.body.style.paddingRight = null;
+    });
+
+        document.querySelectorAll('.modal').forEach(function(modal) {
+        modal.addEventListener('hidden.bs.modal', function () {
+            document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+            document.body.classList.remove('modal-open');
+            document.body.style = '';
+        });
+    });
+
+
+</script>
+
+<link href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const picker = flatpickr("#fechaCompra", {
+            dateFormat: "Y-m-d"
+        });
+
+        document.getElementById('btnCalendario').addEventListener('click', function () {
+            picker.open();
+        });
+    });
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const picker = flatpickr("#fechaCapitalizacion", {
+            dateFormat: "Y-m-d"
+        });
+
+        document.getElementById('btnCalendario2').addEventListener('click', function () {
+            picker.open();
+        });
+    });
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const picker = flatpickr("#fechaGarantia", {
+            dateFormat: "Y-m-d"
+        });
+
+        document.getElementById('btnCalendario3').addEventListener('click', function () {
+            picker.open();
+        });
+    });
+</script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        document.querySelector('form').addEventListener('submit', function (e)  {
+            const accion = document.activeElement.value;
+
+            if (accion === 'buscar') {
+                e.preventDefault();
+                return;
+            }
+
+            let hasError = false;
+
+            // ✅ Validar campos obligatorios
+            const fields = [
+                { id: 'numeroActivo', name: 'Número de Activo' },
+                { id: 'descripcionLarga', name: 'Descripción Larga' },
+                { id: 'fechaCompra', name: 'Fecha de Compra' }
+            ];
+
+            fields.forEach(field => {
+                const input = document.getElementById(field.id);
+                const errorDiv = document.getElementById(field.id + 'Error');
+
+                if (!input.value.trim()) {
+                    errorDiv.textContent = `Requerido*`;
+                    hasError = true;
+                } else {
+                    errorDiv.textContent = '';
+                }
+            });
+
+            // ✅ Limitar longitud de descripciones
+            const descripcionCorta = document.getElementById('descripcionCorta');
+            const descripcionCortaError = document.getElementById('descripcionCortaError');
+
+            if (descripcionCorta && descripcionCorta.value.length > 40) {
+                descripcionCortaError.textContent = 'Máximo 40 caracteres.';
+                hasError = true;
+            } else if (descripcionCortaError) {
+                descripcionCortaError.textContent = '';
+            }
+
+            const descripcionLarga = document.getElementById('descripcionLarga');
+            const descripcionLargaError = document.getElementById('descripcionLargaError');
+
+            if (descripcionLarga && descripcionLarga.value.length > 80) {
+                descripcionLargaError.textContent = 'Máximo 80 caracteres.';
+                hasError = true;
+            } else if (descripcionLargaError && descripcionLarga.value.trim()) {
+                descripcionLargaError.textContent = '';
+            }
+
+            // ✅ Validar fechas
+            const hoy = new Date();
+            hoy.setHours(0, 0, 0, 0);
+
+            const fechaCompra = document.getElementById('fechaCompra');
+            const fechaCapitalizacion = document.getElementById('fechaCapitalizacion');
+            const fechaCompraError = document.getElementById('fechaCompraError');
+            const fechaCapitalizacionError = document.getElementById('fechaCapitalizacionError');
+
+            const validarFecha = (input, errorDiv) => {
+                if (!input.value.trim()) return;
+
+                const valor = new Date(input.value);
+                valor.setHours(0, 0, 0, 0);
+
+                if (valor > hoy) {
+                    errorDiv.textContent = 'No puede ser mayor a hoy.';
+                    hasError = true;
+                } else {
+                    errorDiv.textContent = '';
+                }
+            };
+
+            if (fechaCompra && fechaCompraError) validarFecha(fechaCompra, fechaCompraError);
+            if (fechaCapitalizacion && fechaCapitalizacionError) validarFecha(fechaCapitalizacion, fechaCapitalizacionError);
+
+            // ✅ Validar número de activo (solo enteros)
+            const numeroActivo = document.getElementById('numeroActivo');
+            const numeroActivoError = document.getElementById('numeroActivoError');
+
+            if (numeroActivo && !/^\d+$/.test(numeroActivo.value.trim())) {
+                numeroActivoError.textContent = 'Solo se permiten números enteros.';
+                hasError = true;
+            } else if (numeroActivoError && numeroActivo.value.trim()) {
+                numeroActivoError.textContent = '';
+            }
+
+            // ✅ Validar decimales para costo y valorResidual
+            const validarDecimal = (valor) => {
+                const normalizado = valor.replace(',', '.');
+                return !isNaN(normalizado) && isFinite(normalizado);
+            };
+
+            const costo = document.getElementById('costo');
+            const costoError = document.getElementById('costoError');
+
+            if (costo && !validarDecimal(costo.value.trim())) {
+                costoError.textContent = 'Debe ser un número válido.';
+                hasError = true;
+            } else if (costoError) {
+                costoError.textContent = '';
+            }
+
+            const valorResidual = document.getElementById('valorResidual');
+            const valorResidualError = document.getElementById('valorResidualError');
+
+            if (valorResidual && !validarDecimal(valorResidual.value.trim())) {
+                valorResidualError.textContent = 'Debe ser un número válido.';
+                hasError = true;
+            } else if (valorResidualError) {
+                valorResidualError.textContent = '';
+            }
+
+            // ✅ Cancelar si hay errores
+            if (hasError) {
+                e.preventDefault();
+                return;
+            }
+
+            // ✅ Asignar fecha de hoy si no se eligieron
+            const hoyFormateado = new Date().toLocaleDateString('en-US'); // mm/dd/yyyy
+            const fechaGarantia = document.getElementById('fechaGarantia');
+
+            if (fechaCapitalizacion && !fechaCapitalizacion.value.trim()) {
+                fechaCapitalizacion.value = hoyFormateado;
+            }
+
+            if (fechaGarantia && !fechaGarantia.value.trim()) {
+                fechaGarantia.value = hoyFormateado;
+            }
+
+            // ✅ Normalizar valores decimales
+            if (costo && costo.value.trim()) {
+                costo.value = costo.value.replace(',', '.');
+            }
+
+            if (valorResidual && valorResidual.value.trim()) {
+                valorResidual.value = valorResidual.value.replace(',', '.').toFixed(2);
+            }
+        });
+    });
+</script>
+
+
+
+
+
+
+
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // Cargar empresas desde el backend
+        fetch('@Url.Content("~/Administration/ObtenerEmpresas")')
+            .then(response => response.json())
+            .then(data => {
+                const select = document.getElementById('selectEmpresa');
+                data.forEach(item => {
+                    const option = document.createElement('option');
+                    option.value = item.id;
+                    option.textContent = item.nombre;
+                    select.appendChild(option);
+                });
+            });
+    });
+</script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // Cargar marcas desde el backend
+        fetch('@Url.Content("~/Administration/ObtenerMarcas")')
+            .then(response => response.json())
+            .then(data => {
+                const select = document.getElementById('selectMarca');
+                data.forEach(item => {
+                    const option = document.createElement('option');
+                    option.value = item.id;
+                    option.textContent = item.nombre;
+                    select.appendChild(option);
+                });
+            });
+    });
+</script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        fetch('@Url.Content("~/Administration/ObtenerCuentasContables")')
+            .then(response => response.json())
+            .then(data => {
+                const select = document.getElementById('selectCuentaContableDepreciacion');
+                data.forEach(item => {
+                    const option = document.createElement('option');
+                    option.value = item.id;
+                    option.textContent = item.nombre;
+                    select.appendChild(option);
+                });
+            });
+    });
+</script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        fetch('@Url.Content("~/Administration/ObtenerCentrosCostos")')
+            .then(response => response.json())
+            .then(data => {
+                const select = document.getElementById('selectCentroCosto');
+                data.forEach(item => {
+                    const option = document.createElement('option');
+                    option.value = item.id;
+                    option.textContent = item.nombre;
+                    select.appendChild(option);
+                });
+            });
+    });
+</script>
+
+
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        fetch('@Url.Content("~/Administration/ObtenerUbicacionesA")')
+            .then(response => response.json())
+            .then(data => {
+                const select = document.getElementById('selectUbicacionA');
+                data.forEach(item => {
+                    const option = document.createElement('option');
+                    option.value = item.id;
+                    option.textContent = item.texto;
+                    select.appendChild(option);
+                });
+            });
+    });
+</script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const selectA = document.getElementById('selectUbicacionA');
+        const selectB = document.getElementById('selectUbicacionB');
+
+        selectA.addEventListener('change', function () {
+            const companyId = this.value;
+
+            // Reset y deshabilita el select B
+            selectB.innerHTML = '<option value="">Seleccione un elemento</option>';
+            //selectB.disabled = true;
+
+            if (companyId) {
+                fetch(`@Url.Content("~/Administration/ObtenerUbicacionesB")?idCompany=${companyId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        data.forEach(item => {
+                            const option = document.createElement('option');
+                            option.value = item.id;
+                            option.textContent = item.texto;
+                            selectB.appendChild(option);
+                        });
+                        //selectB.disabled = false;
+                    });
+            }
+        });
+    });
+</script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const selectA = document.getElementById('selectUbicacionA');
+        const selectB = document.getElementById('selectUbicacionB');
+        const selectC = document.getElementById('selectUbicacionC');
+
+        function cargarUbicacionC() {
+            const companyId = selectA.value;
+            const buildingId = selectB.value;
+
+            // Resetear y desactivar el selectC
+            selectC.innerHTML = '<option value="">Seleccione un elemento</option>';
+           // selectC.disabled = true;
+
+            if (companyId && buildingId) {
+                const url = `@Url.Content("~/Administration/ObtenerUbicacionesC")?idCompany=${companyId}&idBuilding=${buildingId}`;
+
+                fetch(url)
+                    .then(response => response.json())
+                    .then(data => {
+                        data.forEach(item => {
+                            const option = document.createElement('option');
+                            option.value = item.id;
+                            option.textContent = item.texto;
+                            selectC.appendChild(option);
+                        });
+                        //selectC.disabled = false;
+                    });
+            }
+        }
+
+        // Escuchar cambios en A y B para cargar C
+        selectA.addEventListener('change', cargarUbicacionC);
+        selectB.addEventListener('change', cargarUbicacionC);
+    });
+</script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const selectA = document.getElementById('selectUbicacionA');
+        const selectB = document.getElementById('selectUbicacionB');
+        const selectC = document.getElementById('selectUbicacionC');
+        const selectD = document.getElementById('selectUbicacionD');
+
+        function cargarUbicacionD() {
+            const companyId = selectA.value;
+            const buildingId = selectB.value;
+            const floorId = selectC.value;
+
+            // Reset y desactivar selectD
+            selectD.innerHTML = '<option value="">Seleccione un elemento</option>';
+           // selectD.disabled = true;
+
+            if (companyId && buildingId && floorId) {
+                const url = `@Url.Content("~/Administration/ObtenerUbicacionesD")?idCompany=${companyId}&idBuilding=${buildingId}&idFloor=${floorId}`;
+
+                fetch(url)
+                    .then(response => response.json())
+                    .then(data => {
+                        data.forEach(item => {
+                            const option = document.createElement('option');
+                            option.value = item.id;
+                            option.textContent = item.texto;
+                            selectD.appendChild(option);
+                        });
+                      //  selectD.disabled = false;
+                    });
+            }
+        }
+
+        // Escuchar cambios en A, B y C
+        selectA.addEventListener('change', cargarUbicacionD);
+        selectB.addEventListener('change', cargarUbicacionD);
+        selectC.addEventListener('change', cargarUbicacionD);
+    });
+</script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        fetch('@Url.Content("~/Administration/ObtenerUbicacionesSecundarias")')
+            .then(response => response.json())
+            .then(data => {
+                const select = document.getElementById('selectUbicacionSecundaria');
+                data.forEach(item => {
+                    const option = document.createElement('option');
+                    option.value = item.id;
+                    option.textContent = item.texto;
+                    select.appendChild(option);
+                });
+            });
+    });
+</script>
+
+
+
+
+<script>
+    function actualizarDepreciado() {
+        const valorResidualInput = document.getElementById("valorResidual");
+        const checkDepreciado = document.getElementById("checkDepreciado");
+        const depreciadoHidden = document.getElementById("depreciadoValue");
+
+        const valor = parseFloat(valorResidualInput.value.replace(',', '.')) || 0;
+
+        if (valor === 0) {
+            checkDepreciado.checked = true;
+            depreciadoHidden.value = "Depreciado";
+        } else {
+            checkDepreciado.checked = false;
+            depreciadoHidden.value = "No depreciado";
+        }
+    }
+
+
+    document.addEventListener("DOMContentLoaded", function () {
+        const valorResidualInput = document.getElementById("valorResidual");
+        const checkDepreciado = document.getElementById("checkDepreciado");
+        const depreciadoHidden = document.getElementById("depreciadoValue");
+
+        valorResidualInput.addEventListener("input", actualizarDepreciado);
+
+        checkDepreciado.addEventListener("change", function () {
+            depreciadoHidden.value = this.checked ? "Depreciado" : "No depreciado";
+        });
+
+        actualizarDepreciado();
+    });
+</script>
+
+<script>
+    function mostrarModal(tipo, mensaje) {
+        const deleteModal = document.getElementById('deleteModal');
+        const deleteModalLabel = document.getElementById('deleteModalLabel');
+        const deleteModalBody = document.getElementById('deleteModalBody');
+        const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+        const modalHeader = deleteModal.querySelector('.modal-header');
+
+        deleteModalLabel.textContent = (tipo === "success") ? "Éxito" : "Error";
+        deleteModalBody.innerHTML = mensaje;
+
+        // Estilos dinámicos según el tipo
+        if (tipo === "success") {
+            modalHeader.style.backgroundColor = "transparent";
+            deleteModalLabel.style.color = "#606060";
+        } else {
+            modalHeader.style.backgroundColor = "#FF5100";
+            deleteModalLabel.style.color = "white";
+        }
+
+        confirmDeleteBtn.classList.add('d-none');
+
+        const modal = new bootstrap.Modal(deleteModal);
+        modal.show();
+
+        deleteModal.addEventListener('hidden.bs.modal', function () {
+            history.replaceState(null, '', window.location.pathname);
+        });
+    }
+</script>
+
+
+<script>
+    
+
+    function cargarMarcaYModelo(marcaId, modeloId) {
+        // Asignar la marca
+        $('#selectMarca').val(marcaId).trigger('change');
+
+        // Esperar a que los modelos se carguen (puedes usar setTimeout o mejor, una promesa si adaptas el código)
+        setTimeout(function () {
+            $('#selectModelo').val(modeloId);
+        }, 500); // tiempo suficiente para que cargue, ajustable
+    }
+
+    document.querySelector('.btn.btn-orange').addEventListener('click', function () {
+        const tipoBusqueda = document.getElementById('selectBusquedaActivo').value;
+        const valorBusqueda = document.getElementById('busqueda').value;
+
+        if (!tipoBusqueda || !valorBusqueda.trim()) {
+            mostrarModal("error", "Debe seleccionar un tipo de búsqueda y escribir un valor.");
+            return;
+        }
+
+        const url = '@Url.Content("~/Administration/BuscarActivo")' + `?tipo=${tipoBusqueda}&valor=${encodeURIComponent(valorBusqueda)}`;
+
+        fetch(url)
+            .then(response => response.json())
+                .then(data => {
+        console.log("Datos recibidos:", data);
+        if (data && data.idActivo) {
+          document.getElementById('EstadoFormulario').value = 'Editar';
+
+          habilitarBotonesDocumentos();
+
+            document.getElementById('activoGuid').value = data.idActivo ?? '';
+            verificarDocumento(1, "btnDocAsoc1");
+            verificarDocumento(2, "btnDocAsoc2");
+            cargarFotosActivo();
+
+            document.getElementById('numeroActivo').value = data.numeroActivo ?? '';
+            document.getElementById('numeroEtiqueta').value = data.numeroEtiqueta ?? '';
+            document.getElementById('descripcionCorta').value = data.descripcionCorta ?? '';
+            document.getElementById('descripcionLarga').value = data.descripcionLarga ?? '';
+            document.getElementById('selectCategoria').value = data.categoria ?? '';
+            document.getElementById('selectEstado').value = data.estado ?? '';
+            document.getElementById('selectEmpresa').value = data.empresa ?? '';
+
+       
+            cargarMarcaYModelo(data.marca, data.modelo);
+
+            document.getElementById('numeroFactura').value = data.numeroFactura ?? '';
+            document.getElementById('costo').value = data.costo ?? '';
+            document.getElementById('color').value = data.color ?? '';
+            document.getElementById('fechaCompra').value = data.fechaCompra ?? '';
+            document.getElementById('fechaCapitalizacion').value = data.fechaCapitalizacion ?? '';
+            document.getElementById('valorResidual').value = data.valorResidual ?? '';
+            document.getElementById('numParteFabricante').value = data.numeroParteFabricante ?? '';
+            const checkDepreciado = document.getElementById('checkDepreciado');
+    const valorDepreciado = data.depreciado ?? '';
+
+    document.getElementById('depreciadoValue').value = valorDepreciado;
+     //cargarFotosActivo();
+
+    if (valorDepreciado === "Depreciado") {
+        checkDepreciado.checked = true;
+    } else {
+        checkDepreciado.checked = false;
+    }
+
+            document.getElementById('descripcionDepreciado').value = data.descripcionDepreciado ?? '';
+            document.getElementById('anosVidaUtil').value = data.anosVidaUtil ?? '';
+            document.getElementById('selectCuentaContableDepreciacion').value = data.cuentaContableDepresiacion ?? '';
+            document.getElementById('selectCentroCosto').value = data.centroCostos ?? '';
+            document.getElementById('descripcionEstadoUltimoInventario').value = data.descripcionEstadoUltimoInventario ?? '';
+            document.getElementById('TagEPC').value = data.tagEPC ?? '';
+            $('#selectEmpleado').val(data.empleado ?? '').trigger('change');
+
+             document.getElementById('selectEmpleado').value = data.empleado ?? '';
+            document.getElementById('selectUbicacionA').value = data.ubicacionA ?? '';
+            document.getElementById('selectUbicacionB').value = data.ubicacionB ?? '';
+            document.getElementById('fechaGarantia').value = data.fechaGarantia ?? '';
+            document.getElementById('selectUbicacionC').value = data.ubicacionC ?? '';
+            document.getElementById('selectUbicacionD').value = data.ubicacionD ?? '';
+            document.getElementById('selectUbicacionSecundaria').value = data.ubicacionSecundaria ?? '';
+            document.getElementById('numeroSerie').value = data.numeroSerie ?? '';
+            document.getElementById('tamanioMedida').value = data.tamanioMedida ?? '';
+            document.getElementById('observaciones').value = data.observaciones ?? '';
+            document.getElementById('Estado_Activo').value = data.estado_Activo ?? '0';
+            actualizarVisual(); 
+
+            cargarUbicaciones(data.ubicacionA, data.ubicacionB, data.ubicacionC, data.ubicacionD);
+
+
+            $('#selectCategoria').trigger('change');
+            $('#selectEstado').trigger('change');
+
+
+        } else {
+         mostrarModal("error", "Activo no encontrado.");
+        }
+    })
+
+            .catch(error => {
+                console.error('Error al buscar activo:', error);
+          mostrarModal("error", "Ocurrió un error al buscar el activo.");
+            });
+    });
+
+
+</script>
+<script>
+      function verificarDocumento(tipo, botonId) {
+        const idActivo = document.getElementById("activoGuid").value;
+        if (!idActivo) return;
+
+        const url = '@Url.Action("ObtenerDocumentoActivo", "Administration")';
+
+        fetch(`${url}?id=${idActivo}&tipo=${tipo}`)
+            .then(response => response.json())
+            .then(data => {
+                const boton = document.getElementById(botonId);
+                boton.style.backgroundColor = data.success ? "#dddddd" : "#f2f2f2";
+            })
+            .catch(err => console.error("Error al verificar documento:", err));
+    }
+
+</script>
+<script>
+    function actualizarVisual() {
+        const botonEstado = document.getElementById("activoInactivo");
+        const hiddenEstado = document.getElementById("Estado_Activo");
+
+        const estado = hiddenEstado.value;
+
+        if (estado === "1") {
+            botonEstado.textContent = "Activo";
+            botonEstado.style.color = "#898989";
+        } else {
+            botonEstado.textContent = "Inactivo";
+            botonEstado.style.color = "#45bdcb";
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        const botonEstado = document.getElementById("activoInactivo");
+        const hiddenEstado = document.getElementById("Estado_Activo");
+
+        botonEstado.addEventListener("click", function (e) {
+            e.preventDefault();
+            hiddenEstado.value = hiddenEstado.value === "0" ? "1" : "0";
+            actualizarVisual();
+        });
+
+        actualizarVisual(); // Estado inicial
+    });
+</script>
+
+<script>
+    async function cargarUbicaciones(ubicacionA, ubicacionB, ubicacionC, ubicacionD) {
+        const selectA = document.getElementById('selectUbicacionA');
+        const selectB = document.getElementById('selectUbicacionB');
+        const selectC = document.getElementById('selectUbicacionC');
+        const selectD = document.getElementById('selectUbicacionD');
+
+        // Asignar A y cargar B
+        selectA.value = ubicacionA;
+        await fetch(`@Url.Content("~/Administration/ObtenerUbicacionesB")?idCompany=${ubicacionA}`)
+            .then(response => response.json())
+            .then(data => {
+                selectB.innerHTML = '<option value="">Seleccione un elemento</option>';
+                data.forEach(item => {
+                    const option = document.createElement('option');
+                    option.value = item.id;
+                    option.textContent = item.texto;
+                    selectB.appendChild(option);
+                });
+                selectB.value = ubicacionB;
+            });
+
+        // Cargar C
+        await fetch(`@Url.Content("~/Administration/ObtenerUbicacionesC")?idCompany=${ubicacionA}&idBuilding=${ubicacionB}`)
+            .then(response => response.json())
+            .then(data => {
+                selectC.innerHTML = '<option value="">Seleccione un elemento</option>';
+                data.forEach(item => {
+                    const option = document.createElement('option');
+                    option.value = item.id;
+                    option.textContent = item.texto;
+                    selectC.appendChild(option);
+                });
+                selectC.value = ubicacionC;
+            });
+
+        // Cargar D
+        await fetch(`@Url.Content("~/Administration/ObtenerUbicacionesD")?idCompany=${ubicacionA}&idBuilding=${ubicacionB}&idFloor=${ubicacionC}`)
+            .then(response => response.json())
+            .then(data => {
+                selectD.innerHTML = '<option value="">Seleccione un elemento</option>';
+                data.forEach(item => {
+                    const option = document.createElement('option');
+                    option.value = item.id;
+                    option.textContent = item.texto;
+                    selectD.appendChild(option);
+                });
+                selectD.value = ubicacionD;
+            });
+    }
+</script>
+
+<script>
+    document.getElementById("btnDocAsoc1").addEventListener("click", function () {
+        document.getElementById("tipoDoc").value = "1";
+        cargarDocumentoExistente(1);
+        new bootstrap.Modal(document.getElementById("modalDocumento")).show();
+    });
+
+    document.getElementById("btnDocAsoc2").addEventListener("click", function () {
+        document.getElementById("tipoDoc").value = "2";
+        cargarDocumentoExistente(2);
+        new bootstrap.Modal(document.getElementById("modalDocumento")).show();
+    });
+
+</script>
+<script>
+    document.getElementById("formDocumento").addEventListener("submit", function (e) {
+        e.preventDefault();
+
+        const archivoInput = document.getElementById("archivoDocumento");
+        const archivo = archivoInput.files[0];
+
+        // Validar que se haya seleccionado un archivo
+        if (!archivo) {
+            mostrarModal("error", "Debe seleccionar un archivo.");
+            return;
+        }
+
+        // Validar tipo de archivo
+        const extensionesPermitidas = [".pdf", ".doc", ".docx"];
+        const nombreArchivo = archivo.name.toLowerCase();
+        const extensionValida = extensionesPermitidas.some(ext => nombreArchivo.endsWith(ext));
+    if (!extensionValida) {
+        const modalEl = document.getElementById("modalDocumento");
+        const modalInstance = bootstrap.Modal.getInstance(modalEl);
+
+        // Esperar a que se cierre el modal para mostrar el mensaje
+        modalEl.addEventListener('hidden.bs.modal', function handler() {
+            mostrarModal("error", "Solo se permiten archivos PDF o Word (.pdf, .doc, .docx).");
+            modalEl.removeEventListener('hidden.bs.modal', handler);
+        });
+
+        modalInstance.hide(); // Cierra el modal
+        archivoInput.value = ""; // Limpia el input
+
+        return;
+    }
+
+
+        // ✅ Si pasa la validación, continuar
+        const formData = new FormData(this);
+        formData.append("idActivo", document.getElementById("activoGuid").value);
+        formData.append("tipoDoc", document.getElementById("tipoDoc").value);
+
+        fetch('@Url.Action("SubirDocumentoActivo", "Administration")', {
+            method: "POST",
+            body: formData
+        })
+        .then(resp => resp.json())
+            .then(data => {
+        const modalEl = document.getElementById("modalDocumento");
+        const modalInstance = bootstrap.Modal.getInstance(modalEl);
+
+        const tipo = document.getElementById("tipoDoc").value; 
+
+        if (data.success) {
+            modalInstance.hide();
+            archivoInput.value = "";
+            document.getElementById("visorDocumento").innerHTML = "";
+            mostrarModal("success", "Documento guardado.");
+
+            // ✅ Actualizar color del botón correspondiente automáticamente
+            if (tipo === "1") verificarDocumento(1, "btnDocAsoc1");
+            else if (tipo === "2") verificarDocumento(2, "btnDocAsoc2");
+        } else {
+            modalInstance.hide();
+            archivoInput.value = "";
+            document.getElementById("visorDocumento").innerHTML = "";
+            mostrarModal("error", "Error al guardar el documento.");
+        }
+    })
+        .catch(err => {
+            const modalEl = document.getElementById("modalDocumento");
+            const modalInstance = bootstrap.Modal.getInstance(modalEl);
+            modalInstance.hide();
+
+            archivoInput.value = "";
+            document.getElementById("visorDocumento").innerHTML = "";
+            console.error(err);
+            mostrarModal("error", "El documento está dañado.");
+        });
+    });
+</script>
+
+
+<script>
+    const verDocumentoUrl = '@Url.Action("VerDocumento", "Administration")';
+
+    function cargarDocumentoExistente(tipo) {
+        const idActivo = document.getElementById("activoGuid").value;
+        if (!idActivo) {
+            document.getElementById("visorDocumento").innerHTML = "<p>Activo no válido.</p>";
+            return;
+        }
+
+        fetch(`@Url.Action("ObtenerDocumentoActivo", "Administration")?id=${idActivo}&tipo=${tipo}`)
+            .then(response => response.json())
+            .then(data => {
+                const visor = document.getElementById("visorDocumento");
+
+                if (data.success && data.url) {
+                    const extension = data.url.split('.').pop().toLowerCase();
+                    const urlDocumento = `${verDocumentoUrl}?ruta=${encodeURIComponent(data.url)}`;
+
+                    if (extension === "pdf") {
+                        visor.innerHTML = `<iframe src="${urlDocumento}" width="100%" height="500px" frameborder="0"></iframe>`;
+                    } else if (extension === "doc" || extension === "docx") {
+                        visor.innerHTML = `
+                            <p>Este documento no se puede visualizar directamente aquí.</p>
+                            <a href="${urlDocumento}" target="_blank" class="btn btn-outline-primary">Descargar documento</a>`;
+                    } else {
+                        visor.innerHTML = "<p>Tipo de documento no soportado para vista previa.</p>";
+                    }
+                } else {
+                    visor.innerHTML = "<p>No hay documento asociado</p>";
+                }
+            })
+            .catch(error => {
+                console.error("Error al cargar documento:", error);
+                document.getElementById("visorDocumento").innerHTML = "<p>Error al cargar el documento.</p>";
+            });
+    }
+</script>
+
+<script>
+    // document.addEventListener("DOMContentLoaded", function () {
+    //     const estado = document.getElementById("EstadoFormulario").value;
+    //     if (estado === "Insertar") {
+    //         document.getElementById("btnDocAsoc1").disabled = true;
+    //         document.getElementById("btnDocAsoc2").disabled = true;
+    //     }
+    // });
+
+    function habilitarBotonesDocumentos() {
+        document.getElementById("btnDocAsoc1").disabled = false;
+        document.getElementById("btnDocAsoc2").disabled = false;
+    }
+
+
+
+
+</script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+
+        const modalElemento = document.getElementById("modalDocumento");
+        const instanciaModal = new bootstrap.Modal(modalElemento);
+
+        document.getElementById("btnDocAsoc1").addEventListener("click", function () {
+            const estado = document.getElementById("EstadoFormulario").value;
+
+            if (estado !== "Editar") {
+                mostrarModal("error", "Solo puede gestionar documentos en modo edición.");
+                return;
+            }
+
+            document.getElementById("tipoDoc").value = "1";
+            cargarDocumentoExistente(1);
+            instanciaModal.show();
+        });
+
+        document.getElementById("btnDocAsoc2").addEventListener("click", function () {
+            const estado = document.getElementById("EstadoFormulario").value;
+
+            if (estado !== "Editar") {
+                mostrarModal("error", "Solo puede gestionar documentos en modo edición.");
+                return;
+            }
+
+            document.getElementById("tipoDoc").value = "2";
+            cargarDocumentoExistente(2);
+            instanciaModal.show();
+        });
+
+        // 🔒 Evitar que se abra manualmente o por error
+        modalElemento.addEventListener('show.bs.modal', function (event) {
+            const estado = document.getElementById("EstadoFormulario").value;
+            if (estado !== "Editar") {
+                event.preventDefault();
+            }
+        });
+    });
+</script>
+
+
+
+
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // Asignar evento a cada div para abrir modal
+        document.querySelectorAll(".foto-preview").forEach(function (div) {
+            div.addEventListener("click", function () {
+                const slot = this.getAttribute("data-slot");
+                document.getElementById("slotSeleccionado").value = slot;
+                const estado = document.getElementById("EstadoFormulario").value;
+
+                if (estado === "Editar") {
+                    const modal = new bootstrap.Modal(document.getElementById("modalSubirFoto"));
+                    modal.show();
+                } else {
+                         mostrarModal("error", "Solo puede subir las fotos en modo edición.");
+                }
+            });
+        });
+
+            // Enviar foto al backend
+    document.getElementById("formSubirFoto").addEventListener("submit", function (e) {
+        e.preventDefault();
+
+        const idActivo = document.getElementById("activoGuid").value;
+        const slot = document.getElementById("slotSeleccionado").value;
+        const archivoInput = document.getElementById("fotoArchivo");
+        const archivo = archivoInput.files[0];
+
+        if (!idActivo) {
+            mostrarModal("error", "Debe guardar el activo antes de subir fotos.");
+            return;
+        }
+
+        if (!archivo) {
+            mostrarModal("error", "Debe seleccionar una foto.");
+            return;
+        }
+
+        // ✅ Validación de extensión de imagen
+        const extensionesPermitidas = [".jpg", ".jpeg"];
+        const nombreArchivo = archivo.name.toLowerCase();
+        const extensionValida = extensionesPermitidas.some(ext => nombreArchivo.endsWith(ext));
+
+        if (!extensionValida) {
+            const modalEl = document.getElementById("modalSubirFoto");
+            const modalInstance = bootstrap.Modal.getInstance(modalEl);
+
+            modalEl.addEventListener("hidden.bs.modal", function handler() {
+                mostrarModal("error", "Solo se permiten imágenes JPG o JPEG.");
+                modalEl.removeEventListener("hidden.bs.modal", handler);
+            });
+
+            modalInstance.hide();
+            archivoInput.value = "";
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append("archivoFoto", archivo); // Nombre esperado por el backend
+        formData.append("tipoDoc", slot);        // Número del slot
+        formData.append("idActivo", idActivo);   // ID del activo
+
+        fetch('@Url.Action("SubirFotoActivo", "Administration")', {
+            method: 'POST',
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            try {
+                if (data.success) {
+                    mostrarModal("success", "Foto subida correctamente.");
+                    archivoInput.value = "";
+
+                    const divFoto = document.getElementById(`foto${slot}`);
+                    if (divFoto) {
+                      divFoto.style.backgroundColor = "#dddddd"; // ✅ Color de slot con foto
+                    }
+
+
+                    else {
+                        console.warn(`No se encontró el div foto${slot}`);
+                    }
+                } else {
+                    mostrarModal("error", "No se pudo subir la foto.");
+                    archivoInput.value = "";
+                }
+            } catch (error) {
+                console.error("Error al procesar la respuesta:", error);
+                archivoInput.value = "";
+            }
+        })
+        .catch(err => {
+            console.error("Error al enviar la solicitud:", err);
+            mostrarModal("error", "Error al subir la foto.");
+            archivoInput.value = "";
+        });
+
+        bootstrap.Modal.getInstance(document.getElementById("modalSubirFoto")).hide();
+    });
+
+    });
+</script>
+
+<script>
+    // Parte Razor procesada en el servidor, al cargar la página
+    const baseUrlVerFoto = '@Url.Action("VerFotoExistente", "Administration")';
+
+    document.addEventListener("DOMContentLoaded", function () {
+        document.querySelectorAll(".foto-preview").forEach(function (div) {
+            div.addEventListener("click", function () {
+                const slot = this.getAttribute("data-slot");
+                document.getElementById("slotSeleccionado").value = slot;
+                const estado = document.getElementById("EstadoFormulario").value;
+                const idActivo = document.getElementById("activoGuid").value;
+
+                const preview = document.getElementById("previewFoto");
+                const mensaje = document.getElementById("mensajeNoFoto");
+
+                if (estado !== "Editar") {
+                    mostrarModal("error", "Solo puede subir fotos en modo edición.");
+                    return;
+                }
+
+                // URL final armada en JS con parámetros
+                const url = `${baseUrlVerFoto}?idActivo=${idActivo}&slot=${slot}`;
+
+                fetch(url)
+                    .then(response => {
+                        if (!response.ok) throw new Error("No encontrada");
+                        return response.blob();
+                    })
+                    .then(blob => {
+                        const urlBlob = URL.createObjectURL(blob);
+                        preview.src = urlBlob;
+                        preview.style.display = "block";
+                        mensaje.style.display = "none";
+                    })
+                    .catch(() => {
+                        preview.src = "";
+                        preview.style.display = "none";
+                        mensaje.style.display = "block";
+                    });
+
+                const modal = new bootstrap.Modal(document.getElementById("modalSubirFoto"));
+                modal.show();
+            });
+        });
+    });
+</script>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script>
+    $.getScript("https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js", function () {
+        $('head').append('<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />');
+
+        // Estilos visuales para que Select2 parezca un form-select Bootstrap
+          const select2CustomStyle = `
+    <style>
+        /* Estilo del contenedor principal */
+        #selectEmpleado.select2-hidden-accessible + .select2-container--default .select2-selection--single {
+            background-color: #eeeeee !important;
+            border: 1px solid #d1d0d4 !important;
+            border-radius: 6px !important;
+            height: 38px !important;
+            padding: 6px 14px !important;
+            font-size: 15px !important;
+            font-family: "Public Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif !important;
+            color: #606060 !important;
+            box-sizing: border-box !important;
+            display: flex !important;
+            align-items: center !important;
+        }
+
+        /* Texto renderizado (placeholder y valor) */
+        #selectEmpleado.select2-hidden-accessible + .select2-container--default .select2-selection--single .select2-selection__rendered {
+            color: #606060 !important;
+            font-size: 15px !important;
+            line-height: 24px !important;
+            padding-left: 0 !important;
+        }
+
+        /* Flechita */
+        #selectEmpleado.select2-hidden-accessible + .select2-container--default .select2-selection__arrow {
+            height: 38px !important;
+            top: 0 !important;
+            right: 10px !important;
+            width: 20px !important;
+        }
+
+        /* Al hacer focus */
+        #selectEmpleado.select2-hidden-accessible + .select2-container--default.select2-container--focus .select2-selection--single {
+            border-color: #b3b3b3 !important;
+            box-shadow: none !important;
+        }
+
+        /* Opciones del dropdown */
+        .select2-dropdown {
+            background-color: #ffffff;
+            color: #606060;
+            font-size: 15px;
+            border: 1px solid #d1d0d4;
+        }
+
+        .select2-results__option--highlighted {
+            background-color: #e0e0e0;
+            color: #000;
+        }
+    </style>
+    `;
+    $('head').append(select2CustomStyle);
+
+
+
+
+
+
+        $(document).ready(function () {
+            fetch('@Url.Content("~/Administration/ObtenerEmpleados")')
+                .then(res => res.json())
+                .then(data => {
+                    const $select = $('#selectEmpleado');
+                    $select.empty().append('<option></option>');
+
+                    data.forEach(item => {
+                        const option = new Option(item.nombre, item.id, false, false);
+                        $select.append(option);
+                    });
+
+                    $select.select2({
+                        placeholder: "Seleccione un empleado",
+                        allowClear: true,
+                        width: '100%'
+                    });
+                });
+        });
+    });
+</script>
+
+
+
+
+<script>
+    $(document).ready(function () {
+        // Cargar categorías desde el backend
+        $.getJSON('@Url.Content("~/Administration/ObtenerCategorias")', function (data) {
+            data.forEach(function (item) {
+                $('#selectCategoria').append(
+                    $('<option>', {
+                        value: item.id,
+                        text: item.nombre,
+                        'data-descripcion': item.descripcion
+                    })
+                );
+            });
+        });
+
+        // Mostrar descripción al seleccionar
+        $('#selectCategoria').on('change', function () {
+            var descripcion = $('option:selected', this).data('descripcion') || '';
+            $('#descripcionCategoria').val(descripcion);
+        });
+    });
+</script>
+<script>
+    $(document).ready(function () {
+        // Cargar estados desde el servidor
+        $.getJSON('@Url.Content("~/Administration/ObtenerEstados")', function (data) {
+            data.forEach(function (item) {
+                $('#selectEstado').append(
+                    $('<option>', {
+                        value: item.id,
+                        text: item.nombre,
+                        'data-descripcion': item.descripcion
+                    })
+                );
+            });
+        });
+
+        // Mostrar descripción cuando se cambia el estado
+        $('#selectEstado').on('change', function () {
+            var descripcion = $('option:selected', this).data('descripcion') || '';
+            $('#descripcionEstado').val(descripcion);
+        });
+    });
+</script>
+
+<script>
+    $(document).ready(function () {
+        // Cargar marcas
+        $.getJSON('@Url.Content("~/Administration/ObtenerMarcas")', function (data) {
+            data.forEach(function (item) {
+                $('#selectMarca').append(
+                    $('<option>', {
+                        value: item.id,
+                        text: item.nombre
+                    })
+                );
+            });
+        });
+
+        // Cuando se seleccione una marca, cargar los modelos correspondientes
+        $('#selectMarca').on('change', function () {
+            const marcaId = $(this).val();
+            const $selectModelo = $('#selectModelo');
+
+            // Resetear y deshabilitar mientras carga
+            $selectModelo.html('<option value="">Seleccione un elemento</option>');
+            // $selectModelo.prop('disabled', true); // Descomenta si quieres deshabilitarlo mientras carga
+
+            if (marcaId) {
+                $.getJSON(`@Url.Content("~/Administration/ObtenerModelosPorMarca")?idMarca=${marcaId}`, function (data) {
+                    data.forEach(function (item) {
+                        $selectModelo.append(
+                            $('<option>', {
+                                value: item.id,
+                                text: item.nombre
+                            })
+                        );
+                    });
+                    $selectModelo.prop('disabled', false);
+                });
+            }
+        });
+    });
+</script>

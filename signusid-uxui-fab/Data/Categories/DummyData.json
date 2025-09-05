@@ -1,0 +1,39 @@
+{
+  "Categories": [
+    {
+      "name": "Terrenos",
+      "description": "Aquellos terrenos que posea la empresa,donde se encuentren o no la fábrica, oficina, bodega, etc.",
+      "actives": 2
+    },
+    {
+      "name": "Construcciones",
+      "description": "Inmuebles en general que son propiedad de la organización, como edificios, naves, pisos o locales.",
+      "actives": 0
+    },
+    {
+      "name": "Maquinaria",
+      "description": "Máquinas, vehículos industriales y herramientas destinadas a la producción de bienes o servicios.",
+      "actives": 4
+    },
+    {
+      "name": "Mobiliario",
+      "description": "Todas las estanterías, mesas, sillas, mostradores y demás muebles que posee la empresa.",
+      "actives": 6
+    },
+    {
+      "name": "Equipos Electrónicos",
+      "description": "Compuesto por ordenadores, impresoras, escáner y demás aparatos electrónicos.",
+      "actives": 10
+    },
+    {
+      "name": "Transporte",
+      "description": "Medios de transporte de la compañía, como coches, camiones, motos, barcos, aviones, etc.",
+      "actives": 0
+    },
+    {
+      "name": "Otros",
+      "description": "Aquellos bienes que no se puedan incluir dentro de ninguna de las categorías anteriores.",
+      "actives": 0
+    }
+  ]
+}

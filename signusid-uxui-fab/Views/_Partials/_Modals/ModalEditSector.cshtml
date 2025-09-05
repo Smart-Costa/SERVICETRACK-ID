@@ -1,0 +1,285 @@
+<!-- Edit Sector Modal:
+En este form se el ingreso y edición de edificios.
+-->
+<!-- Edit Sector Modal -->
+<div class="modal fade" id="editSectorModal" data-context="new" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-simple modal-dialog-centered modal-add-new-role">
+        <div class="modal-content">
+            <div class="modal-body" style="padding: 0 !important; margin-top: -20px; margin-bottom:-10px;">
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="margin-top: 15px;"></button>
+                <div class="text-center mb-6">
+                    <h4 class="role-title mb-2" style="margin-top: 15px">Editar @ViewBag.NombreUbicacion</h4>
+                </div>
+
+                <form id="editSectorForm" class="row g-1" asp-action="EditarSector" asp-controller="Empresa" method="post" style="row-gap: 4px; margin-bottom: 0;">
+
+                    <input type="hidden" id="floorSysId" name="floorSysId" class="form-control input2" />
+
+                    <!-- Seleccionar empresa -->
+                    <div class="col-12" style="margin-bottom: 4px;">
+                        <label class="form-label" for="companySelect2" style="margin-bottom: 2px;">Nombre @ViewBag.NombreUbicacionA</label>
+                        <select id="companySelect2" name="companySysId" class="form-select" style="background-color:#C6C6C6" required>
+                            <option value="">Cargando edificios...</option>
+                        </select>
+                    </div>
+
+                    <!-- Seleccionar piso -->
+                    <div class="col-12" style="margin-bottom: 4px;">
+                        <label class="form-label" for="pisoSelect2" style="margin-bottom: 2px;">Nombre @ViewBag.NombreUbicacionB</label>
+                        <select id="pisoSelect2" name="buildingSysId" class="form-select" style="background-color:#C6C6C6" required>
+                            <option value="">Cargando pisos...</option>
+                        </select>
+                    </div>
+
+                    <!-- Nombre sector -->
+                    <div class="col-12" style="margin-bottom: 4px;">
+                        <label class="form-label" for="nameEd" style="margin-bottom: 2px;">Nombre @ViewBag.NombreUbicacion</label>
+                        <input type="text" id="nameEd" name="name" class="form-control input2" placeholder="Ingrese el nombre del sector" required />
+                        <div id="stateNameErrorEd" class="error-message2"></div>
+                    </div>
+
+                    <!-- Descripción -->
+                    <div class="col-12" style="margin-bottom: 4px;">
+                        <label class="form-label" for="descriptionEd" style="margin-bottom: 2px;">Descripción</label>
+                        <textarea id="descriptionEd" name="description" class="form-control input2" placeholder="Ingrese una breve descripción del sector" rows="4" required style="height: 70px; resize: none;"></textarea>
+                        <div id="stateDescriptionErrorEd" class="error-message2"></div>
+                    </div>
+
+                    <div id="addingNamesErrorEd" class="error-message3"></div>
+
+                    <!-- Botones -->
+                    <div class="col-12 d-flex justify-content-center gap-2 mt-0" style="margin-bottom: 0;">
+                        <button type="submit" class="btn btn-primary" id="editSectorButton" style="margin-top:-10px; margin-bottom: 10px">
+                            Editar
+                        </button>
+                        <button type="button" class="btn btn-secondary" id="cancelButton" style="margin-top:-10px; margin-bottom: 10px" data-bs-dismiss="modal">
+                            Cancelar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Estilos -->
+<style>
+    .error-message2 {
+        color: red;
+        font-size: 0.875rem;
+        margin-top: 5px;
+    }
+
+    .error-message3 {
+        color: red;
+        font-size: 0.875rem;
+        text-align: center;
+        margin-top: 5px;
+    }
+
+    .input2 {
+        margin-bottom: 10px;
+    }
+</style>
+
+<!-- #endregion -->
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+
+          // Obtener los botones de editar y el modal
+       const editButtons = document.querySelectorAll(".btn-edit");
+    const modal = new bootstrap.Modal(document.getElementById("editSectorModal"));
+
+    editButtons.forEach(button => {
+        button.addEventListener("click", function () {
+            const floorSysId = this.getAttribute("data-id");
+            const sectorName = this.getAttribute("data-name");
+            const description = this.getAttribute("data-description");
+            const edificioId = this.getAttribute("data-id-edificio");
+            const edificioNombre = this.getAttribute("data-name-edificio");
+            const pisoId = this.getAttribute("data-id-piso");
+            const pisoNombre = this.getAttribute("data-name-piso");
+
+            // Llenar los campos del formulario
+            document.getElementById("floorSysId").value = floorSysId;
+            document.getElementById("nameEd").value = sectorName;
+            document.getElementById("descriptionEd").value = description;
+
+             setTimeout(() => {
+                const companySelect = document.getElementById("companySelect2");
+                if (companySelect) {
+                    let optionFound = false;
+                    for (let option of companySelect.options) {
+                        console.log("Comparando opción:", option.textContent.trim(), "con", edificioNombre.trim());
+                        if (option.textContent.split(' - ')[0].trim() === edificioNombre.trim()) {
+
+                            option.selected = true;
+                            optionFound = true;
+                            break;
+                        }
+                    }
+                    if (!optionFound) {
+                        console.warn("No se encontró la opción en el select para:", edificioNombre);
+                    }
+                }
+            }, 100); // Retraso de 100 ms para esperar a que se carguen las opciones
+
+            setTimeout(() => {
+                const pisoSelect = document.getElementById("pisoSelect2");
+                if (pisoSelect) {
+                    let optionFound = false;
+                    for (let option of pisoSelect.options) {
+                        console.log("Comparando opción:", option.textContent.trim(), "con", pisoNombre.trim());
+                        if (option.textContent.split(' - ')[0].trim() === pisoNombre.trim()) {
+
+                            option.selected = true;
+                            optionFound = true;
+                            break;
+                        }
+                    }
+                    if (!optionFound) {
+                        console.warn("No se encontró la opción en el select para:", pisoNombre);
+                    }
+                }
+            }, 100); // Retraso de 100 ms para esperar a que se carguen las opciones
+
+            // // Seleccionar edificio
+            // const companySelect = document.getElementById("companySelect2");
+            // if (companySelect) {
+            //     for (let option of companySelect.options) {
+            //         if (option.value === edificioId) {
+            //             option.selected = true;
+            //             break;
+            //         }
+            //     }
+            // }
+
+            // Seleccionar piso
+            // const pisoSelect = document.getElementById("pisoSelect2");
+            // if (pisoSelect) {
+            //     for (let option of pisoSelect.options) {
+            //         if (option.value === pisoId) {
+            //             option.selected = true;
+            //             break;
+            //         }
+            //     }
+            // }
+
+            // Mostrar el modal
+            modal.show();
+        });
+    });
+
+    // Asegurar que los errores se limpian al abrir el modal
+    document.getElementById("editSectorModal").addEventListener("show.bs.modal", function () {
+        document.getElementById("stateNameErrorEd").textContent = "";
+        document.getElementById("stateDescriptionErrorEd").textContent = "";
+        document.getElementById("addingNamesErrorEd").textContent = "";
+    });
+
+    // Esto asegura que los campos se limpien si cierras el modal
+    modal._element.addEventListener("hidden.bs.modal", function () {
+        document.getElementById("editSectorForm").reset();
+        console.log("Formulario de edición reseteado");
+    });
+
+
+
+
+
+
+
+
+
+        const form = document.getElementById("editSectorForm");
+        const cancelButton = document.getElementById("cancelButton");
+        //const modal = document.getElementById("editSectorModal");
+        const nameInput = document.getElementById("nameEd");
+        const descriptionInput = document.getElementById("descriptionEd");
+        const companySelect = document.getElementById("companySelect2");
+        const pisoSelect = document.getElementById("pisoSelect2");
+
+        const nameErrorDiv = document.getElementById("stateNameErrorEd");
+        const descriptionErrorDiv = document.getElementById("stateDescriptionErrorEd");
+        const addingNamesErrorDiv = document.getElementById("addingNamesErrorEd");
+
+        const companyErrorDiv = document.createElement("div");
+        const pisoErrorDiv = document.createElement("div");
+
+        companyErrorDiv.classList.add("error-message2");
+        pisoErrorDiv.classList.add("error-message2");
+
+        companySelect.parentNode.appendChild(companyErrorDiv);
+        pisoSelect.parentNode.appendChild(pisoErrorDiv);
+
+        function resetForm() {
+            form.reset();
+            nameErrorDiv.textContent = "";
+            descriptionErrorDiv.textContent = "";
+            companyErrorDiv.textContent = "";
+            pisoErrorDiv.textContent = "";
+            addingNamesErrorDiv.textContent = "";
+        }
+
+        modal.addEventListener("hidden.bs.modal", resetForm);
+
+        cancelButton.addEventListener("click", function () {
+            resetForm();
+            const bsModal = bootstrap.Modal.getInstance(modal);
+            if (bsModal) bsModal.hide();
+        });
+
+        form.addEventListener("submit", function (e) {
+            e.preventDefault();
+
+            const nameValue = nameInput.value.trim();
+            const descriptionValue = descriptionInput.value.trim();
+            const companyValue = companySelect.value;
+            const pisoValue = pisoSelect.value;
+
+            nameErrorDiv.textContent = "";
+            descriptionErrorDiv.textContent = "";
+            companyErrorDiv.textContent = "";
+            pisoErrorDiv.textContent = "";
+            addingNamesErrorDiv.textContent = "";
+
+            let isValid = true;
+
+            if (!nameValue || nameValue.length < 3 || nameValue.length > 50) {
+                nameErrorDiv.textContent = "El nombre debe tener entre 3 y 50 caracteres.";
+                isValid = false;
+            }
+
+            if (!descriptionValue || descriptionValue.length < 3 || descriptionValue.length > 150) {
+                descriptionErrorDiv.textContent = "La descripción debe tener entre 3 y 150 caracteres.";
+                isValid = false;
+            }
+
+            if (!companyValue || companyValue === "") {
+                companyErrorDiv.textContent = "Debe seleccionar un edificio válido.";
+                isValid = false;
+            }
+
+            if (!pisoValue || pisoValue === "") {
+                pisoErrorDiv.textContent = "Debe seleccionar un piso válido.";
+                isValid = false;
+            }
+
+            if (isValid) {
+                form.submit();
+            }
+        });
+
+        nameInput.addEventListener("input", () => nameErrorDiv.textContent = "");
+        descriptionInput.addEventListener("input", () => descriptionErrorDiv.textContent = "");
+        companySelect.addEventListener("change", () => companyErrorDiv.textContent = "");
+        pisoSelect.addEventListener("change", () => pisoErrorDiv.textContent = "");
+    });
+
+
+</script>
+
+
+
+
+<!--/ Add Edificios Modal -->

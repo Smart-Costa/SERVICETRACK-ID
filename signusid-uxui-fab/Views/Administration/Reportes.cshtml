@@ -1,0 +1,294 @@
+@using AspnetCoreMvcFull.Models.Mensajes
+@{
+    ViewData["Title"] = "Reportes";
+}
+
+<head>
+@*     <link rel="stylesheet" href="~/css/reportes.css" /> *@
+</head>
+
+<div class="card" style="padding: 5px 2rem 2rem 2rem;">
+
+    <h4 class="mb-4" style="color:#606060;">Reportes</h4>
+    <div class="row p-3 rounded mb-4" style="border: 1px solid #d6d6d6;">
+        <!-- Card 2: Activos Nuevos -->
+        <div style="display:none;" class="col-md-4 mb-4">
+            <div class="card shadow-sm d-flex flex-row align-items-start p-3" style="border-radius: 8px; min-height: 120px;">
+                <div style="min-width: 100px; height: 100px; background-color: #00A5B8; border-radius: 8px;
+                    display: flex; align-items: center; justify-content: center;
+                    box-shadow: 0 2px 6px rgba(0,0,0,0.2);">
+                    <img src="~/img/Activos Nuevos_icono_.svg" alt="Ícono de activos nuevos" class="img-fluid" style="width: 70%; height: 70%;">
+                </div>
+                <div class="ms-3 flex-grow-1 d-flex flex-column justify-content-between" style="min-height: 100px;">
+                    <div>
+                        <h6 class="mb-1">Activos Nuevos</h6>
+                        <p class="text-muted small mb-1">Este reporte permite mostrar con filtros todos los activos nuevos.</p>
+                    </div>
+                    <div class="text-end">
+                        <a href="@Url.Action("rep_ActivosNuevos", "Reportes")" class="btn btn-sm" style="background-color: #FF5100; color: white; border-radius: 6px;">Abrir</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 7: Activos Levantados -->
+        <div style="display:none;" class="col-md-4 mb-4">
+            <div class="card shadow-sm d-flex flex-row align-items-start p-3" style="border-radius: 8px; min-height: 120px;">
+                <div style="min-width: 100px; height: 100px; background-color: #00A5B8; border-radius: 8px;
+                    display: flex; align-items: center; justify-content: center;
+                    box-shadow: 0 2px 6px rgba(0,0,0,0.2);">
+                    <img src="~/img/Activos Levantados_icono_.svg" alt="Ícono de activos levantados" class="img-fluid" style="width: 70%; height: 70%;">
+                </div>
+                <div class="ms-3 flex-grow-1 d-flex flex-column justify-content-between" style="min-height: 100px;">
+                    <div>
+                        <h6 class="mb-1">Activos Levantados</h6>
+                        <p class="text-muted small mb-1">Este reporte permite mostrar con filtros todos los activos levantados.</p>
+                    </div>
+                    <div class="text-end">
+                        <a href="@Url.Action("rep_ActivosLevantados", "Reportes")" class="btn btn-sm" style="background-color: #FF5100; color: white; border-radius: 6px;">Abrir</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 1: Activos Generales -->
+        <div style="display:none;" class="col-md-4 mb-4">
+            <div class="card shadow-sm d-flex flex-row align-items-start p-3" style="border-radius: 8px; min-height: 120px;">
+                <div style="min-width: 100px; height: 100px; background-color: #00A5B8; border-radius: 8px;
+                    display: flex; align-items: center; justify-content: center;
+                    box-shadow: 0 2px 6px rgba(0,0,0,0.2);">
+                    <img src="~/img/Reportes Generales de Activos_icono_.svg" alt="Ícono de activos generales" class="img-fluid" style="width: 70%; height: 70%;">
+                </div>
+                <div class="ms-3 flex-grow-1 d-flex flex-column justify-content-between" style="min-height: 100px;">
+                    <div>
+                        <h6 class="mb-1">Reportes Generales de Activos</h6>
+                        <p class="text-muted small mb-1">Este reporte permite mostrar con filtros todos los activos.</p>
+                    </div>
+                    <div class="text-end">
+                        <a href="@Url.Action("reporteActivoGeneral", "Reportes")" class="btn btn-sm" style="background-color: #FF5100; color: white; border-radius: 6px;">Abrir</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 6: Activos por Estado -->
+        <div class="col-md-4 mb-4">
+            <div class="card shadow-sm d-flex flex-row align-items-start p-3" style="border-radius: 8px; min-height: 120px;">
+                <div style="min-width: 100px; height: 100px; background-color: #00A5B8; border-radius: 8px;
+                    display: flex; align-items: center; justify-content: center;
+                    box-shadow: 0 2px 6px rgba(0,0,0,0.2);">
+                    <img src="~/img/Activo_por_estado__icono_.svg" alt="Ícono de activos por estado" class="img-fluid" style="width: 70%; height: 70%;">
+                </div>
+                <div class="ms-3 flex-grow-1 d-flex flex-column justify-content-between" style="min-height: 100px;">
+                    <div>
+                        <h6 class="mb-1">Activos por Estado</h6>
+                        <p class="text-muted small mb-1">Este reporte permite mostrar con filtros todos los activos según su estado.</p>
+                    </div>
+                    <div class="text-end">
+                        <a href="@Url.Action("rep_PorEstados", "Reportes")" class="btn btn-sm" style="background-color: #FF5100; color: white; border-radius: 6px;">Abrir</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 3: Activos por Ubicación -->
+        <div class="col-md-4 mb-4">
+            <div class="card shadow-sm d-flex flex-row align-items-start p-3" style="border-radius: 8px; min-height: 120px;">
+                <div style="min-width: 100px; height: 100px; background-color: #00A5B8; border-radius: 8px;
+                    display: flex; align-items: center; justify-content: center;
+                    box-shadow: 0 2px 6px rgba(0,0,0,0.2);">
+                    <img src="~/img/Activo_por_ubicacion___icono_.svg" alt="Ícono de activos por ubicación" class="img-fluid" style="width: 70%; height: 70%;">
+                </div>
+                <div class="ms-3 flex-grow-1 d-flex flex-column justify-content-between" style="min-height: 100px;">
+                    <div>
+                        <h6 class="mb-1">Activos por Ubicaciones</h6>
+                        <p class="text-muted small mb-1">Este reporte permite mostrar con filtros todos los activos por sus ubicaciones.</p>
+                    </div>
+                    <div class="text-end">
+                        <a href="@Url.Action("rep_PorUbicacion", "Reportes")" class="btn btn-sm" style="background-color: #FF5100; color: white; border-radius: 6px;">Abrir</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 5: Activos por Empleado -->
+        <div class="col-md-4 mb-4">
+            <div class="card shadow-sm d-flex flex-row align-items-start p-3" style="border-radius: 8px; min-height: 120px;">
+                <div style="min-width: 100px; height: 100px; background-color: #00A5B8; border-radius: 8px;
+                    display: flex; align-items: center; justify-content: center;
+                    box-shadow: 0 2px 6px rgba(0,0,0,0.2);">
+                    <img src="~/img/Activo_por_empleado__icono__icono_.svg" alt="Ícono de activos por empleado" class="img-fluid" style="width: 70%; height: 70%;">
+                </div>
+                <div class="ms-3 flex-grow-1 d-flex flex-column justify-content-between" style="min-height: 100px;">
+                    <div>
+                        <h6 class="mb-1">Activos por Personas</h6>
+                        <p class="text-muted small mb-1">Este reporte permite mostrar con filtros todos los activos por las personas asignadas.</p>
+                    </div>
+                    <div class="text-end">
+                        <a href="@Url.Action("rep_PorEmpleados", "Reportes")" class="btn btn-sm" style="background-color: #FF5100; color: white; border-radius: 6px;">Abrir</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 13: Activos Retirados con Fotografías -->
+        <div style="display:none;" class="col-md-4 mb-4">
+            <div class="card shadow-sm d-flex flex-row align-items-start p-3" style="border-radius: 8px; min-height: 120px;">
+                <div style="min-width: 100px; height: 100px; background-color: #00A5B8; border-radius: 8px;
+                    display: flex; align-items: center; justify-content: center;
+                    box-shadow: 0 2px 6px rgba(0,0,0,0.2);">
+                    <img src="~/img/Reporte de Activos Retirados con Fotografias_icono_.svg" alt="Ícono de activos retirados con fotografías" class="img-fluid" style="width: 70%; height: 70%;">
+                </div>
+                <div class="ms-3 flex-grow-1 d-flex flex-column justify-content-between" style="min-height: 100px;">
+                    <div>
+                        <h6 class="mb-1">Reporte de Activos Retirados con Fotografías</h6>
+                        <p class="text-muted small mb-1">Este reporte permite mostrar con filtros todos los activos retirados con fotografías</p>
+                    </div>
+                    <div class="text-end">
+                        <a href="@Url.Action("rep_RetiradosConFotografia", "Reportes")" class="btn btn-sm" style="background-color: #FF5100; color: white; border-radius: 6px;">Abrir</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 11: Activos destruidos o donados -->
+        <div style="display:none;" class="col-md-4 mb-4">
+            <div class="card shadow-sm d-flex flex-row align-items-start p-3" style="border-radius: 8px; min-height: 120px;">
+                <div style="min-width: 100px; height: 100px; background-color: #00A5B8; border-radius: 8px;
+                    display: flex; align-items: center; justify-content: center;
+                    box-shadow: 0 2px 6px rgba(0,0,0,0.2);">
+                    <img src="~/img/Reporte de Activos Destruidos o Donados_icono_.svg" alt="Ícono de activos destruidos o donados" class="img-fluid" style="width: 70%; height: 70%;">
+                </div>
+                <div class="ms-3 flex-grow-1 d-flex flex-column justify-content-between" style="min-height: 100px;">
+                    <div>
+                        <h6 class="mb-1">Reporte de Activos Destruidos o Donados.</h6>
+                        <p class="text-muted small mb-1">Este reporte permite mostrar con filtros todos los activos destruidos o donados.</p>
+                    </div>
+                    <div class="text-end">
+                        <a href="@Url.Action("rep_DestruidosDonados", "Reportes")" class="btn btn-sm" style="background-color: #FF5100; color: white; border-radius: 6px;">Abrir</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 9: Permisos de los Activos -->
+        <div style="display:none;" class="col-md-4 mb-4">
+            <div class="card shadow-sm d-flex flex-row align-items-start p-3" style="border-radius: 8px; min-height: 120px;">
+                <div style="min-width: 100px; height: 100px; background-color: #00A5B8; border-radius: 8px;
+                    display: flex; align-items: center; justify-content: center;
+                    box-shadow: 0 2px 6px rgba(0,0,0,0.2);">
+                    <img src="~/img/Permisos_icono_.svg" alt="Ícono de permisos de activos" class="img-fluid" style="width: 70%; height: 70%;">
+                </div>
+                <div class="ms-3 flex-grow-1 d-flex flex-column justify-content-between" style="min-height: 100px;">
+                    <div>
+                        <h6 class="mb-1">Permisos</h6>
+                        <p class="text-muted small mb-1">Este reporte permite mostrar con filtros todos los activos según sus permisos.</p>
+                    </div>
+                    <div class="text-end">
+                        <a href="@Url.Action("rep_Permisos", "Reportes")" class="btn btn-sm" style="background-color: #FF5100; color: white; border-radius: 6px;">Abrir</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 10: Pólizas de los Activos -->
+        <div style="display:none;" class="col-md-4 mb-4">
+            <div class="card shadow-sm d-flex flex-row align-items-start p-3" style="border-radius: 8px; min-height: 120px;">
+                <div style="min-width: 100px; height: 100px; background-color: #00A5B8; border-radius: 8px;
+                    display: flex; align-items: center; justify-content: center;
+                    box-shadow: 0 2px 6px rgba(0,0,0,0.2);">
+                    <img src="~/img/poliza_icono_.svg" alt="Ícono de pólizas de activos" class="img-fluid" style="width: 70%; height: 70%;">
+                </div>
+                <div class="ms-3 flex-grow-1 d-flex flex-column justify-content-between" style="min-height: 100px;">
+                    <div>
+                        <h6 class="mb-1">Póliza</h6>
+                        <p class="text-muted small mb-1">Este reporte permite mostrar con filtros todos los activos según sus pólizas.</p>
+                    </div>
+                    <div class="text-end">
+                        <a href="@Url.Action("rep_PorPolizas", "Reportes")" class="btn btn-sm" style="background-color: #FF5100; color: white; border-radius: 6px;">Abrir</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 12: Tomas Físicas de Inventario -->
+        <div class="col-md-4 mb-4">
+            <div class="card shadow-sm d-flex flex-row align-items-start p-3" style="border-radius: 8px; min-height: 120px;">
+                <div style="min-width: 100px; height: 100px; background-color: #00A5B8; border-radius: 8px;
+                    display: flex; align-items: center; justify-content: center;
+                    box-shadow: 0 2px 6px rgba(0,0,0,0.2);">
+                    <img src="~/img/Tomas Fisicas de Inventario_icono_.svg" alt="Ícono de tomas físicas de inventario" class="img-fluid" style="width: 70%; height: 70%;">
+                </div>
+                <div class="ms-3 flex-grow-1 d-flex flex-column justify-content-between" style="min-height: 100px;">
+                    <div>
+                        <h6 class="mb-1">Tomas Físicas de Inventario</h6>
+                        <p class="text-muted small mb-1">Este reporte permite mostrar con filtros todos los activos según las tomas físicas.</p>
+                    </div>
+                    <div class="text-end">
+                        <a href="@Url.Action("rep_TomasFisicasInventario", "Reportes")" class="btn btn-sm" style="background-color: #FF5100; color: white; border-radius: 6px;">Abrir</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 8: Incidentes de los Activos -->
+        <div class="col-md-4 mb-4">
+            <div class="card shadow-sm d-flex flex-row align-items-start p-3" style="border-radius: 8px; min-height: 120px;">
+                <div style="min-width: 100px; height: 100px; background-color: #00A5B8; border-radius: 8px;
+                    display: flex; align-items: center; justify-content: center;
+                    box-shadow: 0 2px 6px rgba(0,0,0,0.2);">
+                    <img src="~/img/Incidentes de los Activos_icono_.svg" alt="Ícono de incidentes de activos" class="img-fluid" style="width: 70%; height: 70%;">
+                </div>
+                <div class="ms-3 flex-grow-1 d-flex flex-column justify-content-between" style="min-height: 100px;">
+                    <div>
+                        <h6 class="mb-1">Incidente de Activos</h6>
+                        <p class="text-muted small mb-1">Este reporte permite mostrar con filtros todos los activos según sus incidentes.</p>
+                    </div>
+                    <div class="text-end">
+                        <a href="@Url.Action("rep_IncidentesActivos", "Reportes")" class="btn btn-sm" style="background-color: #FF5100; color: white; border-radius: 6px;">Abrir</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 4: Activos por Departamento -->
+        <div style="display:none;" class="col-md-4 mb-4">
+            <div class="card shadow-sm d-flex flex-row align-items-start p-3" style="border-radius: 8px; min-height: 120px;">
+                <div style="min-width: 100px; height: 100px; background-color: #00A5B8; border-radius: 8px;
+                    display: flex; align-items: center; justify-content: center;
+                    box-shadow: 0 2px 6px rgba(0,0,0,0.2);">
+                    <img src="~/img/Activo por departamento_icono_.svg" alt="Ícono de activos por departamento" class="img-fluid" style="width: 70%; height: 70%;">
+                </div>
+                <div class="ms-3 flex-grow-1 d-flex flex-column justify-content-between" style="min-height: 100px;">
+                    <div>
+                        <h6 class="mb-1">Activos por Departamento</h6>
+                        <p class="text-muted small mb-1">Este reporte permite mostrar con filtros todos los activos por los departamentos.</p>
+                    </div>
+                    <div class="text-end">
+                        <a href="@Url.Action("rep_PorDepartamento", "Reportes")" class="btn btn-sm" style="background-color: #FF5100; color: white; border-radius: 6px;">Abrir</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+
+<style>
+    .report-card:hover {
+        background-color: #f5f5f5;
+        transform: scale(1.01);
+        transition: all 0.2s ease-in-out;
+    }
+    h6{
+      font-size: 13px;
+    }
+    p{
+        font-size: 11px;
+    }
+</style>
+
+

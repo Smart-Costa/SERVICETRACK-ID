@@ -1,0 +1,547 @@
+@using AspnetCoreMvcFull.Models.Mensajes
+
+@{
+    ViewData["Title"] = "Oficinas";
+}
+
+@section VendorStyles {
+    <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css">
+    <link rel="stylesheet" href="~/vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css">
+    <link rel="stylesheet" href="~/vendor/libs/datatables-buttons-bs5/buttons.bootstrap5.css">
+    <link rel="stylesheet" href="~/vendor/libs/&#64;form-validation/form-validation.css" />
+}
+
+@section VendorScripts {
+    <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
+
+    <script src="~/vendor/libs/&#64;form-validation/popular.js"></script>
+    <script src="~/vendor/libs/&#64;form-validation/bootstrap5.js"></script>
+    <script src="~/vendor/libs/&#64;form-validation/auto-focus.js"></script>
+
+}
+
+@section PageScripts {
+   <script src="~/js/oficinas-features.js"></script> 
+
+}
+
+@* ************** Content ************** *@
+
+
+
+
+<div class="card p-3">
+
+    @model AspnetCoreMvcFull.Models.Oficinas.OficinasViewModel
+
+
+    <h4 class="mb-1">Oficinas</h4>
+    <br />
+    <div class="row mb-3">
+
+
+        <!-- Formulario de búsqueda -->
+        <div class="col-md-6">
+            <form method="get" action="@Url.Action("Oficinas", "Administration")" class="d-flex align-items-center">
+                <!-- Select para elegir tipo de búsqueda -->
+                <div style="position: relative;">
+                    <select name="searchType" class="form-control mx-1" style="width: auto; padding-right: 30px;">
+                        <option value="name" selected>Por Nombre</option>
+                        <option value="description">Por Descripción</option>
+                    </select>
+                    <i class="fas fa-chevron-down" style="position: absolute; top: 50%; right: 10px; transform: translateY(-50%); pointer-events: none;"></i>
+                </div>
+
+
+                <div class="input-group w-100">
+                    <!-- Input de búsqueda -->
+                    <input type="text" name="search" id="searchInput" class="form-control" placeholder="Buscar por nombre o descripción" value="@ViewBag.SearchQuery" />
+
+                    <!-- Botón para limpiar el input -->
+                    <button type="button" class="btn btn-outline-secondary" id="clearSearch" title="Limpiar búsqueda">
+                        <i class="fas fa-times"></i>
+                    </button>
+
+                    <!-- Botón de búsqueda -->
+                    <button type="submit" class="btn btn-primary">
+                        Buscar
+                    </button>
+                </div>
+
+            </form>
+        </div>
+
+        <!-- Formulario de filtro -->
+        <div class="col-md-6">
+            <form method="get" action="@Url.Action("Oficinas")" class="d-flex align-items-center" style="position: relative;">
+                <div class="form-group w-100 me-3" style="position: relative;">
+                    <select id="filterAssets" name="hasAssets" class="form-control" style="padding-right: 30px;">
+                        <option value="">-- Todos --</option>
+                        <option value="withAssets">Con activos asignados</option>
+                        <option value="withoutAssets">Sin activos asignados</option>
+                    </select>
+                    <i class="fas fa-chevron-down" style="position: absolute; top: 50%; right: 15px; transform: translateY(-50%); pointer-events: none;"></i>
+                </div>
+                <button type="submit" class="btn btn-primary">Filtrar</button>
+            </form>
+        </div>
+
+    </div>
+
+    <!-- Botón + Nuevo Piso -->
+    <button id="buttonAddStates" type="button" data-bs-target="#addOficinaModal" data-bs-toggle="modal" data-context="new" class="btn btn-primary align-self-end" style="white-space: nowrap;">+ Nueva Oficina</button>
+    <div class="card-datatable table-responsive">
+        <div class="d-flex align-items-center mb-3">
+            <!-- Checkbox original -->
+            <label class="switch switch-lg">
+                <input type="checkbox" id="batchDeactivateButton" class="switch-input" disabled>
+                <span class="switch-toggle-slider">
+                    <span class="switch-on" data-state="activar">
+                        <i class="ti ti-check"></i>
+                    </span>
+                    <span class="switch-off" data-state="desactivar">
+                        <i class="ti ti-x"></i>
+                    </span>
+                </span>
+                <span class="switch-label">Activar/Desactivar</span>
+            </label>
+        </div>
+        <table class="datatables-basic table">
+            <thead>
+                <tr>
+                    <th><input type="checkbox" id="selectAllRoles" class="form-check-input"></th>
+                    <th class="d-none">ID</th>
+                    <th>
+                        <a style="color: black; text-decoration: none;" href="@Url.Action("Oficinas", new { sortColumn = "name", sortDirection = ViewBag.SortColumn == "name" && ViewBag.SortDirection == "asc" ? "desc" : "asc", page = Model.CurrentPage, search = ViewBag.SearchQuery })">
+                            Nombre @if (ViewBag.SortColumn == "name")
+                            {
+                                <i class="fas fa-sort-@ViewBag.SortDirection"></i>
+                            }
+                        </a>
+                    </th>
+                    <th>
+                        <a style="color: black; text-decoration: none;" href="@Url.Action("Oficinas", new { sortColumn = "description", sortDirection = ViewBag.SortColumn == "description" && ViewBag.SortDirection == "asc" ? "desc" : "asc", page = Model.CurrentPage, search = ViewBag.SearchQuery })">
+                            Descripción @if (ViewBag.SortColumn == "description")
+                            {
+                                <i class="fas fa-sort-@ViewBag.SortDirection"></i>
+                            }
+                        </a>
+                    </th>
+                    <th>
+                        <a style="color: black; text-decoration: none;" href="@Url.Action("Oficinas", new { sortColumn = "Sector", sortDirection = ViewBag.SortColumn == "Sector" && ViewBag.SortDirection == "asc" ? "desc" : "asc", page = Model.CurrentPage, search = ViewBag.SearchQuery })">
+                            Sector @if (ViewBag.SortColumn == "Sector")
+                            {
+                                <i class="fas fa-sort-@ViewBag.SortDirection"></i>
+                            }
+                        </a>
+                    </th>
+                    <th>
+                        <a style="color: black; text-decoration: none;" href="@Url.Action("Oficinas", new { sortColumn = "Pisos", sortDirection = ViewBag.SortColumn == "Pisos" && ViewBag.SortDirection == "asc" ? "desc" : "asc", page = Model.CurrentPage, search = ViewBag.SearchQuery })">
+                            Piso @if (ViewBag.SortColumn == "Pisos")
+                            {
+                                <i class="fas fa-sort-@ViewBag.SortDirection"></i>
+                            }
+                        </a>
+                    </th>
+                    <th>
+                        <a style="color: black; text-decoration: none;" href="@Url.Action("Oficinas", new { sortColumn = "Edificios", sortDirection = ViewBag.SortColumn == "Edificios" && ViewBag.SortDirection == "asc" ? "desc" : "asc", page = Model.CurrentPage, search = ViewBag.SearchQuery })">
+                            Edificio @if (ViewBag.SortColumn == "Edificios")
+                            {
+                                <i class="fas fa-sort-@ViewBag.SortDirection"></i>
+                            }
+                        </a>
+                    </th>
+                    <th>
+                        <a style="color: black; text-decoration: none;" href="@Url.Action("Oficinas", new { sortColumn = "Activos", sortDirection = ViewBag.SortColumn == "Activos" && ViewBag.SortDirection == "asc" ? "desc" : "asc", page = Model.CurrentPage, search = ViewBag.SearchQuery })">
+                            Activos @if (ViewBag.SortColumn == "Activos")
+                            {
+                                <i class="fas fa-sort-@ViewBag.SortDirection"></i>
+                            }
+                        </a>
+                    </th>
+                    <th>
+                        Estado
+                    </th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var oficina in Model.Oficinas)
+                {
+                    <tr>
+                        <td><input type="checkbox" class="form-check-input role-checkbox" data-role-id="@oficina.OfficeSysId"></td>
+                        <td class="d-none">@oficina.OfficeSysId</td>
+                        <td>@oficina.Name</td>
+                        <td>@oficina.Description</td>
+                        <td>@oficina.Sector</td>
+                        <td>@oficina.Pisos</td>
+                        <td>@oficina.Edificios</td>
+                        <td>@oficina.Activos</td>
+                        <td style="color: @(oficina.IsEnable ? "green" : "red");">
+                            @(oficina.IsEnable ? "Activo" : "Inactivo")
+                        </td>
+                        <td>
+                            <!-- Contenedor de botones con espacio entre ellos -->
+                            <div class="d-flex justify-content-start">
+                                <!-- Botón de editar -->
+                                <a class="btn btn-sm btn-primary btn-edit2 mx-1"
+                                   title="Editar"
+                                   data-id="@oficina.OfficeSysId"
+                                   data-name="@oficina.Name"
+                                   data-name-edificio="@oficina.Edificios"
+                                   data-id-edificio="@oficina.CompanySysId"
+                                   data-name-piso="@oficina.Pisos"
+                                   data-id-piso="@oficina.BuildingSysId"
+                                   data-description="@oficina.Description"
+                                   data-name-sector="@oficina.Sector"
+                                   data-id-sector="@oficina.FloorSysId">
+                                    <i class="fas fa-edit text-white"></i>
+                                </a>
+
+                                <!-- Botón de habilitar/deshabilitar -->
+                                <button class="btn btn-sm @(oficina.IsEnable ? "btn-secondary" : "btn-success") mx-1"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#deleteModal"
+                                        data-id-piso="@oficina.OfficeSysId"
+                                        data-name="@oficina.Name"
+                                        data-assets="@oficina.Activos">
+                                    <i class="fas @(oficina.IsEnable ? "fa-toggle-off" : "fa-toggle-on")"></i>
+                                </button>
+                            </div>
+                        </td>
+
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+
+    <!-- Paginación -->
+    <nav aria-label="Page navigation">
+        <ul class="pagination justify-content-end">
+            <!-- Ir a la primera página -->
+            @if (Model.CurrentPage > 1)
+            {
+                <li class="page-item">
+                    <a class="page-link" href="@Url.Action("Oficinas", new { page = 1, hasAssets = ViewContext.HttpContext.Request.Query["hasAssets"], search = Model.search })" aria-label="First">
+                        <span aria-hidden="true">&laquo;&laquo;</span>
+                    </a>
+                </li>
+            }
+
+            <!-- Ir a la página anterior -->
+            @if (Model.CurrentPage > 1)
+            {
+                <li class="page-item">
+                    <a class="page-link" href="@Url.Action("Oficinas", new { page = Model.CurrentPage - 1, hasAssets = ViewContext.HttpContext.Request.Query["hasAssets"], search = Model.search })" aria-label="Previous">
+                        <span aria-hidden="true">&laquo;</span>
+                    </a>
+                </li>
+            }
+
+            <!-- Mostrar números de páginas (4-5 páginas cercanas) -->
+            @for (var i = 1; i <= Model.TotalPages; i++)
+            {
+                @if (i == 1 || i == Model.TotalPages || (i >= Model.CurrentPage - 2 && i <= Model.CurrentPage + 2))
+                {
+                    <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
+                        <a class="page-link" href="@Url.Action("Oficinas", new { page = i, hasAssets = ViewContext.HttpContext.Request.Query["hasAssets"], search = Model.search })">@i</a>
+                    </li>
+                }
+
+                @if (i == Model.CurrentPage + 2 && Model.CurrentPage + 2 < Model.TotalPages)
+                {
+                    <li class="page-item disabled">
+                        <span class="page-link">...</span>
+                    </li>
+                }
+            }
+
+            <!-- Ir a la página siguiente -->
+            @if (Model.CurrentPage < Model.TotalPages)
+            {
+                <li class="page-item">
+                    <a class="page-link" href="@Url.Action("Oficinas", new { page = Model.CurrentPage + 1, hasAssets = ViewContext.HttpContext.Request.Query["hasAssets"], search = Model.search })" aria-label="Next">
+                        <span aria-hidden="true">&raquo;</span>
+                    </a>
+                </li>
+            }
+
+            <!-- Ir a la última página -->
+            @if (Model.CurrentPage < Model.TotalPages)
+            {
+                <li class="page-item">
+                    <a class="page-link" href="@Url.Action("Oficinas", new { page = Model.TotalPages, hasAssets = ViewContext.HttpContext.Request.Query["hasAssets"], search = Model.search })" aria-label="Last">
+                        <span aria-hidden="true">&raquo;&raquo;</span>
+                    </a>
+                </li>
+            }
+        </ul>
+
+        <!-- Mostrar la información de la página actual y total de páginas -->
+        <div class="pagination-info">
+            <span>Página @Model.CurrentPage de @Model.TotalPages</span>
+        </div>
+    </nav>
+
+
+
+
+
+</div>
+
+<!--Modal para la Desactivación de varios roles-->
+<div class="modal fade" id="batchSuccessModal" tabindex="-1" aria-labelledby="batchSuccessModalLabel"
+     aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content" style="background-color: #e0f7fa;">
+            <div class="modal-header">
+                <h5 class="modal-title" id="batchSuccessModalLabel">Cambio Exitoso</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="batchSuccessMessage"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- Modal de confirmación -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Confirmar eliminación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="deleteModalBody">
+                <!-- Este texto se actualizará dinámicamente -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <a id="confirmDeleteBtn" class="btn btn-danger d-none" href="#">Aceptar</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@{
+    var alert = ViewContext.HttpContext.Request.Query["alert"].FirstOrDefault();
+    AlertMessage? alertMessage = null;
+
+    if (!string.IsNullOrEmpty(alert))
+    {
+        try
+        {
+            alertMessage = System.Text.Json.JsonSerializer.Deserialize<AlertMessage>(alert);
+        }
+        catch { alertMessage = null; } // En caso de error, evitar que la página falle
+    }
+}
+
+@if (alertMessage != null)
+{
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            var deleteModalLabel = document.getElementById('deleteModalLabel');
+            var deleteModalBody = document.getElementById('deleteModalBody');
+            var confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+
+            var tipo = @Html.Raw(Json.Serialize(alertMessage.Tipo));
+            deleteModalLabel.textContent = (tipo.toLowerCase() === "success") ? "Éxito" : "Error";
+            deleteModalBody.innerHTML = `@Html.Raw(Json.Serialize(alertMessage.Mensaje))`;
+            confirmDeleteBtn.classList.add('d-none');
+
+            var deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+            deleteModal.show();
+
+            document.getElementById('deleteModal').addEventListener('hidden.bs.modal', function () {
+                window.location.href = '/Administration/Oficinas';
+            });
+        });
+    </script>
+}
+
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    $(document).ready(function () {
+        $('#addOficinaModal').on('show.bs.modal', function () {
+            $.ajax({
+                url: '@Url.Action("GetCompanies", "Administration")',
+                type: 'GET',
+                dataType: 'json',
+                    success: function (data) {
+                    console.log(data);
+                    let select = $('#companySelect');
+                    select.empty();
+                    select.append('<option value="">Seleccione un edificio</option>');
+
+                    if (data.length === 0 || data.message) {
+                        select.append('<option value="">No hay empresas disponibles</option>');
+                    } else {
+                        $.each(data, function (index, company) {
+
+                            select.append('<option value="' + company.companySysId + '">' + company.name + ' - ' + company.description + '</option>');
+                        });
+                    }
+                },
+
+                error: function () {
+                    console.log("Error al cargar las empresas.");
+                }
+            });
+        });
+    });
+    $(document).ready(function () {
+        $('#addOficinaModal').on('show.bs.modal', function () {
+            $.ajax({
+                url: '@Url.Action("GetPisos", "Administration")',
+                type: 'GET',
+                dataType: 'json',
+                    success: function (data) {
+                    console.log(data);
+                    let select = $('#pisoSelect');
+                    select.empty();
+                    select.append('<option value="">Seleccione un piso</option>');
+
+                    if (data.length === 0 || data.message) {
+                        select.append('<option value="">No hay pisos disponibles</option>');
+                    } else {
+                        $.each(data, function (index, piso) {
+
+                            select.append('<option value="' + piso.buildingSysId + '">' + piso.name + ' - ' + piso.description + '</option>');
+                        });
+                    }
+                },
+
+                error: function () {
+                    console.log("Error al cargar los pisos.");
+                }
+            });
+        });
+    });
+    $(document).ready(function () {
+        $('#addOficinaModal').on('show.bs.modal', function () {
+            $.ajax({
+                url: '@Url.Action("GetSectores", "Administration")',
+                type: 'GET',
+                dataType: 'json',
+                    success: function (data) {
+                    console.log(data);
+                    let select = $('#sectorSelect');
+                    select.empty();
+                    select.append('<option value="">Seleccione una oficina</option>');
+
+                    if (data.length === 0 || data.message) {
+                        select.append('<option value="">No hay sectores disponibles</option>');
+                    } else {
+                        $.each(data, function (index, sector) {
+
+                            select.append('<option value="' + sector.floorSysId + '">' + sector.name + ' - ' + sector.description + '</option>');
+                        });
+                    }
+                },
+
+                error: function () {
+                    console.log("Error al cargar los sectores.");
+                }
+            });
+        });
+    });
+</script>
+<script>
+      $(document).ready(function () {
+        $('#editOficinaModal').on('show.bs.modal', function () {
+            $.ajax({
+                url: '@Url.Action("GetCompanies", "Administration")',
+                type: 'GET',
+                dataType: 'json',
+                success: function (data) {
+                    console.log(data);
+                    let select = $('#companySelect2');
+                    select.empty();
+                    select.append('<option value="">Seleccione un edificio</option>');
+
+                    if (data.length === 0 || data.message) {
+                        select.append('<option value="">No hay edificios disponibles</option>');
+                    } else {
+                        $.each(data, function (index, company) {
+                            select.append('<option value="' + company.companySysId + '">' + company.name  + ' - ' + company.description + '</option>');
+                        });
+                    }
+                },
+                error: function () {
+                    console.log("Error al cargar las empresas.");
+                }
+            });
+        });
+    });
+     $(document).ready(function () {
+        $('#editOficinaModal').on('show.bs.modal', function () {
+            $.ajax({
+                url: '@Url.Action("GetPisos", "Administration")',
+                type: 'GET',
+                dataType: 'json',
+                    success: function (data) {
+                    console.log(data);
+                    let select = $('#pisoSelect2');
+                    select.empty();
+                    select.append('<option value="">Seleccione un piso</option>');
+
+                    if (data.length === 0 || data.message) {
+                        select.append('<option value="">No hay pisos disponibles</option>');
+                    } else {
+                        $.each(data, function (index, piso) {
+
+                            select.append('<option value="' + piso.buildingSysId + '">' + piso.name + ' - ' + piso.description + '</option>');
+                        });
+                    }
+                },
+
+                error: function () {
+                    console.log("Error al cargar los pisos.");
+                }
+            });
+        });
+    });
+      $(document).ready(function () {
+        $('#editOficinaModal').on('show.bs.modal', function () {
+            $.ajax({
+                url: '@Url.Action("GetSectores", "Administration")',
+                type: 'GET',
+                dataType: 'json',
+                    success: function (data) {
+                    console.log(data);
+                    let select = $('#sectorSelect2');
+                    select.empty();
+                    select.append('<option value="">Seleccione una oficina</option>');
+
+                    if (data.length === 0 || data.message) {
+                        select.append('<option value="">No hay sectores disponibles</option>');
+                    } else {
+                        $.each(data, function (index, sector) {
+
+                            select.append('<option value="' + sector.floorSysId + '">' + sector.name + ' - ' + sector.description + '</option>');
+                        });
+                    }
+                },
+
+                error: function () {
+                    console.log("Error al cargar los sectores.");
+                }
+            });
+        });
+    });
+</script>
+
+
+
+
+@await Html.PartialAsync("../_Partials/_Modals/ModalAddOficinas")
+@await Html.PartialAsync("../_Partials/_Modals/ModalEditOficinas")

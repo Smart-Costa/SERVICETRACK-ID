@@ -1,0 +1,33 @@
+@{
+  TempData.Keep();
+  ViewData["containerNav"] = (ViewData["containerNav"] ??= "container-fluid");
+}
+<!-- Footer -->
+<footer class="content-footer footer bg-footer-theme" style="background-color: #606060; color: white; padding: 20px 0; margin-top: 40px;">
+    <div class="container">
+        <div class="row align-items-center text-center text-md-start">
+            <!-- Logo -->
+            <div class="col-12 col-md-4 mb-3 mb-md-0">
+                <img src="~/img/V1_logotipo_SIGNUS_ID v2.svg" alt="SignusID Logo" style="height: 50px;" class="mx-auto d-block d-md-inline">
+            </div>
+
+            <!-- Google Play + Copyright -->
+            <div class="col-12 col-md-4 mb-3 mb-md-0 text-center">
+                <a href="#" target="_blank">
+                    <img src="~/img/Google Play svg.svg"
+                         alt="Get it on Google Play"
+                         style="height: 35px;">
+                </a>
+                <div style="font-size: 0.7em; color: #E2E2E2; margin-top: 5px; font-weight: 100">
+                    © Copyright Signus ID 2025
+                </div>
+            </div>
+
+            <!-- Redes sociales -->
+            <div class="col-12 col-md-4 text-center text-md-end">
+                <img src="~/img/RRSS.svg" alt="Redes sociales" style="height:20px;" class="mx-auto d-block d-md-inline">
+            </div>
+        </div>
+    </div>
+</footer>
+<!-- / Footer -->

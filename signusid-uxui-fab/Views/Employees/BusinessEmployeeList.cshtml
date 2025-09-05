@@ -1,0 +1,1053 @@
+@section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css">
+  <link rel="stylesheet" href="~/vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css">
+  <link rel="stylesheet" href="~/vendor/libs/flatpickr/flatpickr.css" />
+}
+
+@section VendorScripts {
+  <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
+  <!-- Flat Picker -->
+  <script src="~/vendor/libs/moment/moment.js"></script>
+  <script src="~/vendor/libs/flatpickr/flatpickr.js"></script>
+}
+
+@section PageScripts {
+  <script src="~/js/tables-datatables-advanced.js"></script>
+}
+
+@* Dependencia para leer parametros de la URL *@
+@inject IHttpContextAccessor HttpContextAccessor
+
+
+@model AspnetCoreMvcFull.Controllers.Employee[]
+
+
+@*
+  ////NOTAS:////
+
+  El manejo de variables entre el controller y esta vista se realiza mediante:
+  Parametros URL y el diccionario ViewData
+
+  //// Variables ViewData ////
+  MVC .NET permite trabajar con un diccionaro para almacenar valores y pasarlos entre el controlador y la vista.
+
+  Si en el controlador se creó una nueva entrada en el ViewData (por ejemplo: ViewData["Current_Page"] = 1;), esta
+  podrá ser accesada desde la vista.
+
+
+  **SE DECIDIO NO UTILIZAR ESTE METODO PARA PASAR DATOS DE CONTROLADOR A VISTA**
+  //// Parametros URL ////
+  Los parametros se comunican con el Controller mediante la propiedad name definida en un elemento <input> en la vista.
+  Si en la vista un elemento input llamado search_input recibe un value, el controlador podrá recibirlo solo si se agrega
+  un parametro con el mismo nombre search_input al metodo correspondiente
+
+  Así se podrán recibir y manejar los URL parameters en el controlador
+
+
+  //// Utilizar los parametros URL y los valores ViewData para mantener filtros de busqueda ////
+
+  En los inputs y filtros de busqueda se consulta si en la URL o en el ViewData existe un valor correspondiente a esa entrada.
+  Esto permite mantener los valores de busqueda visibles en la Interfaz
+
+    Ejemplo:
+    if (HttpContextAccessor.HttpContext != null &&
+        HttpContextAccessor.HttpContext.Request.Query["employee_state"] != "" &&
+        HttpContextAccessor.HttpContext.Request.Query["employee_state"] == "activo"){
+        value = "activo"
+        }
+
+
+  //// Inputs ocultos ////
+
+  En algunos casos donde se utiliza un label o algun otro elemento que no permita almacenar un valor, se utilizó un elemento
+  <input> escondido que almacena el valor necesario. Con esto, mediante otros elementos, por ejemplo un label, se le asigna
+  el valor correspondiente al input que almacena el valor que será utilizado.
+
+
+
+Fin*@
+
+@* VARIABLES QUE CONTIENEN LA INFORMACION DE FILTROS DE BUSQUEDA, ORDEN DE REGISTROS Y PAGINADO DE DATOS *@
+@{
+
+
+  //Variable que almacena el string de busqueda por nombre, apellido y correo de empleados
+  string employee_search_input = ViewData["Employee_Search_Input"] is string employee_search_input_value ?
+  employee_search_input_value : "";
+  //Variable que almacena el string de busqueda por ID de empleados
+  string employee_ID_search_input = ViewData["Employee_ID_Search_Input"] is string employee_ID_search_input_value ?
+  employee_ID_search_input_value : "";
+  //string que almacena el string de filtrado de empleados segun su estado activo/inactivo
+  string employee_state = ViewData["Employee_State"] is string employee_state_value ? employee_state_value : "";
+  //Variable que contiene el nombre de la columna que dicta el orden
+  string order_by = ViewData["Order_By"] is string order_by_value ? order_by_value : "name";
+
+
+  //Variable que almacena el conteo de paginas totales
+  int total_pages = Int32.TryParse(ViewData["Total_Pages"]?.ToString(), out int total_pages_result) ?
+  total_pages_result : 1;
+  //Variable que contiene el numero de pagina actual
+  int current_page = Int32.TryParse(ViewData["Current_Page"]?.ToString(), out int current_page_result) ?
+  current_page_result : 1;
+  //Variable que contiene el numero de empleados por pagina
+  int employees_per_page = Int32.TryParse(ViewData["Employees_Per_Page"]?.ToString(), out int employees_per_page_result) ?
+  employees_per_page_result : 5;
+
+
+}
+
+<style>
+  /* Clase para el efecto de hover de seleccion */
+  .sortable-column:hover {
+    background-color: #f0f0f0;
+    /* Fondo gris claro */
+    cursor: pointer;
+    /* Cambia el cursor a mano */
+  }
+
+  /* Clase para el encabezado seleccionado */
+  .sortable-column.active {
+    background-color: #f0f0f0;
+    /* Fondo gris para indicar selección */
+    font-weight: bold;
+    /* Resalta el texto */
+  }
+</style>
+
+@* MODAL REGISTRAR EMPLEADO *@
+
+
+<style>
+  /* Clase para el efecto de hover de seleccion */
+  .sortable-column:hover {
+    background-color: #f0f0f0;
+    /* Fondo gris claro */
+    cursor: pointer;
+    /* Cambia el cursor a mano */
+  }
+
+  /* Clase para el encabezado seleccionado */
+  .sortable-column.active {
+    background-color: #f0f0f0;
+    /* Fondo gris para indicar selección */
+    font-weight: bold;
+    /* Resalta el texto */
+  }
+</style>
+
+@* Script para hacer la validacion de campos del modal de registro de empleado *@
+<script type="text/javascript">
+  document.addEventListener('DOMContentLoaded', () => {
+
+    //Metodo para validar campos
+    const check_inputs_add_employee = (event) => {
+      //Definicion de variables que contienen la referencia a su respectivo elemento html
+      const name = document.getElementById("txtAddName");
+      const last_name = document.getElementById("txtAddLastname");
+      const email = document.getElementById("txtAddCorreoEmpleado");
+      const cedula = document.getElementById("txtAddIdentificacionE");
+      const id = document.getElementById("txtAddIdEmpleado");
+
+      //Validacion de campos no nulos o vacios
+      if (!name.value || !last_name.value || !email.value || !id.value || !cedula.value) {
+        //Mostrar y personalizar mensaje de error
+        document.getElementById('add_employee_error_message').style.display = 'block';
+        document.getElementById('add_employee_error_message').innerHTML = 'Por favor completar todos los campos de registro.';
+        console.log('error');
+      }
+      //Validacion de correo electronico
+      else if (!email.checkValidity()) {
+        //Mostrar y personalizar mensaje de error
+        document.getElementById('add_employee_error_message').style.display = 'block';
+        document.getElementById('add_employee_error_message').innerHTML = 'Por favor ingresar una direccion de Correo electronico valida.';
+        console.log('error email');
+      }
+      //Escenario de exito: Campos Válidos
+      else {
+        //Mostrar y personalizar mensaje de éxito
+        document.getElementById('add_employee_error_message').style.display = 'block';
+        document.getElementById('add_employee_error_message').innerHTML = 'Registro de empleado exitoso.';
+        document.getElementById('add_employee_error_message').className = 'text-success text-center';
+
+        //Timeout para Mostrar mensaje de exito y luego hacer el envio de formulario al controller
+        setTimeout(() => {
+          document.getElementById('add_employee_error_message').style.display = 'none';
+          document.getElementById('register_employee_form').submit();
+        }, 3000);
+      }
+    }
+
+
+
+    //Asignacion del metodo check_inputs_add_employee al boton correspondiente
+    document.getElementById("btnAdd").addEventListener('click', check_inputs_add_employee);
+
+  });
+</script>
+
+@* CUERPO DEL MODAL REGISTRAR EMPLEADO*@
+<div class="modal fade show hidden" id="addEmployeeModal" tabindex="-1" aria-modal="true" role="dialog"
+  style="display: none; padding-left: 0px; background-color: rgba(0, 0, 0, 0.5);">
+
+  <div class="modal-dialog modal-lg modal-simple modal-dialog-centered modal-add-new-role">
+
+    <div class="modal-content">
+
+      <div class="modal-body">
+
+        @* Boton para cerrar el modal y ocultar mensaje de error en caso de que se haya mostrado*@
+        <button type="button" class="btn-close p-2 m-2" aria-label="Close" onclick="document.getElementById('addEmployeeModal').style.display='none';
+          document.getElementById('add_employee_error_message').style.display = 'none';"></button>
+
+        @* Titulo del modal *@
+        <div class="text-center mb-6">
+          <h4 class="role-title mb-2">Registro de Empleados</h4>
+        </div>
+
+        @* Form para enviar el formulario *@
+        <form asp-action="BusinessEmployeeRegister" asp-controller="Employees" method="post" class="dt_adv_search"
+          id="register_employee_form">
+
+
+          @* div contenedor *@
+          <div class="container">
+
+            @* Primera fila donde esta el input de Nombre y Apellido *@
+            <div class="row ">
+
+              <div class="col grid">
+                <label for="txtAddName">Nombre</label>
+                <input type="text" class="form-control dt-input dt-full-name w-full h-auto" data-column=1
+                  data-column-index="0" placeholder="" name="txtAddName" id="txtAddName" value="">
+              </div>
+
+              <div class="col grid">
+                <label for="txtAddLastname">Apellidos</label>
+                <input type="text" class="form-control dt-input dt-full-name w-full h-auto" data-column=1
+                  data-column-index="0" placeholder="" name="txtAddLastname" id="txtAddLastname" value="">
+              </div>
+            </div>
+
+            @* Segunda fila donde esta el input de Cedula del empleado e Identificacion*@
+            <div class="row mt-2">
+
+
+              @* NOTA IMPORTANTE
+
+                En ActiveID se manejaban dos inputs para registrar empleado: "Id del Empleado" e "Identificacion del empleado"
+
+                Para este caso, se asuma que "Identificacion del empleado" representa la cedula del empleado
+                Por esa razon el campo lleva el label asignado con el titulo "Cedula del Empleado"
+
+                Para el otro campo se mantiene igual. Se llama "Id del empleado" y representa el numero
+                de Identificacion a nivel corporativo del Empleado
+                Lleva el titulo de "Identificacion"
+
+
+              Fin *@
+              <div class="col grid">
+                <label for="txtAddIdentificacionE">Cédula del Empleado</label>
+                <input type="number" class="form-control dt-input dt-full-name w-full h-auto" data-column=1
+                  data-column-index="0" placeholder="" name="txtAddIdentificacionE" id="txtAddIdentificacionE" value="">
+              </div>
+
+              <div class="col grid">
+                <label for="txtAddIdEmpleado">Identificación</label>
+                <input type="number" class="form-control dt-input dt-full-name w-full h-auto" data-column=1
+                  data-column-index="0" placeholder="" name="txtAddIdEmpleado" id="txtAddIdEmpleado" value="">
+              </div>
+
+            </div>
+
+            @* Tercer fila donde esta el input de correo electronico*@
+            <div class="row mt-2">
+
+              <div class="col grid">
+                <label for="txtAddCorreoEmpleado">Correo Electrónico</label>
+                <input type="email" class="form-control dt-input dt-full-name w-full h-auto" data-column=1
+                  data-column-index="0" placeholder="" name="txtAddCorreoEmpleado" id="txtAddCorreoEmpleado" value="">
+              </div>
+
+            </div>
+
+
+            @* Cuarta fila donde esta el switch (checkbox) para activar/desactivar empleado *@
+            <div class="row mt-2">
+
+              <div class="col grid">
+                <div class="form-check form-switch me-n3">
+                  <input type="hidden" name="add_employee_state" id="add_employee_state" value="activo">
+                  <input type="checkbox" class="form-check-input" checked onchange="
+                  if(document.getElementById('add_employee_state').value == 'activo'){
+                    document.getElementById('add_employee_state').value = 'inactivo'
+                  }else{
+                    document.getElementById('add_employee_state').value = 'activo'
+                  }
+                  ">
+                  <label for="employee_register_state">Activar Empleado</label>
+                </div>
+              </div>
+
+
+            </div>
+
+            @* Quinta fila con posible mensaje de error/Exito *@
+            <div class="row mt-2">
+              @* Mensaje en caso de error al completar el formulario *@
+              <p class="text-danger text-center" id="add_employee_error_message" style="display: none;">Error</p>
+            </div>
+
+            @* Sexta fila donde esta el boton de enviar formulario y de cerrar el model *@
+            <div class="row mt-2">
+              <div class="col d-flex align-items-center justify-content-center">
+
+                <button class="btn btn-primary align-self-center mx-2 w-full h-auto" id="btnAdd" type="button">
+                  Enviar
+                </button>
+                @* Boton para cerrar modal y ocultar mensaje de error en caso de que se haya mostrado *@
+                <button type="button" class="btn btn-label-secondary waves-effect w-full h-auto" onclick="document.getElementById('addEmployeeModal').style.display='none';
+                  document.getElementById('add_employee_error_message').style.display = 'none';">
+                  Cancelar
+                </button>
+
+              </div>
+
+            </div>
+
+
+          </div>
+
+        </form>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+@* Script para hacer la validacion de campos del modal de editar empleado *@
+<script type="text/javascript">
+  document.addEventListener('DOMContentLoaded', () => {
+
+    //Metodo para validar campos
+    const check_inputs_edit_employee = (event) => {
+      //Definicion de variables que contienen la referencia a su respectivo elemento html
+      const name = document.getElementById("txtEditName");
+      const last_name = document.getElementById("txtEditLastName");
+      const email = document.getElementById("txtEditEmailA");
+      const id = document.getElementById("txtEditIDEmpleado");
+      const cedula = document.getElementById("txtEditIdentificacion");
+
+      //Validacion de campos no nulos o vacios
+      if (!name.value, !last_name.value, !email.value, !id.value || !cedula.value) {
+        //Mostrar y personalizar mensaje de error
+        document.getElementById('edit_employee_error_message').style.display = 'block';
+        document.getElementById('edit_employee_error_message').innerHTML = 'Por favor completar todos los campos de registro.';
+        console.log('error');
+      }
+      //Validacion de correo electronico
+      else if (!email.checkValidity()) {
+        //Mostrar y personalizar mensaje de error
+        document.getElementById('edit_employee_error_message').style.display = 'block';
+        document.getElementById('edit_employee_error_message').innerHTML = 'Por favor ingresar una direccion de Correo electronico valida.';
+        console.log('error email');
+      }
+      //Escenario de exito: Campos Válidos
+      else {
+        //Mostrar y personalizar mensaje de éxito
+        document.getElementById('edit_employee_error_message').style.display = 'block';
+        document.getElementById('edit_employee_error_message').innerHTML = 'Edición de empleado exitosa.';
+        document.getElementById('edit_employee_error_message').className = 'text-success text-center';
+
+        //Timeout para Mostrar mensaje de exito y luego hacer el envio de formulario al controller
+        setTimeout(() => {
+          document.getElementById('edit_employee_error_message').style.display = 'none';
+          document.getElementById('edit_employee_form').submit();
+        }, 3000);
+      }
+    }
+
+
+
+    //Asignacion del metodo check_inputs_add_employee al boton correspondiente
+    document.getElementById("btnEdit").addEventListener('click', check_inputs_edit_employee);
+
+  });
+</script>
+
+@* CUERPO DEL MODAL EDITAR EMPLEADO*@
+<div class="modal fade show hidden" id="editEmployeeModal" tabindex="-1" aria-modal="true" role="dialog"
+  style="display: none; padding-left: 0px; background-color: rgba(0, 0, 0, 0.5);">
+
+  <div class="modal-dialog modal-lg modal-simple modal-dialog-centered modal-add-new-role">
+
+    <div class="modal-content">
+
+      <div class="modal-body">
+
+        @* Boton para cerrar el modal y ocultar mensaje de error en caso de que se haya mostrado*@
+        <button type="button" class="btn-close p-2 m-2" aria-label="Close" onclick="document.getElementById('editEmployeeModal').style.display='none';
+          document.getElementById('edit_employee_error_message').style.display = 'none';"></button>
+
+        @* Titulo del modal *@
+        <div class="text-center mb-6">
+          <h4 class="role-title mb-2">Editar Empleado</h4>
+        </div>
+
+        @* Form para enviar el formulario *@
+        <form asp-action="BusinessEmployeeEdit" asp-controller="Employees" method="post" class="dt_adv_search"
+          id="edit_employee_form">
+
+
+          @* div contenedor *@
+          <div class="container">
+
+            @* Primera fila donde esta el input de Nombre y Apellido *@
+            <div class="row ">
+
+              <div class="col grid">
+                <label for="txtEditName">Nombre</label>
+                <input type="text" class="form-control dt-input dt-full-name w-full h-auto" data-column=1
+                  data-column-index="0" placeholder="" name="txtEditName" id="txtEditName" value="">
+              </div>
+
+              <div class="col grid">
+                <label for="txtEditLastName">Apellidos</label>
+                <input type="text" class="form-control dt-input dt-full-name w-full h-auto" data-column=1
+                  data-column-index="0" placeholder="" name="txtEditLastName" id="txtEditLastName" value="">
+              </div>
+            </div>
+
+            @* Segunda fila donde esta el input de Cedula del empleado e Identificacion*@
+            <div class="row mt-2">
+
+
+              @* NOTA IMPORTANTE
+
+                En ActiveID se manejaban dos inputs para registrar empleado: "Id del Empleado" e "Identificacion del empleado"
+
+                Para este caso, se asuma que "Identificacion del empleado" representa la cedula del empleado
+                Por esa razon el campo lleva el label asignado con el titulo "Cedula del Empleado"
+
+                Para el otro campo se mantiene igual. Se llama "Id del empleado" y representa el numero
+                de Identificacion a nivel corporativo del Empleado
+                Lleva el titulo de "Identificacion"
+
+
+              Fin *@
+              <div class="col grid">
+                <label for="txtEditIdentificacion">Cédula del Empleado</label>
+                <input type="number" class="form-control dt-input dt-full-name w-full h-auto" data-column=1
+                  data-column-index="0" placeholder="" name="txtEditIdentificacion" id="txtEditIdentificacion" value="">
+              </div>
+
+              <div class="col grid">
+                <label for="txtEditIDEmpleado">Identificación</label>
+                <input type="text" class="form-control dt-input dt-full-name w-full h-auto" data-column=1
+                  data-column-index="0" placeholder="" id="txtEditIDEmpleado" name="txtEditIDEmpleado" value="">
+              </div>
+
+            </div>
+
+            @* Tercer fila donde esta el input de correo electronico*@
+            <div class="row mt-2">
+
+              <div class="col grid">
+                <label for="txtEditEmailA">Correo Electrónico</label>
+                <input type="email" class="form-control dt-input dt-full-name w-full h-auto" data-column=1
+                  data-column-index="0" placeholder="" name="txtEditEmailA" id="txtEditEmailA" value="">
+              </div>
+
+            </div>
+
+
+            @* Cuarta fila donde esta el switch (checkbox) para activar/desactivar empleado *@
+            <div class="row mt-2">
+
+              <div class="col grid">
+                <div class="form-check form-switch me-n3">
+                  <input type="hidden" name="edit_employee_state" id="edit_employee_state" value="Activo">
+                  <input id="edit_employee_state_checkbox" type="checkbox" class="form-check-input" onchange="
+                  if(document.getElementById('edit_employee_state').value == 'Activo'){
+                    document.getElementById('edit_employee_state').value = 'Inactivo'
+                  }else{
+                    document.getElementById('edit_employee_state').value = 'Activo'
+                  }">
+                  <label for=" edit_employee_state_checkbox">Activar Empleado</label>
+                </div>
+              </div>
+
+
+            </div>
+
+            @* Quinta fila con posible mensaje de error/Exito *@
+            <div class="row mt-2">
+              @* Mensaje en caso de error al completar el formulario *@
+              <p class="text-danger text-center" id="edit_employee_error_message" style="display: none;">Error</p>
+            </div>
+
+            @* Sexta fila donde esta el boton de enviar formulario y de cerrar el model *@
+            <div class="row mt-2">
+              <div class="col d-flex align-items-center justify-content-center">
+
+                <button class="btn btn-primary align-self-center mx-2 w-full h-auto" id="btnEdit" type="button">
+                  Enviar
+                </button>
+                @* Boton para cerrar modal y ocultar mensaje de error en caso de que se haya mostrado *@
+                <button type="button" class="btn btn-label-secondary waves-effect w-full h-auto" onclick="document.getElementById('editEmployeeModal').style.display='none';
+                  document.getElementById('edit_employee_error_message').style.display = 'none';">
+                  Cancelar
+                </button>
+
+              </div>
+
+            </div>
+
+
+          </div>
+
+        </form>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+
+@* CUERPO DE PAGINA *@
+
+<h5 class="card-header h3 mb-2">Empleados</h5>
+
+<div class="card">
+  <link rel="stylesheet" href="@Url.Content("~/css/site.css")" />
+
+  @* Script para manejar el check masivo y para abrir el modal de registro mediante el boton correspondiente
+    Si la checkbox principal se marca, todas las demas tambien
+    Si alguna checkbox de empleado no esta marcada, la checkbox principal tampoco lo va a estar *@
+  <script>
+
+    document.addEventListener('DOMContentLoaded', () => {
+
+      // Obtener el checkbox principal y los secundarios
+      const selectAllCheckbox = document.getElementById('select_all');
+      const checkboxes = document.querySelectorAll('.checkbox-item');
+
+      // Evento para controlar el estado de los checkboxes secundarios
+      selectAllCheckbox.addEventListener('change', function () {
+        const isChecked = selectAllCheckbox.checked; // Verificar si el principal está marcado
+        checkboxes.forEach(checkbox => {
+          checkbox.checked = isChecked; // Cambiar el estado de los secundarios
+        });
+      });
+
+      // (Opcional) Desmarcar el principal si se desmarca alguno de los secundarios
+      checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function () {
+          if (!checkbox.checked) {
+            selectAllCheckbox.checked = false; // Desmarcar el principal
+          } else if (Array.from(checkboxes).every(cb => cb.checked)) {
+            selectAllCheckbox.checked = true; // Marcar el principal si todos están seleccionados
+          }
+        });
+      });
+
+
+      //Asignacion del metodo al boton que abre el modal de registrar
+
+      document.getElementById("register_employee_button").addEventListener('click', () => {
+
+        //Limpiar el valor de los inputs del modal de registro
+        document.getElementById("txtAddName").value = '';
+        document.getElementById("txtAddLastname").value = '';
+        document.getElementById("txtAddCorreoEmpleado").value = '';
+        document.getElementById("txtAddIdentificacionE").value = '';
+        document.getElementById("txtAddIdEmpleado").value = '';
+
+        //Abrir modal de registro
+        document.getElementById('addEmployeeModal').style.display = 'block';
+      });
+
+    });
+  </script>
+
+
+  @* Form para enviar la solicitud de busqueda al Controller segun los filtros ingresados*@
+  <form asp-action="BusinessEmployeeList" asp-controller="Employees" method="get" class="dt_adv_search"
+    id="search_form">
+
+    @* TITULO *@
+    <h5 class="card-header h4">Filtros</h5>
+
+    <div class="card-body">
+
+      @* FILTROS DE BUSQUEDA Y BOTONES *@
+      <div class="row">
+        <div class="col-12">
+
+          @* Busqueda por ID de empleado y boton de limpiar filtros *@
+          <div class="row g-3 mt-1">
+
+            @* Estado Activo/Inactivo y de ID *@
+            <div class="col d-flex align-items-center">
+              @* Seleccion de estado del empleado *@
+              <select name="employee_state" class="form-select form-select-sm w-auto h-100">
+                @{
+
+                  if (employee_state == "activo")
+                  {
+                    <option value="estatus"> Estatus </option>
+                    <option value="activo" selected> Activo </option>
+                    <option value="inactivo"> Inactivo </option>
+                  }
+                  else if (employee_state == "inactivo")
+                  {
+                    <option value="estatus"> Estatus </option>
+                    <option value="activo"> Activo </option>
+                    <option value="inactivo" selected> Inactivo </option>
+                  }
+                  else
+                  {
+                    <option value="estatus" selected> Estatus </option>
+                    <option value="activo"> Activo </option>
+                    <option value="inactivo"> Inactivo </option>
+                  }
+
+                }
+
+              </select>
+              @* Input para buscar empleados por ID *@
+              <input type="number" class="form-control dt-input dt-full-name w-auto h-auto mx-2" data-column=1
+                data-column-index="0" placeholder="Identificación" name="employee_ID_search_input"
+                value="@(employee_ID_search_input)">
+
+
+            </div>
+
+            @* Boton para limpiar todos los filtros *@
+            <div class="col d-flex align-items-center justify-content-end">
+              <a href="/Employees/BusinessEmployeeList">
+                <button type="button" class="btn btn-primary align-self-center mx-2 w-full h-auto">
+                  Limpiar Filtros
+                </button>
+              </a>
+            </div>
+
+
+          </div>
+
+          <hr>
+
+          @* Filtros de cantidad de Empleados, Input de busqueda y Botones Buscar y Registrar *@
+          <div class="row g-3 mt-1 ">
+
+            @* Filtro de cantidad de empleados a mostrar *@
+            <div class="col d-flex align-items-center">
+
+              <label for="employees_per_page" class="me-2">Mostrar</label>
+              <select name="employees_per_page" class="form-select form-select-sm w-auto h-75">
+                @* SE ITERA PARA CREAR LAS OPCIONES DE PAGINADO Y SE IDENTIFICA SI UNA OPCION YA ESTABA SELECCIONADA
+                      ANTERIORMENTE PARA DEJAR ESA OPCION ACTIVA *@
+                @{
+                  for (int i = 5; i <= 20; i = i + 5)
+                  {
+                    if (i == employees_per_page)
+                    {
+                      <option value="@i" selected>@i</option>
+                    }
+                    else
+                    {
+                      <option value="@i">@i</option>
+                    }
+
+                  }
+                }
+              </select>
+              <span class="ms-2">empleados</span>
+            </div>
+            @* Filtro de cantidad de empleados a mostrar *@
+
+
+            @* Input de busqueda de empleado por nombre, apellido o correo y Botones buscar y registrar Empleado *@
+            <div class="col d-flex justify-content-end align-items-center">
+              <input type="text" class="form-control dt-input dt-full-name w-full mx-2 h-auto" data-column=1
+                data-column-index="0" placeholder="Empleado..." name="employee_search_input"
+                value="@(employee_search_input)">
+
+
+              <button class="btn btn-primary align-self-center mx-2 w-full h-auto" id="search_button">
+                Buscar
+              </button>
+
+
+              <button class="btn btn-primary align-self-center mx-2 w-75 h-auto" id="register_employee_button"
+                type="button">
+                <i class="fa-solid fa-plus fa-sm m-lg-1"></i> Registrar Empleado
+              </button>
+
+            </div>
+            @* Botones buscar y registrar Empleado *@
+
+
+          </div>
+          @* Filtros de cantidad de Empleados y Botones Buscar y Registrar *@
+
+
+        </div>
+      </div>
+
+
+
+    </div>
+
+
+    @* Tabla de los empleados *@
+    <div class="card-datatable table-responsive">
+      <table class="dt-advanced-search table">
+
+        <script>
+          //METODO QUE SEGUN EL CAMPO CAMBIA EL ORDEN DE LOS REGISTROS A ASCENDENTE O DESCENDENTE
+          const change_orderby = (columnName) => {
+            const current_orderby_value = document.getElementById('order_by').value;
+            if (current_orderby_value === `${columnName}_ascending`) {
+              document.getElementById('order_by').value = `${columnName}_descending`;
+              console.log('change to descending');
+            } else {
+              document.getElementById('order_by').value = `${columnName}_ascending`;
+              console.log('change to ascending');
+            }
+            document.getElementById('search_button').click();
+          }
+
+        </script>
+
+        @* SCRIPT PARA LLENAR DATA DE FORMULARIO DE EDITAR DE EMPLEADO CON LA DATA DEL EMPLEADO SELECCIONADO *@
+        <script>
+
+          const fill_selected_employee_data = (name, last_name, email, cedula, id, state) => {
+            document.getElementById('editEmployeeModal').style.display = 'block';
+
+            //Definicion de variables que contienen la referencia a su respectivo elemento html
+            document.getElementById("txtEditName").value = name;
+            document.getElementById("txtEditLastName").value = last_name;
+            document.getElementById("txtEditIDEmpleado").value = id;
+            document.getElementById("txtEditIdentificacion").value = cedula;
+            document.getElementById("txtEditEmailA").value = email;
+            document.getElementById("edit_employee_state").value = state;
+            document.getElementById("edit_employee_state").value = state;
+
+            //Checkear el switch de Estado segun el valor del state
+            if (state == "Activo") {
+              document.getElementById("edit_employee_state_checkbox").checked = true;
+            } else if (state == "Inactivo") {
+              document.getElementById("edit_employee_state_checkbox").checked = false;
+            }
+          }
+        </script>
+
+
+        @* Titulos de las columnas de la tabla *@
+        <thead>
+          <tr>
+
+            @* INPUT OCULTO QUE ALMACENA EL ORDEN DE LA LISTA PARA ENVIAR AL FORMULARIO *@
+            <input type="hidden" id="order_by" name="order_by" value="@order_by" />
+
+            @* CHECKBOX PARA REALIZAR LA SELECCION MASIVA *@
+            <th><input type="checkbox" id="select_all"> </th>
+
+
+            <th>ID</th>
+
+            @* SE ORDENA ALFABETICAMENTE AL DAR CLICK EN NOMBRE, CORREO, FECHA DE CREACION*@
+
+            @* Se consulta si el orden por nombre ya estaba asignado
+                para asignar el estilo de columna representativa del orden
+
+                 Si no existe ningun valor en order_by se asigna a nombre *@
+            <th class=" sortable-column cursor-pointer sortable-column cursor-pointer
+                @(order_by == "name_ascending" || order_by == "name_descending"
+                ? "active"
+                : ""
+                )" onclick="change_orderby('name')">
+              Nombre
+              @{
+                //Dependiendo del orden se carga el icono de la flecha hacia arriba o hacia abajo
+                if (order_by == "name_ascending")
+                {
+                  <span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                      class="icon icon-tabler icons-tabler-outline icon-tabler-arrow-down">
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                      <path d="M12 5l0 14" />
+                      <path d="M18 13l-6 6" />
+                      <path d="M6 13l6 6" />
+                    </svg>
+                  </span>
+                }
+                else if (order_by == "name_descending")
+                {
+                  <span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                      class="icon icon-tabler icons-tabler-outline icon-tabler-arrow-up">
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                      <path d="M12 5l0 14" />
+                      <path d="M18 11l-6 -6" />
+                      <path d="M6 11l6 -6" />
+                    </svg>
+                  </span>
+                }
+
+              }
+
+            </th>
+
+            @* Se consulta si el orden por email ya estaba asignado
+                para asignar el estilo de columna representativa del orden *@
+            <th class=" sortable-column cursor-pointer
+            @(order_by == "email"
+            ? "active"
+            : ""
+            )" onclick="change_orderby('email')">
+              Correo electronico
+              @{
+                //Dependiendo del orden se carga el icono de la flecha hacia arriba o hacia abajo
+                if (order_by == "email_ascending")
+                {
+                  <span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                      class="icon icon-tabler icons-tabler-outline icon-tabler-arrow-down">
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                      <path d="M12 5l0 14" />
+                      <path d="M18 13l-6 6" />
+                      <path d="M6 13l6 6" />
+                    </svg>
+                  </span>
+                }
+                else if (order_by == "email_descending")
+                {
+                  <span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                      class="icon icon-tabler icons-tabler-outline icon-tabler-arrow-up">
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                      <path d="M12 5l0 14" />
+                      <path d="M18 11l-6 -6" />
+                      <path d="M6 11l6 -6" />
+                    </svg>
+                  </span>
+                }
+
+              }
+            </th>
+            @* Se consulta si el orden por fecha de creacion ya estaba asignado
+                para asignar el estilo de columna representativa del orden *@
+            <th class=" sortable-column cursor-pointer
+            @(order_by == "creation_date"
+            ? "active"
+            : ""
+            )" onclick="change_orderby('creation_date')">
+              Fecha de Registro
+              @{
+                //Dependiendo del orden se carga el icono de la flecha hacia arriba o hacia abajo
+                if (order_by == "creation_date_ascending")
+                {
+                  <span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                      class="icon icon-tabler icons-tabler-outline icon-tabler-arrow-down">
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                      <path d="M12 5l0 14" />
+                      <path d="M18 13l-6 6" />
+                      <path d="M6 13l6 6" />
+                    </svg>
+                  </span>
+                }
+                else if (order_by == "creation_date_descending")
+                {
+                  <span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                      class="icon icon-tabler icons-tabler-outline icon-tabler-arrow-up">
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                      <path d="M12 5l0 14" />
+                      <path d="M18 11l-6 -6" />
+                      <path d="M6 11l6 -6" />
+                    </svg>
+                  </span>
+                }
+
+              }
+            </th>
+
+
+            <th>Estado</th>
+            <th>Acciones</th>
+
+
+          </tr>
+        </thead>
+
+
+
+        @* Listado de los Empleados del Model en la tabla *@
+        <tbody class="table-border-bottom-0">
+
+          @* Se hace loop en el Model que contiene la lista de empleados y se crean las entradas en la tabla *@
+          @{
+            foreach (var employee in Model)
+            {
+              <tr>
+                <td>
+                  <input type="checkbox" class="checkbox-item" />
+                </td>
+
+                <td>
+                  @employee.Id
+                </td>
+
+                <td>
+                  @employee.Name @employee.LastName
+                </td>
+
+                <td>
+                  @employee.Email
+                </td>
+
+                <td>
+                  @employee.CreationDate
+                </td>
+
+                @* Si el usuario esta activo/inactivo el color del texto cambia rojo/verde *@
+                <td class="@(employee.State == "Activo" ? "text-success" : "text-danger")">
+                  @employee.State
+                </td>
+
+                @* Botones para editar/desactivar empleado *@
+                <td>
+                  <div class="d-flex justify-content-start">
+                    @* Boton de editar que llama al metodo para llenar los campos del modal de registro
+                      con la data del usuario seleccionado*@
+                    <a class="dropdown-item waves-effect w-auto" id="edit_btn"
+                      onclick="fill_selected_employee_data('@(employee.Name)','@(employee.LastName)','@(employee.Email)','@(employee.Id)','@(employee.Id)','@(employee.State)')">
+                      <i class="ti ti-pencil me-1"></i>
+                    </a>
+                    @* Menu dropdown donde esta la opcion de desactivar *@
+                    <div class="dropdown">
+                      <button type="button" class="btn p-0 dropdown-toggle hide-arrow" data-bs-toggle="dropdown">
+                        <i class="ti ti-dots-vertical"></i>
+                      </button>
+
+                      <div class="dropdown-menu">
+                        <a class="dropdown-item"><i class="ti ti-trash me-1"></i> Desactivar</a>
+                      </div>
+                    </div>
+
+                  </div>
+
+                </td>
+
+
+              </tr>
+
+            }
+          }
+
+
+
+
+        </tbody>
+      </table>
+
+      @* Si no se encuentran Empleados en el Model (Array de Empleados), se muestra este mensaje*@
+      @{
+        if (Model.Length == 0)
+        {
+          <div class="d-flex justify-content-center">
+            <label class="mt-10">No se encontraron empleados</label>
+          </div>
+        }
+      }
+
+
+      @* Paginacion *@
+      <nav aria-label="Page navigation">
+        <div class="d-flex flex-row-reverse m-lg-3">
+
+          @* CAMPO OCULTO QUE ALMACENA EL NUMERO DE LA PAGINA SELECCIONADA PARA ENVIAR AL FORMULARIO *@
+          <input type="hidden" id="page_number" name="page_number" value="1" />
+
+
+
+
+
+          @* LISTA CON LOS BOTONES DE PAGINACION *@
+
+          <ul class="pagination pagination-rounded">
+            @* BOTON DE VOLVER A LA PRIMERA PAGINA *@
+            <li class="page-item first">
+              @* Onclick asigna el valor correspondiente a current_page *@
+              <button class="page-link" type="submit" onclick="document.getElementById('page_number').value = 1"><i
+                  class="ti ti-chevrons-left ti-sm"></i></button>
+            </li>
+            @* BOTON DE VOLVER A LA PAGINA ANTERIOR *@
+            <li class="page-item prev">
+              @* Onclick asigna el valor correspondiente a current_page *@
+              <button class="page-link" type="submit"
+                onclick="document.getElementById('page_number').value = @(current_page > 1 ? current_page - 1 : 1)">
+                <i class="ti ti-chevron-left ti-sm"></i>
+              </button>
+            </li>
+
+            @* LOOP PARA CREAR LOS BOTONES DE PAGINACION
+                SE CREA LA PAGINA ACTUAL Y LAS DOS SIGUIENTES*@
+            @{
+
+              for (int i = current_page; i <= current_page + 2; i++)
+              {
+                @* Solo si i es menor o igual a las paginas totales se crea el objeto <li>  *@
+                if (i <= total_pages)
+                {
+                  @* Si la pagina actual coincide con i, significa que es la pagina actual correspondiente y se asigna la clase al <li> *@
+                  <li class="page-item @(current_page == i ? "active": "")">
+                    <button class="page-link" type="submit"
+                      onclick="document.getElementById('page_number').value = @i">@i</button>
+                  </li>
+                }
+
+              }
+            }
+
+            @* BOTON DE IR A LA PAGINA SIGUIENTE *@
+            <li class="page-item next">
+              @* Onclick asigna el valor correspondiente a current_page *@
+              <button class="page-link" type="submit"
+                onclick="document.getElementById('page_number').value = @(current_page < total_pages ? current_page + 1 : total_pages)">
+                <i class="ti ti-chevron-right ti-sm"></i>
+              </button>
+            </li>
+            @* BOTON DE IR A LA ULTIMA PAGINA *@
+            <li class="page-item last">
+              @* Onclick asigna el valor correspondiente a current_page *@
+              <button class="page-link" type="submit"
+                onclick="document.getElementById('page_number').value = @(total_pages)">
+                <i class="ti ti-chevrons-right ti-sm"></i>
+              </button>
+            </li>
+          </ul>
+
+
+
+        </div>
+
+      </nav>
+
+
+    </div>
+
+  </form>
+
+</div>

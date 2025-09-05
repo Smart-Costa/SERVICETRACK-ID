@@ -1,0 +1,13 @@
+body {
+
+}
+
+#batchDeactivateButton {
+  background: #7367F0;
+  border: none;
+  color: white;
+  padding: 10px 20px;
+  font-size: 16px;
+  position: relative;
+  text-align: center;
+}

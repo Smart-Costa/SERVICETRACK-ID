@@ -1,0 +1,77 @@
+@{
+    ViewData["Title"] = "Importar Datos";
+}
+
+@section PageStyles {
+    <link href="@Url.Content("~/vendor/css/ImportarData.css")" rel="stylesheet" />
+}
+
+<div class="card">
+    <div class="container-xxl py-4 importar-datos">
+        <h1 class="titulo mb-4">Importar Datos</h1>  @* más espacio bajo el título *@
+        <div class="row align-items-start g-5" style="margin-top: 54px;">
+
+
+            <!-- Columna izquierda: textos + select + botón -->
+            <div class="col-12 col-lg-6">
+                <div class="mb-2 label-gray fw-semibold">¿Qué deseas importar?</div>
+                <label for="tipoImport" class="form-label label-gray">Seleccione el tipo</label>
+
+                <div class="d-flex gap-3 flex-column flex-sm-row control-row">
+                    <div class="flex-grow-1 position-relative">
+                        <select id="tipoImport" class="form-select select-soft">
+                            <option value="">Seleccione…</option>
+                            <option value="Activos">Activos</option>
+                            <!-- aquí podrás agregar más tipos -->
+                        </select>
+                    </div>
+
+                    <button id="btnImportar" type="button" class="btn btn-importar">
+                        Importar
+                    </button>
+                </div>
+
+
+            </div>
+
+            <!-- Columna derecha: ilustración -->
+            <div class="col-12 col-lg-6 text-center">
+                <img class="img-fluid ilustracion"
+                     src="@Url.Content("~/img/Illustracion.svg")"
+                     alt="Ilustración de importación de datos" />
+            </div>
+        </div>
+    </div>
+</div>
+
+@section PageScripts {
+    <script>
+        document.getElementById('btnImportar')?.addEventListener('click', function () {
+          const tipo = document.getElementById('tipoImport').value;
+          console.log('Importar tipo:', tipo);
+        });
+    </script>
+    <script>
+        (function () {
+          const routes = {
+            Activos: '@Url.Action("SeleccionarArchivo", "Activos")'
+
+          };
+
+          document.getElementById('btnImportar')?.addEventListener('click', function () {
+            const tipo = document.getElementById('tipoImport').value;
+            if (!tipo) {
+              // feedback simple; cámbialo por tu toast si tienes
+              alert('Selecciona un tipo para importar.');
+              return;
+            }
+            const url = routes[tipo];
+            if (url) {
+              window.location.href = url; // navegar a la página del tipo
+            } else {
+              alert('La importación para "' + tipo + '" aún no está disponible.');
+            }
+          });
+        })();
+    </script>
+}

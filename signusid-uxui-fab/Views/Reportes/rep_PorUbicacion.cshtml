@@ -1,0 +1,334 @@
+@using System.Data
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de Activos por Ubicación</title>
+    <style>
+        /* Estilos para el contenedor de carga */
+        #loadingOverlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        #loadingIcon {
+            color: white;
+            font-size: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h4 class="mb-4">Reporte de Activos por Ubicación</h4>
+
+        <form method="get" asp-action="rep_PorUbicacion" class="mb-4">
+            <div class="row">
+                <div class="col-md-6 col-12 mb-3">
+                    <label for="company" class="form-label">Edificio</label>
+                    <select id="company" name="company" class="form-select">
+                        <option value="">Todos</option>
+                        @if (ViewBag.EdificioList != null)
+                        {
+                            foreach (var company in ViewBag.EdificioList)
+                            {
+                                var isSelected = ViewBag.SelectedCompany != null && ViewBag.SelectedCompany.ToString() == company.CompanySysId.ToString();
+                                <option value="@company.CompanySysId" selected="@(isSelected ? "selected" : null)">
+                                    @company.Name
+                                </option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                <div class="col-md-6 col-12 mb-3">
+                    <label for="building" class="form-label">Piso</label>
+                    <select id="building" name="building" class="form-select">
+                        <option value="">Todas</option>
+                        @if (ViewBag.PisoList != null)
+                        {
+                            foreach (var building in ViewBag.PisoList)
+                            {
+                                var isSelected = ViewBag.SelectedBuilding != null && ViewBag.SelectedBuilding.ToString() == building.BuildingSysId.ToString();
+                                <option value="@building.BuildingSysId" selected="@(isSelected ? "selected" : null)">
+                                    @building.Name
+                                </option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                <div class="col-md-6 col-12 mb-3">
+                    <label for="floor" class="form-label">Sector</label>
+                    <select id="floor" name="floor" class="form-select">
+                        <option value="">Todas</option>
+                        @if (ViewBag.SectorList != null)
+                        {
+                            foreach (var floor in ViewBag.SectorList)
+                            {
+                                var isSelected = ViewBag.SelectedFloor != null && ViewBag.SelectedFloor.ToString() == floor.floorSysId.ToString();
+                                <option value="@floor.floorSysId" selected="@(isSelected ? "selected" : null)">
+                                    @floor.name
+                                </option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                <div class="col-md-6 col-12 mb-3">
+                    <label for="office" class="form-label">Oficina</label>
+                    <select id="office" name="office" class="form-select">
+                        <option value="">Todas</option>
+                        @if (ViewBag.OficinaList != null)
+                        {
+                            foreach (var office in ViewBag.OficinaList)
+                            {
+                                var isSelected = ViewBag.SelectedOffice != null && ViewBag.SelectedOffice.ToString() == office.OfficeSysId.ToString();
+                                <option value="@office.OfficeSysId" selected="@(isSelected ? "selected" : null)">
+                                    @office.Name
+                                </option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                <div class="col-12 d-flex justify-content-center">
+                    <button type="submit" class="btn btn-primary">Filtrar</button>
+                </div>
+            </div>
+        </form>
+
+
+
+
+        <div class="table-responsive">
+            <table id="activosTable" class="table table-striped table-bordered">
+                <thead class="table-dark">
+                    <tr>
+                        @foreach (DataColumn col in Model.Columns)
+                        {
+                            <th>
+                                @switch (col.ColumnName)
+                                {
+                                    case "assetSysId":
+                                        @("ID")
+                                        break;
+                                    case "Status":
+                                        @("Estado")
+                                        break;
+                                    case "Category":
+                                        @("Categoría")
+                                        break;
+                                    case "assetItemNumber":
+                                        @("Num Item Activo")
+                                        break;
+                                    case "assetERP":
+                                        @("ERP Activo")
+                                        break;
+                                    case "Placa":
+                                        @("Placa")
+                                        break;
+                                    case "shortDescription":
+                                        @("Descripción Corta")
+                                        break;
+                                    case "longDescription":
+                                        @("Descripción Larga")
+                                        break;
+                                    case "marca":
+                                        @("Marca")
+                                        break;
+                                    case "modelo":
+                                        @("Modelo")
+                                        break;
+                                    case "serialNo":
+                                        @("No. Serial")
+                                        break;
+                                    case "IdBusinessName":
+                                        @("ID Empresa")
+                                        break;
+                                    case "BusinessName":
+                                        @("Nombre Empresa")
+                                        break;
+                                    case "IdCountry":
+                                        @("ID País")
+                                        break;
+                                    case "Country":
+                                        @("País")
+                                        break;
+                                    case "IdBuilding":
+                                        @("ID Edificio")
+                                        break;
+                                    case "Building":
+                                        @("Edificio")
+                                        break;
+                                    case "IdSector":
+                                        @("ID Sector")
+                                        break;
+                                    case "Sector":
+                                        @("Sector")
+                                        break;
+                                    case "BarcoreParent":
+                                        @("Barcore Padre")
+                                        break;
+                                    case "shortDescriptionParent":
+                                        @("Descripción Padre")
+                                        break;
+                                    default:
+                                        @col.ColumnName
+                                        break;
+                                }
+                            </th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (DataRow row in Model.Rows)
+                    {
+                        <tr>
+                            @foreach (var item in row.ItemArray)
+                            {
+                                <td>@item</td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+
+
+
+        </div>
+        <!-- Paginación -->
+        <nav aria-label="Page navigation">
+            <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center">
+                <!-- Información de la página actual -->
+                <div class="pagination-info mb-2 mb-sm-0">
+                    <span>Página @ViewBag.CurrentPage de @ViewBag.TotalPages</span>
+                </div>
+
+                <!-- Paginación -->
+                <ul class="pagination flex-wrap justify-content-center justify-content-sm-end">
+                    <!-- Ir a la primera página -->
+                    @if (ViewBag.CurrentPage > 1)
+                    {
+                        <li class="page-item">
+                            <a class="page-link" href="@Url.Action("rep_PorUbicacion", new { status = ViewBag.SelectedStatus, category = ViewBag.SelectedCategory, page = 1 })" aria-label="First">
+                                <span aria-hidden="true">&laquo;&laquo;</span>
+                            </a>
+                        </li>
+                    }
+
+                    <!-- Ir a la página anterior -->
+                    @if (ViewBag.CurrentPage > 1)
+                    {
+                        <li class="page-item">
+                            <a class="page-link" href="@Url.Action("rep_PorUbicacion", new { status = ViewBag.SelectedStatus, category = ViewBag.SelectedCategory, page = ViewBag.CurrentPage - 1 })" aria-label="Previous">
+                                <span aria-hidden="true">&laquo;</span>
+                            </a>
+                        </li>
+                    }
+
+                    <!-- Mostrar números de páginas -->
+                    @for (var i = 1; i <= ViewBag.TotalPages; i++)
+                    {
+                        @if (i == 1 || i == ViewBag.TotalPages || (i >= ViewBag.CurrentPage - 2 && i <= ViewBag.CurrentPage + 2))
+                        {
+                            <li class="page-item @(i == ViewBag.CurrentPage ? "active" : "")">
+                                <a class="page-link" href="@Url.Action("rep_PorUbicacion", new { status = ViewBag.SelectedStatus, category = ViewBag.SelectedCategory, page = i })">@i</a>
+                            </li>
+                        }
+
+                        @if (i == ViewBag.CurrentPage + 2 && ViewBag.CurrentPage + 2 < ViewBag.TotalPages)
+                        {
+                            <li class="page-item disabled">
+                                <span class="page-link">...</span>
+                            </li>
+                        }
+                    }
+
+                    <!-- Ir a la página siguiente -->
+                    @if (ViewBag.CurrentPage < ViewBag.TotalPages)
+                    {
+                        <li class="page-item">
+                            <a class="page-link" href="@Url.Action("rep_PorUbicacion", new { status = ViewBag.SelectedStatus, category = ViewBag.SelectedCategory, page = ViewBag.CurrentPage + 1 })" aria-label="Next">
+                                <span aria-hidden="true">&raquo;</span>
+                            </a>
+                        </li>
+                    }
+
+                    <!-- Ir a la última página -->
+                    @if (ViewBag.CurrentPage < ViewBag.TotalPages)
+                    {
+                        <li class="page-item">
+                            <a class="page-link" href="@Url.Action("rep_PorUbicacion", new { status = ViewBag.SelectedStatus, category = ViewBag.SelectedCategory, page = ViewBag.TotalPages })" aria-label="Last">
+                                <span aria-hidden="true">&raquo;&raquo;</span>
+                            </a>
+                        </li>
+                    }
+                </ul>
+            </div>
+        </nav>
+
+        <form id="exportForm" asp-action="ExportarExcelActivosPorUbicacion" method="get" style="margin-bottom: 20px; margin-top: 20px;">
+            <input type="hidden" id="selectedCompany" name="company" value="" />
+            <input type="hidden" id="selectedBuilding" name="building" value="" />
+            <input type="hidden" id="selectedFloor" name="floor" value="" />
+            <input type="hidden" id="selectedOffice" name="office" value="" />
+            <button type="submit" class="btn btn-success">
+                <i class="fas fa-file-excel"></i> Exportar a Excel
+            </button>
+        </form>
+        <script>
+            document.getElementById('exportForm').addEventListener('submit', function() {
+                // Capturar los valores seleccionados
+                var selectedCompany = document.getElementById('company').value;
+                var selectedBuilding = document.getElementById('building').value;
+                var selectedFloor = document.getElementById('floor').value;
+                var selectedOffice = document.getElementById('office').value;
+
+                // Asignar los valores a los campos ocultos
+                document.getElementById('selectedCompany').value = selectedCompany;
+                document.getElementById('selectedBuilding').value = selectedBuilding;
+                document.getElementById('selectedFloor').value = selectedFloor;
+                document.getElementById('selectedOffice').value = selectedOffice;
+            });
+        </script>
+
+
+
+
+    <!-- Contenedor de carga -->
+    <div id="loadingOverlay">
+        <div id="loadingIcon">
+            <i class="fas fa-spinner fa-spin"></i> Cargando...
+        </div>
+    </div>
+
+    <script>
+        // document.getElementById('exportForm').addEventListener('submit', function() {
+        //     // Mostrar el ícono de carga
+        //     document.getElementById('loadingOverlay').style.display = 'flex';
+        // });
+
+        // Ocultar el ícono de carga cuando la página se recarga o se redirige
+        window.addEventListener('load', function() {
+            document.getElementById('loadingOverlay').style.display = 'none';
+        });
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            $('.table').DataTable();
+        });
+    </script>
+</body>
+</html>

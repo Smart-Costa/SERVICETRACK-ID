@@ -1,0 +1,161 @@
+<!-- Edit Edificios Modal -->
+<div class="modal fade" id="editEdificioModal" data-context="new" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-simple modal-dialog-centered modal-add-new-role">
+        <div class="modal-content">
+            <div class="modal-body" style="padding: 0 !important; margin-top: -20px; margin-bottom:-10px;">
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="margin-top: 15px;"></button>
+                <div class="text-center mb-6">
+                    <h4 class="role-title mb-2" style="margin-top: 15px">Editar @ViewBag.NombreUbicacionA</h4>
+                </div>
+
+                <form id="editEdificioForm" class="row g-1" asp-action="EditarEdificio" asp-controller="Empresa" method="post" style="row-gap: 4px; margin-bottom: 0;">
+                    <input type="hidden" id="edificioIdEd" name="companySysId" />
+
+                    <div class="col-12" style="margin-bottom: 4px;">
+                        <label class="form-label" for="nameEd" style="margin-bottom: 2px;">Nombre @ViewBag.NombreUbicacionA</label>
+                        <input type="text"
+                               id="nameEd"
+                               name="name"
+                               class="form-control input2"
+                               placeholder="Ingrese el nombre del edificio"
+                               required />
+                        <div id="stateNameErrorEd" class="error-message2"></div>
+                    </div>
+
+                    <div class="col-12" style="margin-bottom: 4px;">
+                        <label class="form-label" for="descriptionEd" style="margin-bottom: 2px;">Descripción</label>
+                        <textarea id="descriptionEd"
+                                  name="description"
+                                  class="form-control input2"
+                                  placeholder="Ingrese una breve descripción del edificio"
+                                  rows="4"
+                                  required
+                                  style="height: 70px; resize: none;"></textarea>
+                        <div id="stateDescriptionErrorEd" class="error-message2"></div>
+                    </div>
+
+                    <div id="addingNamesError" class="error-message3"></div>
+
+                    <div class="col-12 d-flex justify-content-center gap-2 mt-0" style="margin-bottom: 0;">
+                        <button type="submit" class="btn btn-primary button2" id="editStateButton" style="margin-top:-10px; margin-bottom: 10px">
+                            Editar
+                        </button>
+                        <button type="button" class="btn btn-secondary button2" id="cancelButtonEdit" style="margin-top:-10px; margin-bottom: 10px" data-bs-dismiss="modal">
+                            Cancelar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- #region Estilos CSS -->
+<style>
+    .error-message2 {
+        color: red;
+        font-size: 0.875rem;
+        margin-top: 5px;
+    }
+
+    .error-message3 {
+        color: red;
+        font-size: 0.875rem;
+        text-align: center;
+        margin-top: 5px;
+    }
+
+    .input2 {
+        margin-bottom: 10px;
+    }
+
+    .button2 {
+        margin-top: 10px;
+    }
+</style>
+<!-- #endregion -->
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+      // ---------- Referencias ----------
+      const form = document.getElementById("editEdificioForm");
+      const modalEl = document.getElementById("editEdificioModal");
+      const modal = new bootstrap.Modal(modalEl);
+
+      const nameInput = document.getElementById("nameEd");
+      const descriptionInput = document.getElementById("descriptionEd");
+      const nameErrorDiv = document.getElementById("stateNameErrorEd");
+      const descriptionErrorDiv = document.getElementById("stateDescriptionErrorEd");
+      const addingNamesErrorDiv = document.getElementById("addingNamesError");
+      const cancelButton = document.getElementById("cancelButtonEdit");
+
+      // ---------- Rellenar datos al hacer click en .btn-edit ----------
+      const editButtons = document.querySelectorAll(".btn-edit");
+      editButtons.forEach(button => {
+        button.addEventListener("click", function () {
+          const edificioId = this.getAttribute("data-id");
+          const name = this.getAttribute("data-name");
+          const description = this.getAttribute("data-description");
+
+          document.getElementById("edificioIdEd").value = edificioId;
+          nameInput.value = name || "";
+          descriptionInput.value = description || "";
+
+          // Limpia errores al abrir
+          limpiarErrores();
+          modal.show();
+        });
+      });
+
+      // ---------- Utilidades ----------
+      function limpiarErrores() {
+        nameErrorDiv.textContent = "";
+        descriptionErrorDiv.textContent = "";
+        if (addingNamesErrorDiv) addingNamesErrorDiv.textContent = "";
+      }
+
+      function resetForm() {
+        form.reset();
+        limpiarErrores();
+      }
+
+      // ---------- Eventos de modal ----------
+      modalEl.addEventListener("hidden.bs.modal", resetForm);
+
+      cancelButton.addEventListener("click", function () {
+        resetForm();
+        const inst = bootstrap.Modal.getInstance(modalEl);
+        if (inst) inst.hide();
+      });
+
+      // ---------- Validación ----------
+      form.addEventListener("submit", function (e) {
+        e.preventDefault();
+
+        const nameValue = nameInput.value.trim();
+        const descriptionValue = descriptionInput.value.trim();
+
+        limpiarErrores();
+
+        let isValid = true;
+
+        if (!nameValue || nameValue.length < 3 || nameValue.length > 50) {
+          nameErrorDiv.textContent = "El nombre debe tener entre 3 y 50 caracteres.";
+          isValid = false;
+        }
+
+        if (!descriptionValue || descriptionValue.length < 3 || descriptionValue.length > 150) {
+          descriptionErrorDiv.textContent = "La descripción debe tener entre 3 y 150 caracteres.";
+          isValid = false;
+        }
+
+        if (isValid) {
+          form.submit();
+        }
+      });
+
+      // ---------- Limpieza de errores en tiempo real ----------
+      nameInput.addEventListener("input", () => nameErrorDiv.textContent = "");
+      descriptionInput.addEventListener("input", () => descriptionErrorDiv.textContent = "");
+    });
+</script>

@@ -1,0 +1,607 @@
+@using AspnetCoreMvcFull.Models.Mensajes
+@using System.Text.Json
+
+@{
+    ViewData["Title"] = "Estados";
+}
+
+
+
+@section VendorStyles {
+    <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css">
+    <link rel="stylesheet" href="~/vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css">
+    <link rel="stylesheet" href="~/vendor/libs/datatables-buttons-bs5/buttons.bootstrap5.css">
+    <link rel="stylesheet" href="~/vendor/libs/&#64;form-validation/form-validation.css" />
+}
+
+@section VendorScripts {
+    <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
+
+    <script src="~/vendor/libs/&#64;form-validation/popular.js"></script>
+    <script src="~/vendor/libs/&#64;form-validation/bootstrap5.js"></script>
+    <script src="~/vendor/libs/&#64;form-validation/auto-focus.js"></script>
+
+}
+
+@section PageScripts {
+    <script src="~/js/estados-features.js"></script>
+}
+
+@* ************** Content ************** *@
+
+
+@model AspnetCoreMvcFull.Models.TomasFisicas.TomasFisicasViewModel
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <base href="~/" />
+
+</head>
+
+<div class="card" style="padding: 1rem 1rem 1rem 1rem;">
+
+    <!-- INICIO FORMULARIO -->
+    <form method="get" action="@Url.Action("Estados", "Administration")">
+
+        <div class="col-12 px-0">
+            <h4 class="mb-2" style="color:#606060;">Planeamiento Tomas Físicas</h4>
+
+
+
+
+            <!-- FILA 1: Búsqueda + Filtros alineados -->
+            <div class="row g-2 mt-1 align-items-end">
+                <!-- IZQUIERDA: Búsqueda + Buscar -->
+                <!-- FILA IZQUIERDA: Desde y Hasta -->
+                <div class="col-md-6 d-flex align-items-end gap-3">
+                    <!-- Fecha Desde -->
+                    <div class="d-flex align-items-center gap-2 flex-grow-1">
+                        <input type="text"
+                               class="form-control flex-grow-1"
+                               id="desde"
+                               name="hasta"
+                               placeholder="Desde  DD/MM/AAAA"
+                               readonly
+                               style="min-width: 180px;" />
+                        <button class="btn btn-outline-orange" type="button" id="btnCalendario">
+                            <img src="@Url.Content("~/img/calendario_icono.svg")" style="filter: brightness(0) invert(1);" alt="Calendario" width="20" height="20" />
+                        </button>
+                    </div>
+
+                    <!-- Fecha Hasta -->
+                    <div class="d-flex align-items-center gap-2 flex-grow-1">
+                        <input type="text"
+                               class="form-control flex-grow-1"
+                               id="hasta"
+                               name="hasta"
+                               placeholder="Hasta  DD/MM/AAAA"
+                               readonly
+                               style="min-width: 180px;" />
+                        <button class="btn btn-outline-orange" type="button" id="btnCalendario2">
+                            <img src="@Url.Content("~/img/calendario_icono.svg")" alt="Calendario" width="20" height="20" />
+                        </button>
+                    </div>
+                </div>
+
+                <!-- DERECHA: Select + Filtrar alineado a la derecha -->
+                <div class="col-md-6 d-flex justify-content-end align-items-end gap-2">
+                    @{
+                        var selectedFilter = ViewBag.Filter?.ToString();
+                    }
+
+                    <select id="filterAssets" name="hasAssets" class="form-control" style="min-width: 180px;">
+                        <option value="" selected="@(selectedFilter == "" ? "selected" : null)">-- Todos --</option>
+                        <option value="withAssets" selected="@(selectedFilter == "withAssets" ? "selected" : null)">Con activos asignados</option>
+                        <option value="withoutAssets" selected="@(selectedFilter == "withoutAssets" ? "selected" : null)">Sin activos asignados</option>
+                    </select>
+
+                    <button type="submit" class="btn btn-primary w-auto" style="white-space: nowrap;">
+                        Filtrar
+                    </button>
+                </div>
+            </div>
+
+            <!-- FILA 2: Mostrar cantidad + Botón Agregar -->
+            <div class="row g-3 mt-4 mb-4 align-items-center">
+                <!-- Selector Mostrar X estados -->
+                <div class="col-md-6 d-flex align-items-center">
+                    @{
+                        int pageSize = Int32.TryParse(ViewData["Categories_Per_Page"]?.ToString(), out int pageSizeResult) ? pageSizeResult : 10;
+                    }
+                    <label for="pageSize" class="me-2 mb-0">Mostrar</label>
+                    <select name="pageSize" class="form-select form-select-sm w-auto h-75" onchange="this.form.submit()">
+                        @{
+                            for (int i = 5; i <= 20; i += 5)
+                            {
+                                if (i == pageSize)
+                                {
+                                    <option value="@i" selected>@i</option>
+                                }
+                                else
+                                {
+                                    <option value="@i">@i</option>
+                                }
+                            }
+                        }
+                    </select>
+                    <span class="ms-2">Tomas</span>
+                    <!-- Mantener filtros -->
+                    <input type="hidden" name="search" value="@ViewBag.SearchQuery" />
+                    <input type="hidden" name="hasAssets" value="@ViewBag.Filter" />
+                </div>
+
+                <!-- Botón Nuevo Estado alineado a la derecha -->
+                <div class="col-md-6 d-flex justify-content-md-end">
+                    <button id="buttonAddStates" type="button" data-bs-target="#addStateModal" data-bs-toggle="modal" data-context="new"
+                            class="btn btn-primary"
+                            style="white-space: nowrap;">
+                        + Nueva Toma
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </form>
+
+    <div class="card-datatable table-responsive border" style="padding: 0.5rem 0.5rem 0.5rem 0.5rem;">
+
+
+        <style>
+            .card-datatable {
+                border: 1px solid #dee2e6;
+                border-radius: 8px;
+                overflow: hidden;
+                background-color: #fff;
+            }
+
+                .card-datatable table {
+                    border-bottom: 1px solid #dee2e6;
+                }
+        </style>
+
+        <!-- Botón de eliminación en batch -->
+        <button id="deleteBatchBtn" class="btn btn-sm mb-3" title="Borrar en batch" disabled data-bs-toggle="modal" data-bs-target="#deleteModal" style="background-color: #c4c4c4; border: none; border-radius: 6px; height: 28px; min-width: 40px;">
+            <img src="~/img/eliminar_icono.svg" alt="Eliminar seleccionados" style="width: 16px; height: 16px;">
+        </button>
+        <table class="datatables-basic table">
+            <thead>
+                <tr>
+                    <th style="width: 5%; text-align: center;">
+                        <input type="checkbox" id="select_all" style="transform: scale(1.5); accent-color: #ff5100;" />
+                    </th>
+                    <th class="d-none">ID</th>
+                    <th style="width: 35%;">Nombre</th>
+                    <th style="width: 50%;">Descripción</th>
+                    <th style="width: 20%;">Fecha Inicial</th>
+                    <th style="width: 20%;">Fecha Final</th>
+                    <th style="width: 25%;">Asignado</th>
+                    <th style="width: 20%;">Activos</th>
+                    <th style="width: 20%;">Ubicación</th>
+                    <th style="width: 15%;">Estado</th>
+                    <th style="width: 20%;">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var estado in Model.Tomas)
+                {
+                    <tr>
+                        <td class="text-center">
+                            <input type="checkbox" class="checkbox-item" data-id-estado="@estado.IdTomaFIsica"
+                                   style="transform: scale(1.5); accent-color: #ff5100;" />
+                        </td>
+                        <td class="d-none">@estado.IdTomaFIsica</td>
+                        <td>@estado.NombreTomaFisica</td>
+                        <td>@estado.descripcionTomaFisica</td>
+                        <td class="text-center">@estado.FechaInicial</td>
+                        <td class="text-center">@estado.FechaFinal</td>
+                        <td class="text-center">@estado.UsuarioAsignadoTomaFisica</td>
+                        <td class="text-center">@estado.Activos</td>
+                        <td class="text-center">@estado.UbicacionATomaFisica</td>
+                        <td class="text-center">@estado.EstadoActivo</td>
+                        <td>
+                            <div class="d-flex justify-content-start gap-2">
+                                <!-- Botón Editar -->
+                                <a class="btn btn-edit d-flex align-items-center justify-content-center p-1 px-2"
+                                   title="Editar"
+                                   data-id="@estado.IdTomaFIsica"
+                                   data-name="@estado.NombreTomaFisica"
+                                   data-description="@estado.descripcionTomaFisica"
+                                   style="background-color: #00A5B8; border: none; border-radius: 6px; height: 28px; min-width: 40px;">
+                                    <img src="~/img/editar_icono.svg" alt="Editar" style="width: 16px; height: 16px;">
+                                </a>
+
+                                <!-- Botón Eliminar -->
+                                <button class="btn d-flex align-items-center justify-content-center p-1 px-2"
+                                        title="Borrar"
+                                        data-bs-toggle="modal" data-bs-target="#deleteModal"
+                                        data-id="@estado.IdTomaFIsica"
+                                        data-name="@estado.NombreTomaFisica"
+                                        data-assets="@estado.descripcionTomaFisica"
+                                        style="background-color: #666666; border: none; border-radius: 6px; height: 28px; min-width: 40px;">
+                                    <img src="~/img/eliminar_icono.svg" alt="Eliminar" style="width: 16px; height: 16px;">
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+
+        <!-- Paginación -->
+        <!-- Contenedor de paginación responsivo -->
+        @{
+
+
+            //Variable que contiene el numero de categorias por pagina
+            int pageSize2 = Int32.TryParse(ViewData["Categories_Per_Page"]?.ToString(), out int
+            pageSizeResult2) ?
+            pageSizeResult2 : 5;
+
+
+
+        }
+
+
+
+        <nav aria-label="Page navigation" style="margin-top: 0.5rem;">
+            <div class="d-flex justify-content-sm-end justify-content-center">
+
+                <!-- Información de la página actual   -->
+                <div style="display:none;" class="pagination-info mb-2 mb-sm-0">
+                    <span>Página @Model.CurrentPage de @Model.TotalPages</span>
+                </div>
+
+                <!-- Paginación -->
+                <ul class="pagination flex-wrap justify-content-center justify-content-sm-end">
+                    <!-- Ir a la primera página -->
+                    @if (Model.CurrentPage > 1)
+                    {
+                        <li class="page-item">
+                            <a class="page-link" href="@Url.Action("Estados", new { page = 1, pageSize = pageSize2, hasAssets = ViewContext.HttpContext.Request.Query["hasAssets"], search = Model.search })" aria-label="First">
+                                <span aria-hidden="true">&laquo;&laquo;</span>
+                            </a>
+                        </li>
+                    }
+
+                    <!-- Ir a la página anterior -->
+                    @if (Model.CurrentPage > 1)
+                    {
+                        <li class="page-item">
+                            <a class="page-link" href="@Url.Action("Estados", new { page = Model.CurrentPage - 1, pageSize = pageSize2, hasAssets = ViewContext.HttpContext.Request.Query["hasAssets"], search = Model.search })" aria-label="Previous">
+                                <span aria-hidden="true">&laquo;</span>
+                            </a>
+                        </li>
+                    }
+
+                    <!-- Mostrar números de páginas -->
+                    @for (var i = 1; i <= Model.TotalPages; i++)
+                    {
+                        if (i == 1 || i == Model.TotalPages || (i >= Model.CurrentPage - 2 && i <= Model.CurrentPage + 2))
+                        {
+                            <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
+                                <a class="page-link" href="@Url.Action("Estados", new { page = i, pageSize = pageSize2, hasAssets = ViewContext.HttpContext.Request.Query["hasAssets"], search = Model.search })">@i</a>
+                            </li>
+                        }
+
+                        if (i == Model.CurrentPage + 2 && Model.CurrentPage + 2 < Model.TotalPages)
+                        {
+                            <li class="page-item disabled">
+                                <span class="page-link">...</span>
+                            </li>
+                        }
+                    }
+
+                    <!-- Ir a la página siguiente -->
+                    @if (Model.CurrentPage < Model.TotalPages)
+                    {
+                        <li class="page-item">
+                            <a class="page-link" href="@Url.Action("Estados", new { page = Model.CurrentPage + 1, pageSize = pageSize2, hasAssets = ViewContext.HttpContext.Request.Query["hasAssets"], search = Model.search })" aria-label="Next">
+                                <span aria-hidden="true">&raquo;</span>
+                            </a>
+                        </li>
+                    }
+
+                    <!-- Ir a la última página -->
+                    @if (Model.CurrentPage < Model.TotalPages)
+                    {
+                        <li class="page-item">
+                            <a class="page-link" href="@Url.Action("Estados", new { page = Model.TotalPages, pageSize = pageSize2, hasAssets = ViewContext.HttpContext.Request.Query["hasAssets"], search = Model.search })" aria-label="Last">
+                                <span aria-hidden="true">&raquo;&raquo;</span>
+                            </a>
+                        </li>
+                    }
+                </ul>
+            </div>
+        </nav>
+
+
+
+    </div>
+
+
+    <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deleteModalLabel">Confirmar eliminación</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="deleteModalBody">
+                    <!-- Este texto se actualizará dinámicamente -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    <a id="confirmDeleteBtn" class="btn btn-danger d-none" href="#">Borrar</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const borrarEstadoUrl = '@Url.Action("BorrarEstado", "Administration")';
+            const borrarEstadoBatchUrl = '@Url.Action("BorrarEstadoBatch", "Administration")';
+    </script>
+    <link href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const picker = flatpickr("#desde", {
+                dateFormat: "Y-m-d"
+            });
+
+            document.getElementById('btnCalendario').addEventListener('click', function () {
+                picker.open();
+            });
+        });
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const picker = flatpickr("#hasta", {
+                dateFormat: "Y-m-d"
+            });
+
+            document.getElementById('btnCalendario2').addEventListener('click', function () {
+                picker.open();
+            });
+        });
+    </script>
+
+    <!-- Modal de alerta -->
+    <div class="modal fade" id="alertModal" tabindex="-1" aria-labelledby="alertModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="alertModalLabel">Mensaje</h5>
+                    <button type="button" class="btn-close text-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body" id="alertModalBody">
+                    <!-- Aquí va el mensaje dinámico -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @{
+        var alertMessage2 = TempData["Alert2"] as string;
+    }
+    @if (!string.IsNullOrEmpty(alertMessage2))
+    {
+        <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                const alertModalBody = document.getElementById("alertModalBody");
+                alertModalBody.textContent = "@alertMessage2";
+
+                const alertModal = new bootstrap.Modal(document.getElementById("alertModal"));
+                alertModal.show();
+            });
+        </script>
+        TempData.Remove("Alert2");
+    }
+
+    <style>
+        #alertModal .modal-header.bg-primary {
+            background-color: #FF5100 !important;
+        }
+    </style>
+
+
+
+
+</div>
+
+<br />
+<div class="card">
+    <h5 class="card-header h3 mb-2">Sincronización</h5>
+    <div class="card-body mb-3">
+        <form asp-controller="Administration" asp-action="SincronizarEstados" method="post" enctype="multipart/form-data">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-6">
+                    <label for="excelFile" class="form-label">Subir archivo Excel (.xlsx):</label>
+                    <input type="file" name="excelFile" id="excelFile" accept=".xlsx" class="form-control" required />
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-primary-purple w-100">
+                        <i class="fa fa-upload me-1"></i> Sincronizar Estados
+                    </button>
+                </div>
+            </div>
+        </form>
+
+        <!-- Botón de descarga debajo -->
+        <div class="row mt-4">
+            <div class="col-md-3">
+                <a asp-controller="Administration" asp-action="DescargarPlantillaEstados" class="btn btn-outline-secondary w-100">
+                    <i class="fa fa-download me-1"></i> Descargar plantilla Excel
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .btn-primary-purple {
+            background-color: #ff5100 !important;
+            border-color: #ff5100 !important;
+            color: white;
+        }
+
+            .btn-primary-purple:hover {
+                background-color: #ff7c48 !important;
+                border-color: #ff7c48 !important;
+                color: white;
+            }
+    </style>
+
+
+</div>
+
+
+<style>
+
+
+    .btn-orange {
+        background-color: #FF5100;
+        color: white;
+    }
+
+        .btn-orange:hover {
+            background-color: #e46b0f;
+            color: white;
+        }
+
+    .btn-outline-orange {
+        background-color: #FF5100;
+        color: white;
+        border: none;
+        transition: background-color 0.2s ease, color 0.2s ease;
+    }
+
+        .btn-outline-orange:hover {
+            border: 1px solid #FFA45B;
+            color: white;
+            background-color: #FFA45B;
+        }
+
+
+    .select-light {
+        background-color: #eeeeee;
+    }
+
+    h4 {
+        color: #353535;
+    }
+
+</style>
+
+
+<!-- Modal de alerta -->
+<div class="modal fade" id="alertModal" tabindex="-1" aria-labelledby="alertModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="alertModalLabel">Título</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body" id="alertModalBody">
+                <!-- Mensaje dinámico -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+@{
+    AlertMessage? alertMessage = null;
+
+    if (TempData["Alert"] is string alertJson)
+    {
+        try
+        {
+            alertMessage = System.Text.Json.JsonSerializer.Deserialize<AlertMessage>(alertJson);
+            TempData.Remove("Alert");
+        }
+        catch { alertMessage = null; }
+    }
+}
+
+@if (alertMessage != null)
+{
+    var jsonAlert = Json.Serialize(alertMessage); // Serializa para usar en JS
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            var alertData = @Html.Raw(jsonAlert);
+            console.log("SCRIPT DE ALERTA ACTIVADO");
+            console.log(alertData);
+
+            var alertModalLabel = document.getElementById('alertModalLabel');
+            var alertModalBody = document.getElementById('alertModalBody');
+
+            alertModalLabel.textContent = (alertData.tipo.toLowerCase() === "success") ? "Éxito" : "Error";
+            alertModalBody.innerHTML = alertData.mensaje;
+
+            var alertModal = new bootstrap.Modal(document.getElementById('alertModal'));
+            alertModal.show();
+                           console.log('Entró');
+            document.getElementById('alertModal').addEventListener('hidden.bs.modal', function () {
+                 window.location.href = '@Url.Content("~/Administration/Estados")';
+
+            });
+        });
+    </script>
+}
+
+
+
+
+
+<!-- Modal de advertencia para no editable -->
+@*  <div class="modal fade" id="nonEditableModal" tabindex="-1" aria-labelledby="nonEditableModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="nonEditableModalLabel">Edición no permitida</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="nonEditableModalBody">
+                <!-- Este texto se actualizará dinámicamente con el nombre del estado -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div> *@
+
+
+<script>
+    const fill_selected_state_data = (id ,name, description) => {
+      // Actualizar los campos del formulario con los valores seleccionados
+      document.getElementById("assetStatusSysId").value = id;
+      document.getElementById("name").value = name;
+      document.getElementById("description").value = description;
+
+      //
+    };
+
+    function setupEditContext(element,id, name, description) {
+      const form = document.getElementById("addStateModal");
+      form.setAttribute("data-context", "edit");
+      fill_selected_state_data(id,name, description);
+
+    }
+
+</script>
+
+
+
+
+@await Html.PartialAsync("../_Partials/_Modals/ModalAddState")
+@await Html.PartialAsync("../_Partials/_Modals/ModalEditState")

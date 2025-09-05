@@ -1,0 +1,251 @@
+<!-- Edit Sector Modal:
+En este form se el ingreso y edición de edificios.
+-->
+<div class="modal fade" id="editOficinaModal" data-context="new" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-simple modal-dialog-centered modal-add-new-role">
+        <div class="modal-content">
+            <div class="modal-body">
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <div class="text-center mb-6">
+                    <h4 class="role-title mb-2">Editar Oficina</h4>
+                </div>
+
+                <form id="editOficinaForm" class="row g-6" asp-action="EditarOficina" asp-controller="Empresa" method="post">
+                    <input type="hidden"
+                           id="officeSysId"
+                           name="officeSysId"
+                           class="form-control input2" />
+
+                    <div class="col-12">
+                        <label class="form-label" for="companySelect">Edificio</label> 
+                        <select id="companySelect2" name="companySysId" class="form-select" required>
+                            <option value="">Cargando edificios...</option>
+                        </select>
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label" for="pisoSelect">Piso</label>
+                        <select id="pisoSelect2" name="buildingSysId" class="form-select" required>
+                            <option value="">Cargando pisos...</option>
+                        </select>
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label" for="sectorSelect">Sector</label>
+                        <select id="sectorSelect2" name="floorSysId" class="form-select" required>
+                            <option value="">Cargando sector...</option>
+                        </select>
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label" for="name">Nombre de la oficina</label>
+                        <input type="text"
+                               id="nameEd"
+                               name="name"
+                               class="form-control input2"
+                               placeholder="Ingrese el nombre de la oficina"
+                               required />
+                        <div id="stateNameErrorEd" class="error-message2"></div>
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label" for="description">Descripción</label>
+                        <textarea id="descriptionEd"
+                                  name="description"
+                                  class="form-control input2"
+                                  placeholder="Ingrese una breve descripción de la oficina"
+                                  rows="4"
+                                  required></textarea>
+                        <div id="stateDescriptionErrorEd" class="error-message2"></div>
+                    </div>
+
+                    <div id="addingNamesErrorEd" class="error-message3"></div>
+
+                    <div class="col-12 d-flex justify-content-center gap-3 mt-3">
+                        <button type="submit" class="btn btn-primary button2" id="editStateButton">
+                            Editar
+                        </button>
+                        <button type="button" class="btn btn-secondary button2" id="cancelButton" data-bs-dismiss="modal">
+                            Cancelar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- #region Estilos CSS -->
+
+<style>
+    .error-message2 {
+        color: red;
+        font-size: 0.875rem;
+        margin-top: 5px;
+    }
+
+    .error-message3 {
+        color: red;
+        font-size: 0.875rem;
+        text-align: center;
+        margin-top: 5px;
+    }
+
+
+
+    .input2 {
+        margin-bottom: 10px;
+    }
+
+    .button2 {
+        margin-top: 10px;
+    }
+</style>
+
+<!-- #endregion -->
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+
+          // Obtener los botones de editar y el modal
+        const editButtons = document.querySelectorAll(".btn-edit2");
+        const modal = new bootstrap.Modal(document.getElementById("editOficinaModal"));
+
+        editButtons.forEach(button => {
+            button.addEventListener("click", function () {
+                const floorSysId = this.getAttribute("data-id");
+                const sectorName = this.getAttribute("data-name");
+                const description = this.getAttribute("data-description");
+                const edificioId = this.getAttribute("data-id-edificio");
+                const edificioNombre = this.getAttribute("data-name-edificio");
+                const sectorId = this.getAttribute("data-id-sector");
+                const sectorNombre = this.getAttribute("data-name-sector");
+                const pisoId = this.getAttribute("data-id-piso");
+                const pisoNombre = this.getAttribute("data-name-piso");
+
+                // Llenar los campos del formulario
+                document.getElementById("officeSysId").value = floorSysId;
+                document.getElementById("nameEd").value = sectorName;
+                document.getElementById("descriptionEd").value = description;
+
+                 setTimeout(() => {
+                    const companySelect = document.getElementById("companySelect2");
+                    if (companySelect) {
+                        let optionFound = false;
+                        for (let option of companySelect.options) {
+                            console.log("Comparando opción:", option.textContent.trim(), "con", edificioNombre.trim());
+                            if (option.textContent.split(' - ')[0].trim() === edificioNombre.trim()) {
+
+                                option.selected = true;
+                                optionFound = true;
+                                break;
+                            }
+                        }
+                        if (!optionFound) {
+                            console.warn("No se encontró la opción en el select para:", edificioNombre);
+                        }
+                    }
+                }, 100); // Retraso de 100 ms para esperar a que se carguen las opciones
+
+                setTimeout(() => {
+                    const pisoSelect = document.getElementById("pisoSelect2");
+                    if (pisoSelect) {
+                        let optionFound = false;
+                        for (let option of pisoSelect.options) {
+                            console.log("Comparando opción:", option.textContent.trim(), "con", pisoNombre.trim());
+                            if (option.textContent.split(' - ')[0].trim() === pisoNombre.trim()) {
+
+                                option.selected = true;
+                                optionFound = true;
+                                break;
+                            }
+                        }
+                        if (!optionFound) {
+                            console.warn("No se encontró la opción en el select para:", pisoNombre);
+                        }
+                    }
+                }, 100); // Retraso de 100 ms para esperar a que se carguen las opciones
+
+                  setTimeout(() => {
+                    const pisoSelect = document.getElementById("sectorSelect2");
+                    if (pisoSelect) {
+                        let optionFound = false;
+                        for (let option of pisoSelect.options) {
+                            console.log("Comparando opción:", option.textContent.trim(), "con", sectorNombre.trim());
+                            if (option.textContent.split(' - ')[0].trim() === sectorNombre.trim()) {
+
+                                option.selected = true;
+                                optionFound = true;
+                                break;
+                            }
+                        }
+                        if (!optionFound) {
+                            console.warn("No se encontró la opción en el select para:", pisoNombre);
+                        }
+                    }
+                }, 100); // Retraso de 100 ms para esperar a que se carguen las opciones
+                modal.show();
+            });
+        });
+
+     
+    });
+
+</script>
+<script>
+      document.getElementById("editOficinaForm").addEventListener("submit", function(event) {
+        // Evitar el envío del formulario si hay errores
+        event.preventDefault();
+
+        let isValid = true;
+
+        // Obtener los valores de los campos
+        let name = document.getElementById("nameEd").value.trim();
+        let description = document.getElementById("descriptionEd").value.trim();
+        let building = document.getElementById("companySelect2").value;
+        let floor = document.getElementById("pisoSelect2").value;
+        let sector = document.getElementById("sectorSelect2").value;
+
+        // Limpiar los mensajes de error previos
+        document.getElementById("stateNameErrorEd").innerHTML = "";
+        document.getElementById("stateDescriptionErrorEd").innerHTML = "";
+        document.getElementById("addingNamesErrorEd").innerHTML = "";
+
+        // Validar campo Name (entre 3 y 50 caracteres)
+        if (name.length < 3 || name.length > 50) {
+            document.getElementById("stateNameErrorEd").innerHTML = "<span style='color:red;'>El nombre de la oficina debe tener entre 3 y 50 caracteres.</span>";
+            isValid = false;
+        }
+
+        // Validar campo Description (entre 3 y 150 caracteres)
+        if (description.length < 3 || description.length > 150) {
+            document.getElementById("stateDescriptionErrorEd").innerHTML = "<span style='color:red;'>La descripción debe tener entre 3 y 150 caracteres.</span>";
+            isValid = false;
+        }
+
+        // Validar que los campos de selección estén llenos
+        if (!building || building === "") {
+            document.getElementById("addingNamesErrorEd").innerHTML = "<span style='color:red;'>Por favor seleccione un edificio.</span>";
+            isValid = false;
+        }
+
+        if (!floor || floor === "") {
+            document.getElementById("addingNamesErrorEd").innerHTML = "<span style='color:red;'>Por favor seleccione un piso.</span>";
+            isValid = false;
+        }
+
+        if (!sector || sector === "") {
+            document.getElementById("addingNamesErrorEd").innerHTML = "<span style='color:red;'>Por favor seleccione un sector.</span>";
+            isValid = false;
+        }
+
+        // Si todo está bien, permitir el envío del formulario
+        if (isValid) {
+            document.getElementById("editOficinaForm").submit();
+        }
+    });
+
+</script>
+
+
+
+<!--/ Add Edificios Modal -->

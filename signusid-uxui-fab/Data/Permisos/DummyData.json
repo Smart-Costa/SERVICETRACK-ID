@@ -1,0 +1,229 @@
+{
+  "Permissions": [
+    {
+      "id": 598321,
+      "name": "Acceso completo al sistema",
+      "description": "Poder ver y utilizar todo el sistema",
+      "roles": [
+        "admin"
+      ],
+      "creation_date": "2023-06-15T00:00:00"
+    },
+    {
+      "id": 194321,
+      "name": "Ver Informacion de la cuenta",
+      "description": "Poder ver los datos de cuenta",
+      "roles": [
+        "admin",
+        "contador"
+      ],
+      "creation_date": "2024-01-12T00:00:00"
+    },
+    {
+      "id": 355323,
+      "name": "Cambiar contraseña",
+      "description": "Poder actualizar contraseñas",
+      "roles": [
+        "admin",
+        "manager",
+        "admin",
+        "manager",
+        "admin",
+        "manager",
+        "admin",
+        "manager",
+        "admin",
+        "manager"
+      ],
+      "creation_date": "2022-09-23T00:00:00"
+    },
+    {
+      "id": 411321,
+      "name": "Crear usuarios",
+      "description": "Poder crear nuevos usuarios en el sistema",
+      "roles": [
+        "admin"
+      ],
+      "creation_date": "2024-12-01T00:00:00"
+    },
+    {
+      "id": 512434,
+      "name": "Eliminar usuarios",
+      "description": "Poder eliminar usuarios existentes",
+      "roles": [
+        "admin"
+      ],
+      "creation_date": "2023-11-25T00:00:00"
+    },
+    {
+      "id": 623567,
+      "name": "Actualizar perfil de usuario",
+      "description": "Poder editar la información del perfil de usuario",
+      "roles": [
+        "admin",
+        "manager"
+      ],
+      "creation_date": "2024-08-15T00:00:00"
+    },
+    {
+      "id": 734675,
+      "name": "Ver reportes de ventas",
+      "description": "Poder acceder a los reportes de ventas",
+      "roles": [
+        "admin",
+        "analista",
+        "manager"
+      ],
+      "creation_date": "2023-04-18T00:00:00"
+    },
+    {
+      "id": 845786,
+      "name": "Exportar datos",
+      "description": "Poder exportar información del sistema a formatos externos",
+      "roles": [
+        "admin",
+        "manager"
+      ],
+      "creation_date": "2024-05-10T00:00:00"
+    },
+    {
+      "id": 956898,
+      "name": "Gestionar roles y permisos",
+      "description": "Poder crear, editar y asignar roles y permisos",
+      "roles": [
+        "admin"
+      ],
+      "creation_date": "2023-12-30T00:00:00"
+    },
+    {
+      "id": 107345,
+      "name": "Subir archivos",
+      "description": "Poder cargar archivos al sistema",
+      "roles": [
+        "admin",
+        "manager",
+        "usuario"
+      ],
+      "creation_date": "2022-07-01T00:00:00"
+    },
+    {
+      "id": 118456,
+      "name": "Descargar archivos",
+      "description": "Poder descargar archivos del sistema",
+      "roles": [
+        "admin",
+        "manager",
+        "usuario"
+      ],
+      "creation_date": "2024-01-05T00:00:00"
+    },
+    {
+      "id": 129567,
+      "name": "Auditar actividad",
+      "description": "Poder revisar logs y actividad del sistema",
+      "roles": [
+        "admin",
+        "auditor"
+      ],
+      "creation_date": "2023-10-10T00:00:00"
+    },
+    {
+      "id": 130678,
+      "name": "Configurar notificaciones",
+      "description": "Poder modificar las configuraciones de notificaciones del sistema",
+      "roles": [
+        "admin",
+        "manager"
+      ],
+      "creation_date": "2024-03-18T00:00:00"
+    },
+    {
+      "id": 141789,
+      "name": "Acceso al panel de estadísticas",
+      "description": "Poder ver y analizar estadísticas del sistema",
+      "roles": [
+        "admin",
+        "analista"
+      ],
+      "creation_date": "2024-07-22T00:00:00"
+    },
+    {
+      "id": 152890,
+      "name": "Realizar copias de seguridad",
+      "description": "Poder crear respaldos del sistema",
+      "roles": [
+        "admin",
+        "soporte"
+      ],
+      "creation_date": "2023-05-14T00:00:00"
+    },
+    {
+      "id": 163901,
+      "name": "Restaurar copias de seguridad",
+      "description": "Poder restaurar respaldos del sistema",
+      "roles": [
+        "admin"
+      ],
+      "creation_date": "2022-08-30T00:00:00"
+    },
+    {
+      "id": 174012,
+      "name": "Ver clientes registrados",
+      "description": "Poder visualizar la lista de clientes registrados",
+      "roles": [
+        "admin",
+        "manager",
+        "vendedor"
+      ],
+      "creation_date": "2024-02-05T00:00:00"
+    },
+    {
+      "id": 185123,
+      "name": "Editar información de clientes",
+      "description": "Poder actualizar datos de clientes",
+      "roles": [
+        "admin",
+        "manager"
+      ],
+      "creation_date": "2023-01-10T00:00:00"
+    },
+    {
+      "id": 196234,
+      "name": "Eliminar registros de clientes",
+      "description": "Poder borrar registros de clientes",
+      "roles": [
+        "admin"
+      ],
+      "creation_date": "2023-03-20T00:00:00"
+    },
+    {
+      "id": 207345,
+      "name": "Configurar parámetros del sistema",
+      "description": "Poder cambiar configuraciones avanzadas del sistema",
+      "roles": [
+        "admin"
+      ],
+      "creation_date": "2024-10-01T00:00:00"
+    },
+    {
+      "id": 218456,
+      "name": "Aprobar solicitudes de cambio",
+      "description": "Poder aprobar solicitudes de cambios en el sistema",
+      "roles": [
+        "admin",
+        "manager"
+      ],
+      "creation_date": "2023-09-12T00:00:00"
+    },
+    {
+      "id": 229567,
+      "name": "Rechazar solicitudes de cambio",
+      "description": "Poder rechazar solicitudes de cambios en el sistema",
+      "roles": [
+        "admin",
+        "manager"
+      ],
+      "creation_date": "2023-11-04T00:00:00"
+    }
+  ]
+}

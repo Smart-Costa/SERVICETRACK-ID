@@ -1,0 +1,155 @@
+<!-- Add Role Modal:
+En este form se el ingreso y edición de roles.
+-->
+<div class="modal fade" id="editRoleModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-simple modal-dialog-centered modal-add-new-role">
+        <div class="modal-content">
+            <div class="modal-body">
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <div class="text-center mb-6">
+                    <h4 class="role-title mb-2">Editar Rol</h4>
+                </div>
+                <!-- Add role form -->
+                @model AspnetCoreMvcFull.Models.Roles.RolesViewModel
+                <form id="editRoleForm" class="row g-6" asp-action="UpdateRole" asp-controller="Access" method="post">
+                    <input type="hidden" id="editRoleId" name="RoleId" />
+                    <div class="col-12">
+                        <label class="form-label" for="editRoleName">Nombre del Rol</label>
+                        <input type="text" id="editRoleName" name="RoleName" class="form-control input2" placeholder="Ingrese el nombre del rol" />
+                        <div id="roleNameErrorE" class="error-message2"></div>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label" for="editDescripcion">Descripción</label>
+                        <textarea id="editDescripcion" name="Descripcion" class="form-control input2" placeholder="Ingrese una breve descripción del rol" rows="4"></textarea>
+                        <div id="roleDescriptionErrorE" class="error-message2"></div>
+                    </div>
+                    <div class="col-12 d-flex justify-content-center gap-3 mt-3">
+                        <button type="submit" name="ctl00$MainContent$btnEditrole" class="btn btn-primary button2" id="editRoleButton">Editar</button>
+                        <button type="button" class="btn btn-secondary button2" id="cancelButton" data-bs-dismiss="modal">Cancelar</button>
+                    </div>
+                </form>
+
+                <!--/ Add role form -->
+            </div>
+        </div>
+    </div>
+</div>
+<!-- #region Estilos CSS -->
+
+
+<script>
+    // Función para mostrar mensajes de error en los divs correspondientes
+    function showMessage(message, elementId) {
+        const errorElement = document.getElementById(elementId);
+        errorElement.textContent = message;
+        errorElement.style.color = 'red';
+        errorElement.style.fontSize = '12px';
+    }
+
+    // Validación para permitir solo letras
+    function validarLetras(value) {
+        return /^[a-zA-ZáéíóúÁÉÍÓÚ\s]+$/.test(value);
+    }
+
+    // Validación para permitir letras, números y algunos caracteres especiales
+    function validarCaracteresEspeciales(value) {
+        return /^[a-zA-ZáéíóúÁÉÍÓÚ0-9\s\.,\-\(\)]+$/.test(value);
+    }
+
+    // Validación de longitud mínima
+    function validarLongitud(value, minLength) {
+        return value.length >= minLength;
+    }
+
+    // Función para la validación de los campos
+    function validarFormulario(event) {
+        // Limpia los mensajes de error previos
+        document.getElementById("roleNameErrorE").textContent = "";
+        document.getElementById("roleDescriptionErrorE").textContent = "";
+
+        let isValid = true;
+
+        // Validación del campo "RoleName"
+        const roleName = document.getElementById("editRoleName").value; // Cambié "RoleName" por "editRoleName"
+        if (!roleName.trim()) {
+            showMessage("Campo Rol es obligatorio, por favor ingrese este campo.", "roleNameErrorE");
+            isValid = false;
+        } else if (!validarLetras(roleName)) {
+            showMessage("El campo Rol permite únicamente letras.", "roleNameErrorE");
+            isValid = false;
+        } else if (!validarLongitud(roleName, 3)) {
+            showMessage("El campo Rol debe de tener más de 3 caracteres.", "roleNameErrorE");
+            isValid = false;
+        }
+
+        // Validación del campo "Descripcion"
+        const descripcion = document.getElementById("editDescripcion").value; // Cambié "Descripcion" por "editDescripcion"
+        if (!descripcion.trim()) {
+            showMessage("Campo descripción es obligatorio, por favor ingrese este campo.", "roleDescriptionErrorE");
+            isValid = false;
+        } else if (!validarCaracteresEspeciales(descripcion)) {
+            showMessage('El campo descripción permite únicamente letras, números y los siguientes caracteres especiales: ", . - ( )', "roleDescriptionErrorE");
+            isValid = false;
+        } else if (!validarLongitud(descripcion, 3)) {
+            showMessage("El campo descripción debe de tener más de 3 caracteres.", "roleDescriptionErrorE");
+            isValid = false;
+        }
+
+        // Si algún error fue encontrado, previene el envío del formulario
+        if (!isValid) {
+            event.preventDefault();
+        }
+    }
+
+    // Agregar el evento de validación al formulario antes de enviarlo
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById("editRoleForm");
+        if (form) {
+            form.addEventListener('submit', validarFormulario);
+        }
+    });
+
+    document.addEventListener("DOMContentLoaded", function () {
+        const editRoleModal = document.getElementById("editRoleModal");
+
+        if (editRoleModal) {
+            editRoleModal.addEventListener("show.bs.modal", function () {
+                // Limpiar mensajes de error
+                document.getElementById("roleNameErrorE").textContent = "";
+                document.getElementById("roleDescriptionErrorE").textContent = "";
+
+                // Limpiar los estilos de error (opcional)
+                document.getElementById("roleNameErrorE").style.color = "";
+                document.getElementById("roleDescriptionErrorE").style.color = "";
+
+                // También puedes limpiar los valores de los campos si es necesario
+                document.getElementById("editRoleName").classList.remove("is-invalid");
+                document.getElementById("editDescripcion").classList.remove("is-invalid");
+            });
+        }
+    });
+
+</script>
+
+
+
+
+<style>
+    .error-message2 {
+        color: red;
+        font-size: 12px;
+        margin-top: 5px;
+    }
+
+    .input2 {
+        margin-bottom: 10px;
+    }
+
+    .button2 {
+        margin-top: 10px;
+    }
+</style>
+
+<!-- #endregion -->
+<!-- #region Scripts -->
+<!--/ Add Role Modal -->

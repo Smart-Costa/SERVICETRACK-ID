@@ -1,0 +1,64 @@
+body {
+}
+/*@media (max-width: 1024px) {
+  .col-md-3, .col-md-6 {
+    flex: 0 0 100%;
+    max-width: 100%;
+  }
+
+  .col-12.col-md-3,
+  .col-12.col-md-6 {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+    .col-12.col-md-3 .d-flex {
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .col-12.col-md-3 .form-check-input {
+      margin-top: 0.75rem;
+    }
+
+  .col-md-3.d-flex {
+    flex-direction: column;
+  }
+
+    .col-md-3.d-flex > div {
+      width: 100%;
+    }
+}
+*/
+@media (max-width: 1024px) {
+  .col-md-3.d-flex {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+    .col-md-3.d-flex > div {
+      flex: 1 1 48%; /* permite que quepan 2 campos por fila, sin sobrecargar */
+      min-width: 180px; /* evita que se achiquen demasiado */
+    }
+
+  .col-md-3 .form-check-input {
+    margin-top: 1.8rem;
+  }
+
+  .col-md-6 {
+    flex: 1 1 100%;
+  }
+}
+
+
+
+@media (max-width: 768px) {
+  /* Ajustes adicionales para pantallas más pequeñas */
+  .col-md-3 {
+    flex: 0 0 100%; /* En pantallas más pequeñas, cada columna ocupa todo el ancho */
+  }
+
+  .col-md-6 {
+    flex: 0 0 100%; /* La columna de 6 también ocupa el 100% */
+  }
+}

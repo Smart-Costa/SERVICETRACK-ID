@@ -1,0 +1,1210 @@
+@using AspnetCoreMvcFull.Models.Mensajes
+@using System.Text.Json
+
+@{
+    ViewData["Title"] = "Categorias";
+}
+
+@section VendorStyles {
+    <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
+    <link rel="stylesheet" href="~/vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css" />
+    <link rel="stylesheet" href="~/vendor/libs/datatables-buttons-bs5/buttons.bootstrap5.css" />
+    <link rel="stylesheet" href="~/vendor/libs/select2/select2.css">
+}
+
+@section VendorScripts {
+    <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
+    <script src="~/vendor/libs/select2/select2.js"></script>
+}
+
+@section PageScripts {
+    <script src="~/js/app-ecommerce-product-list.js"></script>
+}
+
+@* ************** Content ************** *@
+
+@model AspnetCoreMvcFull.Models.Categorias.Categoria[]
+
+
+@* VARIABLES QUE CONTIENEN LA INFORMACION DE FILTROS DE BUSQUEDA, ORDEN DE REGISTROS Y PAGINADO DE DATOS *@
+@{
+
+    //Variable que almacena el string de busqueda por nombre
+    string categories_search_input = ViewData["Categories_Search_Input"] is string categories_search_input_value ?
+    categories_search_input_value : "";
+    //Variable que contiene el nombre de la columna que dicta el orden
+    string order_by = ViewData["Order_By"] is string order_by_value ? order_by_value : "name";
+    //Variable que almacena el conteo de paginas totales
+    int total_pages = Int32.TryParse(ViewData["Total_Pages"]?.ToString(), out int total_pages_result) ?
+    total_pages_result : 1;
+    //Variable que contiene el numero de pagina actual
+    int current_page = Int32.TryParse(ViewData["Current_Page"]?.ToString(), out int current_page_result) ?
+    current_page_result : 1;
+    //Variable que contiene el numero de categorias por pagina
+    int categories_per_page = Int32.TryParse(ViewData["Categories_Per_Page"]?.ToString(), out int
+    categories_per_page_result) ?
+    categories_per_page_result : 5;
+    //string que almacena el string de filtrado de categorias segun activos asociados o sin activos asociados
+    string category_actives_state = ViewData["Category_Actives_State"] is string category_actives_state_value ?
+    category_actives_state_value : "";
+
+
+}
+
+
+
+
+<style>
+    /* Clase para el efecto de hover de seleccion */
+    .sortable-column:hover {
+        background-color: #f0f0f0;
+        /* Fondo gris claro */
+        cursor: pointer;
+        /* Cambia el cursor a mano */
+    }
+
+    /* Clase para el encabezado seleccionado */
+    .sortable-column.active {
+        background-color: #f0f0f0;
+        /* Fondo gris para indicar selección */
+        font-weight: bold;
+        /* Resalta el texto */
+    }
+</style>
+
+
+@* MODAL REGISTRAR CATEGORIA *@
+
+@* Script para hacer la validacion de campos del modal de registro de categoria *@
+<script type="text/javascript">
+    document.addEventListener('DOMContentLoaded', () => {
+
+      // Método para validar campos
+      const check_inputs = (event) => {
+        const name = document.getElementById("add_category_name");
+        const description = document.getElementById("add_category_description");
+        const modelDataCategorias = @Html.Raw(Json.Serialize(Model));
+
+        // Verifica si la categoría ya existe
+        const category_name_exists = modelDataCategorias.some(category => category.name === name.value);
+
+        // Limpiar mensajes previos
+        document.getElementById('add_category_error_message').style.display = 'none';
+        name.nextElementSibling?.remove();
+        description.nextElementSibling?.remove();
+
+        let hasError = false;
+
+        // Validar nombre
+        if (!name.value || name.value.length < 3 || name.value.length > 50) {
+          showError(name, 'El nombre debe tener entre 3 y 50 caracteres.');
+          hasError = true;
+        }
+
+        // Validar descripción
+        if (!description.value || description.value.length < 3 || description.value.length > 150) {
+          showError(description, 'La descripción debe tener entre 3 y 150 caracteres.');
+          hasError = true;
+        }
+
+        // Validar si la categoría ya existe
+        if (category_name_exists) {
+          showError(name, 'No se puede agregar una categoría existente.');
+          hasError = true;
+        }
+
+        // Si hay errores, detener envío
+        if (hasError) {
+          return;
+        }
+
+        // Escenario de éxito
+        document.getElementById('add_category_error_message').style.display = 'block';
+        document.getElementById('add_category_error_message').innerHTML = 'Registro de categoría exitoso.';
+        document.getElementById('add_category_error_message').className = 'text-success text-center';
+
+        setTimeout(() => {
+          document.getElementById('add_category_error_message').style.display = 'none';
+          document.getElementById('add_category_form').submit();
+        }, 3000);
+      }
+
+      // Mostrar mensaje de error debajo del input
+      const showError = (element, message) => {
+        const error = document.createElement('span');
+        error.className = 'text-danger';
+        error.innerText = message;
+        element.parentNode.insertBefore(error, element.nextSibling);
+      }
+
+      // Asignar evento al botón
+      document.getElementById("btnAdd").addEventListener('click', check_inputs);
+
+    });
+
+</script>
+
+
+@* CUERPO DEL MODAL REGISTRAR CATEGORIA*@
+<div class="modal fade show hidden" id="addCategoryModal" tabindex="-1" aria-modal="true" role="dialog"
+     style="display: none; padding-left: 0px; background-color: rgba(0, 0, 0, 0.5);">
+
+    <div class="modal-dialog modal-md modal-simple modal-dialog-centered modal-add-new-role">
+
+        <div class="modal-content">
+
+            <div class="modal-body">
+
+                @* Boton para cerrar el modal y ocultar mensaje de error en caso de que se haya mostrado*@
+                <button type="button" class="btn-close p-2 m-2" aria-label="Close" onclick="document.getElementById('addCategoryModal').style.display='none';
+          document.getElementById('add_category_error_message').style.display = 'none';"></button>
+
+                @* Titulo del modal *@
+                <div class="text-center mb-6">
+                    <h4 class="role-title mb-2">Registro de Categoría</h4>
+                </div>
+
+                @* Form para enviar el formulario *@
+                <form asp-action="AddCategory" asp-controller="Administration" method="post" class="dt_adv_search"
+                      id="add_category_form">
+
+
+                    @* div contenedor *@
+                    <div class="container">
+
+                        @* Primera fila donde esta el input de Nombre y Descripcion *@
+                        <div class="row ">
+
+                            <script>
+
+                            </script>
+
+                            <div class="col grid">
+                                <label for="add_category_name">Nombre</label>
+                                <input type="text" class="form-control dt-input dt-full-name w-full h-auto mb-2" data-column=1
+                                       data-column-index="0" placeholder="" name="add_category_name" id="add_category_name" value="">
+
+                                <label for="add_category_description mt-4">Descripción</label>
+                                <input type="text" class="form-control dt-input dt-full-name w-full h-auto" data-column=1
+                                       data-column-index="0" placeholder="" name="add_category_description" id="add_category_description"
+                                       value="">
+                            </div>
+
+
+                        </div>
+
+                        @* Segunda fila con posible mensaje de error/Exito *@
+                        <div class="row mt-4">
+                            @* Mensaje en caso de error/exito al completar el formulario *@
+                            <p class="text-danger text-center" id="add_category_error_message" style="display: none;">Error</p>
+                        </div>
+
+                        @* Tercera fila donde esta el boton de enviar formulario y de cerrar el modal *@
+                        <div class="row mt-2">
+                            <div class="col d-flex align-items-center justify-content-center">
+                                @* boton para enviar categoria nueva al controller *@
+                                <button class="btn btn-primary align-self-center mx-2 w-full h-auto" id="btnAdd" type="button">
+                                    Enviar
+                                </button>
+                                @* Boton para cerrar modal y ocultar mensaje de error en caso de que se haya mostrado *@
+                                <button type="button" class="btn btn-label-secondary waves-effect w-full h-auto" onclick="document.getElementById('addCategoryModal').style.display='none';
+                  document.getElementById('add_category_error_message').style.display = 'none';">
+                                    Cancelar
+                                </button>
+
+                            </div>
+
+                        </div>
+
+
+
+                    </div>
+
+                </form>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+@* Script para hacer la validacion de campos del modal de editar categoria *@
+<script type="text/javascript">
+    document.addEventListener('DOMContentLoaded', () => {
+
+      // Método para validar campos
+      const check_inputs_edit_category = (event) => {
+        // Definición de variables que contienen la referencia a su respectivo elemento HTML
+        const name = document.getElementById("edit_category_name");
+        const description = document.getElementById("edit_category_description");
+        const currentCategory = document.getElementById("category_to_edit")?.value;
+        const modelDataCategorias = @Html.Raw(Json.Serialize(Model));
+
+        // Verifica si la categoría ya existe, ignorando la actual que se está editando
+        const category_name_exists = modelDataCategorias.some(category => category.name === name.value && category.name !== currentCategory);
+
+        // Limpiar mensajes previos
+        document.getElementById('edit_category_error_message').style.display = 'none';
+        name.nextElementSibling?.remove();
+        description.nextElementSibling?.remove();
+
+        let hasError = false;
+
+        // Validar nombre
+        if (!name.value || name.value.length < 3 || name.value.length > 50) {
+          showError(name, 'El nombre debe tener entre 3 y 50 caracteres.');
+          hasError = true;
+        }
+
+        // Validar descripción
+        if (!description.value || description.value.length < 3 || description.value.length > 150) {
+          showError(description, 'La descripción debe tener entre 3 y 150 caracteres.');
+          hasError = true;
+        }
+
+        // Validar si la categoría ya existe
+        if (category_name_exists) {
+          showError(name, 'No se puede editar con un nombre de categoría existente.');
+          hasError = true;
+        }
+
+        // Si hay errores, detener envío
+        if (hasError) {
+          return;
+        }
+
+        // Escenario de éxito
+        document.getElementById('edit_category_error_message').style.display = 'block';
+        document.getElementById('edit_category_error_message').innerHTML = 'Edición de categoría exitosa.';
+        document.getElementById('edit_category_error_message').className = 'text-success text-center';
+
+        setTimeout(() => {
+          document.getElementById('edit_category_error_message').style.display = 'none';
+          document.getElementById('edit_category_form').submit();
+        }, 3000);
+      }
+
+      // Mostrar mensaje de error debajo del input
+      const showError = (element, message) => {
+        const error = document.createElement('span');
+        error.className = 'text-danger';
+        error.innerText = message;
+        element.parentNode.insertBefore(error, element.nextSibling);
+      }
+
+      // Asignar evento al botón
+      document.getElementById("btnEdit").addEventListener('click', check_inputs_edit_category);
+
+    });
+</script>
+
+@* CUERPO DEL MODAL EDITAR CATEGORTIA*@
+<div class="modal fade show hidden" id="editCategoryModal" tabindex="-1" aria-modal="true" role="dialog"
+     style="display: none; padding-left: 0px; background-color: rgba(0, 0, 0, 0.5);">
+
+    <div class="modal-dialog modal-lg modal-simple modal-dialog-centered modal-add-new-role">
+
+        <div class="modal-content">
+
+            <div class="modal-body">
+
+                @* Boton para cerrar el modal y ocultar mensaje de error en caso de que se haya mostrado*@
+                <button type="button" class="btn-close p-2 m-2" aria-label="Close" onclick="document.getElementById('editCategoryModal').style.display='none';
+          document.getElementById('edit_category_error_message').style.display = 'none';"></button>
+
+                @* Titulo del modal *@
+                <div class="text-center mb-6">
+                    <h4 class="role-title mb-2">Editar Categoría</h4>
+                </div>
+
+                @* Form para enviar el formulario *@
+                <form asp-action="EditCategory" asp-controller="Administration" method="post" class="dt_adv_search"
+                      id="edit_category_form">
+
+
+                    @* div contenedor *@
+                    <div class="container">
+
+                        @* Primera fila donde esta el input de Nombre y Descripcion *@
+                        <div class="row ">
+
+                            <div class="col grid">
+                                @* input oculto para almacenar el nombre de la categoria que se va a editar *@
+                                <input type="hidden" class="form-control dt-input dt-full-name w-full h-auto mb-2" data-column=1
+                                       data-column-index="0" placeholder="" name="id_category" id="id_category" value="">
+                                @* input oculto para almacenar el nombre de la categoria que se va a editar *@
+                                <input type="hidden" class="form-control dt-input dt-full-name w-full h-auto mb-2" data-column=1
+                                       data-column-index="0" placeholder="" name="category_to_edit" id="category_to_edit" value="">
+                                @* input del nombre nuevo de la categoria *@
+                                <label for="edit_category_name">Nombre</label>
+                                <input type="text" class="form-control dt-input dt-full-name w-full h-auto mb-2" data-column=1
+                                       data-column-index="0" placeholder="" name="edit_category_name" id="edit_category_name" value="">
+                                @* input de la descripcion nueva de la categoria *@
+                                <label for="edit_category_description mt-4">Descripción</label>
+                                <input type="text" class="form-control dt-input dt-full-name w-full h-auto" data-column=1
+                                       data-column-index="0" placeholder="" name="edit_category_description" id="edit_category_description"
+                                       value="">
+                            </div>
+
+
+                        </div>
+
+                        @* Segunda fila con posible mensaje de error/Exito *@
+                        <div class="row mt-4">
+                            @* Mensaje en caso de error/exito al completar el formulario *@
+                            <p class="text-danger text-center" id="edit_category_error_message" style="display: none;">Error</p>
+                        </div>
+
+                        @* Tercera fila donde esta el boton de enviar formulario y de cerrar el modal *@
+                        <div class="row mt-2">
+                            <div class="col d-flex align-items-center justify-content-center">
+                                @* boton para enviar categoria nueva al controller *@
+                                <button class="btn btn-primary align-self-center mx-2 w-full h-auto" id="btnEdit" type="button">
+                                    Enviar
+                                </button>
+                                @* Boton para cerrar modal y ocultar mensaje de error en caso de que se haya mostrado *@
+                                <button type="button" class="btn btn-label-secondary waves-effect w-full h-auto" onclick="document.getElementById('editCategoryModal').style.display='none';
+                  document.getElementById('edit_category_error_message').style.display = 'none';">
+                                    Cancelar
+                                </button>
+
+                            </div>
+
+                        </div>
+
+
+                    </div>
+
+                </form>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+
+
+
+@* CUERPO DEL MODAL CONFIRMAR ELIMINAR*@
+<div class="modal fade show hidden" id="deleteCategoryConfirmationModal" tabindex="-1" aria-modal="true" role="dialog"
+     style="display: none; padding-left: 0px; background-color: rgba(0, 0, 0, 0.5);">
+
+
+    @* Script para comprobar que la categoria que se quiere eliminar no tenga activos asignados *@
+    <script>
+        const check_if_category_has_actives = () => {
+          const error_message_element = document.getElementById('error_msg_label');
+          const category_actives = document.getElementById('category_actives');
+          //si Tiene activos asignados se debe mostrar un mensaje de error
+          if (category_actives.value > 0) {
+            error_message_element.innerHTML = 'No se puede eliminar una categoría con activos asignados';
+            error_message_element.className = 'text-danger';
+            error_message_element.style.display = 'inline';
+            setTimeout(() => {
+              error_message_element.style.display = 'none';
+            }, 3000);
+          } else {
+            error_message_element.innerHTML = 'Eliminando categoría...';
+            error_message_element.className = 'text-success';
+            error_message_element.style.display = 'inline';
+            setTimeout(() => {
+              error_message_element.style.display = 'none';
+              document.getElementById('delete_category_form').submit();
+            }, 3000);
+          }
+
+        }
+
+    </script>
+
+    <div class="modal-dialog modal-md modal-simple modal-dialog-centered">
+
+        <div class="modal-content">
+
+            <div class="modal-body">
+
+                @* Boton para cerrar el modal y ocultar mensaje de error en caso de que se haya mostrado*@
+                <button type="button" class="btn-close p-2 m-2" aria-label="Close" onclick="document.getElementById('deleteCategoryConfirmationModal').style.display='none';
+          document.getElementById('error_msg_label').style.display = 'none';">
+                </button>
+
+                @* Titulo del modal *@
+                <div class="text-center mb-6">
+                    <h4 class="role-title mb-2">¿Eliminar categoría?</h4>
+                </div>
+                @* Mensaje de error *@
+                <div class="text-center mb-2">
+                    <label id="error_msg_label" class="text-danger"
+                           style="display: none; margin-left: 5%; align-self: center; justify-self: center;">
+                        No se puede eliminar una categoría con activos asignados
+                    </label>
+                </div>
+
+
+
+                @* Form para enviar el formulario *@
+                <form asp-action="DeleteCategory" asp-controller="Administration" method="post" class="dt_adv_search"
+                      id="delete_category_form">
+                    @* input oculto para almacenar el nombre de la categoria para ser enviado al controller *@
+                    <input type="hidden" name="category_name" id="category_name" value="" />
+                    @* Input oculto solo para almacenar la cantiadad de activos de la categoria seleccionada para confirmar si se puede eliminar *@
+                    <input type="hidden" id="category_actives" value="" />
+
+                    @* div contenedor *@
+                    <div class="container mt-12 justify-content-center">
+
+                        @* Primera fila donde esta el Boton de confirmar y Cancelar *@
+                        <div class="row" style="justify-self: center;">
+                            <div class="col">
+                                <button type="button" class="btn btn-primary w-full h-auto" onclick="check_if_category_has_actives();">
+                                    Confirmar
+                                </button>
+                            </div>
+
+                            <div class="col">
+                                <button type="button" class="btn btn-secondary w-full h-auto" onclick="document.getElementById('deleteCategoryConfirmationModal').style.display='none';
+                document.getElementById('deleteCategoryConfirmationModal').style.display = 'none';
+                document.getElementById('error_msg_label').style.display = 'none';">
+                                    Cancelar
+                                </button>
+                            </div>
+                        </div>
+
+                    </div>
+
+                </form>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@* CUERPO DEL MODAL CONFIRMAR ELIMINAR MULTIPLES CATEGORIAS*@
+<div class="modal fade show hidden" id="deleteCategoriesConfirmationModal" tabindex="-1" aria-modal="true" role="dialog"
+     style="display: none; padding-left: 0px; background-color: rgba(0, 0, 0, 0.5);">
+
+
+    @* Script para comprobar que las categorias que se quieren eliminar no tengan activos asignados *@
+    <script>
+        const check_if_categories_has_actives = () => {
+
+          //Obtener el value de todas last checkbox que estan marcadas
+          const checkboxes = document.querySelectorAll('.checked-checkbox');
+          let allActivesCount = 0;
+          checkboxes.forEach(checkbox => {
+            allActivesCount += Number(checkbox.value.split(',')[1]);
+          });
+          const error_message_element = document.getElementById('error_msg_label_for_categories');
+
+          //si alguna categoria tiene activos asignados se debe mostrar un mensaje de error
+          if (allActivesCount > 0) {
+            error_message_element.innerHTML = 'No se puede eliminar una categoría con activos asignados';
+            error_message_element.className = 'text-danger';
+            error_message_element.style.display = 'inline';
+            setTimeout(() => {
+              error_message_element.style.display = 'none';
+            }, 3000);
+          } else {
+            error_message_element.innerHTML = 'Eliminando categorias...';
+            error_message_element.className = 'text-success';
+            error_message_element.style.display = 'inline';
+
+            //Asignar los nombres de last categorias seleccionadas al input oculto que llega al controller
+            let categories_names_string = '';
+            //los nombres pasan al controller en forma de strin que sigue la siguiente estructura:
+            // nombre_de_categoria$nombre_de_categoria$nombre_de_categoria$nombre_de_categoria$
+            // para que en el controller se pueda hacer un split y Obtener un Array de nombres
+            checkboxes.forEach(checkbox => categories_names_string += `${checkbox.value.split(',')[0]}$`);
+            document.getElementById('categories_names_string').value = categories_names_string;
+
+
+            setTimeout(() => {
+              error_message_element.style.display = 'none';
+              document.getElementById('delete_categories_form').submit();
+            }, 3000);
+          }
+
+
+        }
+
+    </script>
+
+
+
+    <div class="modal-dialog modal-md modal-simple modal-dialog-centered">
+
+        <div class="modal-content">
+
+            <div class="modal-body">
+
+                @* Boton para cerrar el modal y ocultar mensaje de error en caso de que se haya mostrado*@
+                <button type="button" class="btn-close p-2 m-2" aria-label="Close" onclick="document.getElementById('deleteCategoriesConfirmationModal').style.display='none';
+          document.getElementById('error_msg_label_for_categories').style.display = 'none';">
+                </button>
+
+                @* Titulo del modal *@
+                <div class="text-center mb-6">
+                    <h4 class="role-title mb-2">¿Eliminar categorias seleccionadas?</h4>
+                </div>
+                @* Mensaje de error *@
+                <div class="text-center mb-2">
+                    <label id="error_msg_label_for_categories" class="text-danger"
+                           style="display: none; margin-left: 5%; align-self: center; justify-self: center;">
+                        No se puede eliminar una categoría con activos asignados
+                    </label>
+                </div>
+
+
+
+                @* Form para enviar el formulario *@
+                <form asp-action="DeleteMultipleCategories" asp-controller="Administration" method="post" class="dt_adv_search"
+                      id="delete_categories_form">
+                    @* input oculto para almacenar el nombre de la categoria para ser enviado al controller *@
+                    <input type="hidden" name="categories_names_string" id="categories_names_string" value="" />
+
+                    @* div contenedor *@
+                    <div class="container mt-12 justify-content-center">
+
+                        @* Primera fila donde esta el Boton de confirmar y Cancelar *@
+                        <div class="row" style="justify-self: center;">
+                            <div class="col">
+                                <button type="button" class="btn btn-primary w-full h-auto"
+                                        onclick="check_if_categories_has_actives();">
+                                    Confirmar
+                                </button>
+                            </div>
+
+                            <div class="col">
+                                <button type="button" class="btn btn-secondary w-full h-auto" onclick="
+                document.getElementById('deleteCategoriesConfirmationModal').style.display = 'none';
+                document.getElementById('error_msg_label_for_categories').style.display = 'none';">
+                                    Cancelar
+                                </button>
+                            </div>
+                        </div>
+
+                    </div>
+
+                </form>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- category Table -->
+
+<div class="card" style="padding: 1rem 1rem 1rem 1rem;">
+
+    <link rel="stylesheet" href="@Url.Content("~/css/site.css")" />
+
+
+    @* Form para enviar la solicitud de busqueda al Controller segun los filtros ingresados*@
+    <form asp-action="ListCategories" asp-controller="Administration" method="get" class="dt_adv_search" id="search_form">
+
+        @* FILTROS DE BUSQUEDA Y BOTONES *@
+
+
+        <div class="col-12 px-0">
+            <h4 class="mb-2" style="color:#606060;">Categorías y Descripción</h4>
+            <!-- FILA 1: Búsqueda + Filtros alineados -->
+            <div class="row g-2 mt-1 align-items-end">
+
+                <!-- IZQUIERDA: Búsqueda + Buscar -->
+                <div class="col-md-6 d-flex align-items-end gap-2">
+                    <input type="text" class="form-control"
+                           placeholder="Categoría..."
+                           name="categories_search_input" value="@(categories_search_input)">
+
+                    <button class="btn btn-primary w-auto" id="btnSearch" style="font-size: 14px;">
+                        Buscar
+                    </button>
+                </div>
+
+                <!-- DERECHA: Select + Filtrar alineado a la derecha -->
+                <div class="col-md-6 d-flex justify-content-end align-items-end gap-2">
+                    @{
+                        var selectedState = ViewData["Category_Actives_State"]?.ToString();
+                    }
+
+                    <select id="filterAssets" name="category_actives_state" class="form-control" style="min-width: 180px;">
+                        <option value="" selected="@(selectedState == "" ? "selected" : null)">-- Todos --</option>
+                        <option value="with_actives" selected="@(selectedState == "with_actives" ? "selected" : null)">Con activos asignados</option>
+                        <option value="without_actives" selected="@(selectedState == "without_actives" ? "selected" : null)">Sin activos asignados</option>
+                    </select>
+
+
+
+
+                    <button type="submit" class="btn btn-primary w-auto" style="white-space: nowrap;">
+                        Filtrar
+                    </button>
+                </div>
+            </div>
+
+
+
+
+
+
+            <!-- FILA 2: Mostrar cantidad + Botón Agregar -->
+            <div class="row g-3 mt-4 mb-4 align-items-center">
+
+                <!-- Filtro de cantidad de categorías a mostrar -->
+                <div class="col-md-6 d-flex align-items-center">
+                    <label for="categories_per_page" class="me-2 mb-0">Mostrar</label>
+                    <select name="categories_per_page" class="form-select form-select-sm w-auto h-75" onchange="this.form.submit()">
+                        @{
+                            for (int i = 5; i <= 20; i += 5)
+                            {
+                                if (i == categories_per_page)
+                                {
+                                    <option value="@i" selected>@i</option>
+                                }
+                                else
+                                {
+                                    <option value="@i">@i</option>
+                                }
+                            }
+                        }
+                    </select>
+                    <span class="ms-2">categorías</span>
+                </div>
+
+                <!-- Botón Agregar categoría -->
+                <div class="col-md-6 d-flex justify-content-md-end">
+                    <button type="button" class="btn btn-primary w-auto"
+                            id="add_category_button"
+                            style="font-size: 14px;"
+                            onclick="document.getElementById('addCategoryModal').style.display='block';">
+                        <i class="fa-solid fa-plus fa-sm me-1"></i> Agregar Categoría
+                    </button>
+                </div>
+            </div>
+        </div>
+
+
+
+
+
+        @* Tabla de los categorias *@
+        <div class="card-datatable table-responsive border" style="padding: 0.5rem 0.5rem 0.5rem 0.5rem;">
+
+
+            <!-- Espaciado alrededor del botón -->
+            <button type="button" disabled
+                    class="btn btn-sm mb-3"
+                    id="delete_categories_button"
+                    onclick="document.getElementById('deleteCategoriesConfirmationModal').style.display='block';"
+                    style="background-color: #c4c4c4; border: none; border-radius: 6px; height: 28px; min-width: 40px;">
+                <img src="~/img/eliminar_icono.svg" alt="Eliminar seleccionados" style="width: 16px; height: 16px;">
+            </button>
+
+
+
+            <style>
+                .card-datatable {
+                    border: 1px solid #dee2e6;
+                    border-radius: 8px;
+                    overflow: hidden;
+                    background-color: #fff;
+                }
+
+                    .card-datatable table {
+                        border-bottom: 1px solid #dee2e6;
+                    }
+
+
+
+                #delete_categories_button:not(:disabled) {
+                    background-color: #666666 !important;
+                }
+            </style>
+
+            <table class="datatables-basic table">
+
+                <script>
+                    const fill_selected_category_data = (id,name, description) => {
+
+                      //Definicion de variables que contienen la referencia a su respectivo elemento html
+                                //
+                                                    document.getElementById("id_category").value = id;
+                                document.getElementById("category_to_edit").value = name; //input que almacena el nombre de la categorias para poder identificarla
+                      document.getElementById("edit_category_name").value = name;
+                      document.getElementById("edit_category_description").value = description;
+
+                      document.getElementById('editCategoryModal').style.display = 'block';
+
+                    }
+
+                    //METODO QUE SEGUN EL CAMPO CAMBIA EL ORDEN DE LOS REGISTROS A ASCENDENTE O DESCENDENTE
+                    const change_orderby = (columnName) => {
+                      const current_orderby_value = document.getElementById('order_by').value;
+                      if (current_orderby_value === `${columnName}_ascending`) {
+                        document.getElementById('order_by').value = `${columnName}_descending`;
+                      } else {
+                        document.getElementById('order_by').value = `${columnName}_ascending`;
+                      }
+                      document.getElementById('btnSearch').click();
+                    }
+
+                </script>
+
+
+
+                @* Titulos de las columnas de la tabla *@
+                <thead>
+                    <tr>
+
+                        @* INPUT OCULTO QUE ALMACENA EL ORDEN DE LA LISTA PARA ENVIAR AL FORMULARIO *@
+                        <input type="hidden" id="order_by" name="order_by" value="@order_by" />
+
+
+
+                        @* CHECKBOX PARA REALIZAR LA SELECCION MASIVA *@
+                        <th style="width: 5%; text-align: center;">
+                            <input type="checkbox" style="transform: scale(1.5); accent-color: #ff5100;" id="select_all" class="every-checkbox">
+                        </th>
+
+                        @* Se consulta si el orden por nombre ya estaba asignado
+                           para asignar el estilo de columna representativa del orden
+
+                                Si no existe ningun valor en order_by se asigna a nombre *@
+                        <th style="width: 35%;">Nombre</th>
+                        <th style="width: 50%;">Descripción</th>
+
+                        <th style="width: 10%; text-align: center;">
+                            activos
+                        </th>
+
+                        <th style="width: 20%;">
+                            Acciones
+                        </th>
+
+
+
+                    </tr>
+                </thead>
+
+
+                @* Listado de los Categorias del Model en la tabla *@
+                <tbody>
+
+                    @* Se hace loop en el Model que contiene la lista de categorias y se crean las entradas en la tabla *@
+                    @{
+
+                        foreach (var category in Model)
+                        {
+                            <tr>
+
+                                <td class="text-center">
+                                    <input type="checkbox" style="transform: scale(1.5); accent-color: #ff5100;" class="checkbox-item" id="checkbox_for_@(category.Name)"
+                                           value="@category.Name,@category.Actives" onchange="
+                                                        if(document.getElementById('checkbox_for_@(category.Name)').checked){
+                                                          document.getElementById('checkbox_for_@(category.Name)').className = 'checkbox-item checked-checkbox';
+                                                        }else{
+                                                          document.getElementById('checkbox_for_@(category.Name)').className = 'checkbox-item';
+                                                        }" />
+                                </td>
+
+                                <td >
+                                    @category.Name
+                                </td>
+
+                                <td >
+                                    @(category.Description)
+                                </td>
+
+                                <td class="text-center">
+                                    @(category.Actives)
+                                </td>
+
+                                @* Botones para editar/eliminar categoria *@
+                                <td >
+                                    <div class="d-flex justify-content-start gap-2">
+
+                                        <!-- Botón Editar -->
+                                        <button type="button"
+                                                onclick="fill_selected_category_data('@(category.AssetCategorySysId)','@(category.Name)', '@(category.Description)');"
+                                                class="btn d-flex align-items-center justify-content-center p-1 px-2"
+                                                style="background-color: #00A5B8; border: none; border-radius: 6px; height: 28px; min-width: 40px;">
+                                            <img src="~/img/editar_icono.svg" alt="Editar" style="width: 16px; height: 16px;">
+                                        </button>
+
+                                        <!-- Botón Eliminar -->
+                                        <button type="button"
+                                                onclick="document.getElementById('deleteCategoryConfirmationModal').style.display='block';
+                                            document.getElementById('category_actives').value = '@(category.Actives)';
+                                            document.getElementById('category_name').value = '@(category.Name)';"
+                                                class="btn d-flex align-items-center justify-content-center p-1 px-2"
+                                                style="background-color: #666666; border: none; border-radius: 6px; height: 28px; min-width: 40px;">
+                                            <img src="~/img/eliminar_icono.svg" alt="Eliminar" style="width: 16px; height: 16px;">
+                                        </button>
+
+                                    </div>
+                                </td>
+
+
+
+                            </tr>
+
+                        }
+
+                    }
+
+
+                </tbody>
+            </table>
+
+            <!-- Modal de alerta -->
+            <div class="modal fade" id="alertModal" tabindex="-1" aria-labelledby="alertModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="alertModalLabel">Título</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                        </div>
+                        <div class="modal-body" id="alertModalBody">
+                            <!-- Mensaje dinámico -->
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+
+            @{
+                AlertMessage? alertMessage = null;
+
+                if (TempData["Alert"] is string alertJson)
+                {
+                    try
+                    {
+                        alertMessage = System.Text.Json.JsonSerializer.Deserialize<AlertMessage>(alertJson);
+                        TempData.Remove("Alert");
+                    }
+                    catch { alertMessage = null; }
+                }
+            }
+
+            @if (alertMessage != null)
+            {
+                var jsonAlert = Json.Serialize(alertMessage); // Serializar para JS
+
+                <script>
+                    document.addEventListener("DOMContentLoaded", function () {
+                        var alertData = @Html.Raw(jsonAlert);
+                        console.log("SCRIPT DE ALERTA ACTIVADO");
+                        console.log(alertData);
+
+                        var alertModalLabel = document.getElementById('alertModalLabel');
+                        var alertModalBody = document.getElementById('alertModalBody');
+
+                        alertModalLabel.textContent = (alertData.tipo.toLowerCase() === "success") ? "Éxito" : "Error";
+                        alertModalBody.innerHTML = alertData.mensaje;
+
+                        var alertModal = new bootstrap.Modal(document.getElementById('alertModal'));
+                        alertModal.show();
+
+                        document.getElementById('alertModal').addEventListener('hidden.bs.modal', function () {
+                            window.location.href = '@Url.Content("~/Administration/ListCategories")';
+
+                        });
+                    });
+                </script>
+            }
+
+
+
+
+            @* Si no se encuentran Categorias en el Model (Array de Categorias), se muestra este mensaje*@
+            @{
+
+                if (Model.Length == 0)
+                {
+                    <div class="d-flex justify-content-center">
+                        <label class="mt-10">No se encontraron categorías</label>
+                    </div>
+                }
+
+            }
+
+
+            @* Paginación *@
+            <nav aria-label="Page navigation">
+                <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center mt-1">
+
+
+                    <!-- Información de la página actual -->
+                    <div style="display:none;" class="pagination-info mb-2 mb-sm-0">
+                        <span>Página @current_page de @total_pages</span>
+                    </div>
+
+                    <div class="d-flex justify-content-center justify-content-sm-end w-100">
+                        <!-- Campo oculto para la página seleccionada -->
+                        <input type="hidden" id="page_number" name="page_number" value="@(current_page)" />
+
+                        <!-- Lista con los botones de paginación -->
+                        <ul class="pagination pagination-rounded mb-0 flex-wrap justify-content-center justify-content-sm-end">
+                            <!-- Botón de primera página -->
+                            <li class="page-item">
+                                <button class="page-link" type="submit" onclick="document.getElementById('page_number').value = 1">
+                                    <i class="ti ti-chevrons-left ti-sm"></i>
+                                </button>
+                            </li>
+
+                            <!-- Botón de página anterior -->
+                            <li class="page-item">
+                                <button class="page-link" type="submit"
+                                        onclick="document.getElementById('page_number').value = @(current_page > 1 ? current_page - 1 : 1)">
+                                    <i class="ti ti-chevron-left ti-sm"></i>
+                                </button>
+                            </li>
+
+                            <!-- Botones de paginación dinámicos -->
+                            @for (int i = current_page; i <= current_page + 2; i++)
+                            {
+                                if (i <= total_pages)
+                                {
+                                    <li class="page-item @(current_page == i ? "active" : "")">
+                                        <button class="page-link" type="submit"
+                                                onclick="document.getElementById('page_number').value = @i">
+                                            @i
+                                        </button>
+                                    </li>
+                                }
+                            }
+
+                            <!-- Botón de página siguiente -->
+                            <li class="page-item">
+                                <button class="page-link" type="submit"
+                                        onclick="document.getElementById('page_number').value = @(current_page < total_pages ? current_page + 1 : total_pages)">
+                                    <i class="ti ti-chevron-right ti-sm"></i>
+                                </button>
+                            </li>
+
+                            <!-- Botón de última página -->
+                            <li class="page-item">
+                                <button class="page-link" type="submit"
+                                        onclick="document.getElementById('page_number').value = @(total_pages)">
+                                    <i class="ti ti-chevrons-right ti-sm"></i>
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </nav>
+
+
+
+        </div>
+
+    </form>
+    @* Script para manejar el check masivo
+    Si la checkbox principal se marca, todas las demas tambien
+    Si alguna checkbox de empleado no esta marcada, la checkbox principal tampoco lo va a estar *@
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+          // Seleccionar los elementos necesarios
+          const selectAllCheckbox = document.getElementById('select_all');
+          const checkboxes = document.querySelectorAll('.checkbox-item');
+
+          const delete_categories_button = document.getElementById('delete_categories_button');
+
+          // Función para verificar si al menos una checkbox está seleccionada para activar el boton de desactivar en batch
+          const updateDisableCategoryButtonState = () => {
+            const isAnyChecked = Array.from(checkboxes).some(checkbox => checkbox.checked);
+            delete_categories_button.disabled = !isAnyChecked;
+          }
+
+          // Event listener para la checkbox de selección masiva
+          selectAllCheckbox.addEventListener("change", () => {
+            const isChecked = selectAllCheckbox.checked;
+            checkboxes.forEach(checkbox => {
+              if (isChecked) {
+                //Si se marcan last casillas items mediante el select masivo, se agrega la respectiva clase a casilla item
+                checkbox.className = 'checkbox-item checked-checkbox';
+              } else {
+                checkbox.className = 'checkbox-item';
+              }
+              checkbox.checked = isChecked;
+            });
+            updateDisableCategoryButtonState();
+          });
+
+          // Event listener para las checkboxes individuales
+          checkboxes.forEach(checkbox => {
+            //Event listener para Desmarcar la casilla de check masivo si alguna de las casillas estan desmarcada
+            checkbox.addEventListener('change', () => {
+              if (!checkbox.checked) {
+                selectAllCheckbox.checked = false; // Desmarcar el principal
+              } else if (Array.from(checkboxes).every(cb => cb.checked)) {
+                selectAllCheckbox.checked = true; // Marcar el principal si todos están seleccionados
+              }
+              updateDisableCategoryButtonState();
+            });
+
+          });
+
+        });
+
+    </script>
+    <form asp-action="ListCategories" asp-controller="Administration" method="get" class="dt_adv_search" id="search_form">
+        @* Paginación *@
+        <nav style="display:none;" aria-label="Page navigation">
+            <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center m-lg-3">
+                <!-- Información de la página actual -->
+                <div style="display:none;" class="pagination-info mb-2 mb-sm-0">
+                    <span>Página @current_page de @total_pages</span>
+                </div>
+
+                <div class="d-flex justify-content-center justify-content-sm-end w-100">
+                    <!-- Campo oculto para la página seleccionada -->
+                    <input type="hidden" id="page_number" name="page_number" value="@(current_page)" />
+
+                    <!-- Lista con los botones de paginación -->
+                    <ul class="pagination pagination-rounded mb-0 flex-wrap justify-content-center justify-content-sm-end">
+                        <!-- Botón de primera página -->
+                        <li class="page-item">
+                            <button class="page-link" type="submit" onclick="document.getElementById('page_number').value = 1">
+                                <i class="ti ti-chevrons-left ti-sm"></i>
+                            </button>
+                        </li>
+
+                        <!-- Botón de página anterior -->
+                        <li class="page-item">
+                            <button class="page-link" type="submit"
+                                    onclick="document.getElementById('page_number').value = @(current_page > 1 ? current_page - 1 : 1)">
+                                <i class="ti ti-chevron-left ti-sm"></i>
+                            </button>
+                        </li>
+
+                        <!-- Botones de paginación dinámicos -->
+                        @for (int i = current_page; i <= current_page + 2; i++)
+                        {
+                            if (i <= total_pages)
+                            {
+                                <li class="page-item @(current_page == i ? "active" : "")">
+                                    <button class="page-link" type="submit"
+                                            onclick="document.getElementById('page_number').value = @i">
+                                        @i
+                                    </button>
+                                </li>
+                            }
+                        }
+
+                        <!-- Botón de página siguiente -->
+                        <li class="page-item">
+                            <button class="page-link" type="submit"
+                                    onclick="document.getElementById('page_number').value = @(current_page < total_pages ? current_page + 1 : total_pages)">
+                                <i class="ti ti-chevron-right ti-sm"></i>
+                            </button>
+                        </li>
+
+                        <!-- Botón de última página -->
+                        <li class="page-item">
+                            <button class="page-link" type="submit"
+                                    onclick="document.getElementById('page_number').value = @(total_pages)">
+                                <i class="ti ti-chevrons-right ti-sm"></i>
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </form>
+
+    <!-- Modal de alerta -->
+    <div class="modal fade" id="alertModal" tabindex="-1" aria-labelledby="alertModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="alertModalLabel">Mensaje</h5>
+                    <button type="button" class="btn-close text-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body" id="alertModalBody">
+                    <!-- Aquí va el mensaje dinámico -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @{
+        var alertMessage2 = TempData["Alert2"] as string;
+    }
+    @if (!string.IsNullOrEmpty(alertMessage2))
+    {
+        <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                const alertModalBody = document.getElementById("alertModalBody");
+                alertModalBody.textContent = "@alertMessage2";
+
+                const alertModal = new bootstrap.Modal(document.getElementById("alertModal"));
+                alertModal.show();
+            });
+        </script>
+        TempData.Remove("Alert2");
+    }
+
+    <style>
+        #alertModal .modal-header.bg-primary {
+            background-color: #ff5100 !important;
+        }
+    </style>
+
+
+</div>
+<br />
+<div class="card">
+    <h5 class="card-header h3 mb-2">Sincronización</h5>
+
+    <div class="card-body mb-3">
+        <form asp-controller="Administration" asp-action="SincronizarCategorias" method="post" enctype="multipart/form-data">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-6">
+                    <label for="excelFile" class="form-label">Subir archivo Excel (.xlsx):</label>
+                    <input type="file" name="excelFile" id="excelFile" accept=".xlsx" class="form-control" required />
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-primary-purple w-100">
+                        <i class="fa fa-upload me-1"></i> Sincronizar Categorias
+                    </button>
+                </div>
+            </div>
+        </form>
+
+        <!-- Botón de descarga debajo -->
+        <div class="row mt-4">
+            <div class="col-md-3">
+                <a asp-controller="Administration" asp-action="DescargarPlantillaCategorias" class="btn btn-outline-secondary w-100">
+                    <i class="fa fa-download me-1"></i> Descargar plantilla Excel
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .btn-primary-purple {
+            background-color: #ff5100 !important;
+            border-color: #ff5100 !important;
+            color: white;
+        }
+
+            .btn-primary-purple:hover {
+                background-color: #ff7c48 !important;
+                border-color: #ff7c48 !important;
+                color: white;
+            }
+    </style>
+</div>
+

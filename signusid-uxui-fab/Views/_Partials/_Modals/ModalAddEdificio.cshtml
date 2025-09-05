@@ -1,0 +1,136 @@
+<!-- Add Edificios Modal:
+En este form se el ingreso y edición de edificios.
+-->
+<div class="modal fade" id="addEdificioModal" data-context="new" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-simple modal-dialog-centered modal-add-new-role">
+        <div class="modal-content">
+            <div class="modal-body" style="padding: 0 !important; margin-top: -20px; margin-bottom:-10px;">
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="margin-top: 15px;"></button>
+                <div class="text-center mb-6">
+                    <h4 class="role-title mb-2" style="margin-top: 15px">Agregar @ViewBag.NombreUbicacionA</h4>
+                </div>
+                <!-- Add edificios form -->
+
+                <form id="addEdificioForm" class="row g-1" asp-action="InsertarEdificio" asp-controller="Empresa" method="post" style="row-gap: 4px; margin-bottom: 0;">
+                    <div class="col-12" style="margin-bottom: 4px;">
+                        <label class="form-label" for="name" style="margin-bottom: 2px;">Nombre @ViewBag.NombreUbicacionA</label>
+                        <input type="text"
+                               id="name"
+                               name="name"
+                               class="form-control input2"
+                               placeholder="Ingrese el nombre del edificio"
+                               required />
+                        <div id="stateNameError" class="error-message2"></div>
+                    </div>
+
+                    <div class="col-12" style="margin-bottom: 4px;">
+                        <label class="form-label" for="description" style="margin-bottom: 2px;">Descripción</label>
+                        <textarea id="description"
+                                  name="description"
+                                  class="form-control input2"
+                                  placeholder="Ingrese una breve descripción del edificio"
+                                  rows="4"
+                                  required
+                                  style="height: 70px; resize: none;"></textarea>
+                        <div id="stateDescriptionError" class="error-message2"></div>
+                    </div>
+
+                    <div id="addingNamesError" class="error-message3"></div>
+
+                    <div class="col-12 d-flex justify-content-center gap-2 mt-0" style="margin-bottom: 0;">
+                        <button type="submit" class="btn btn-primary" id="saveStateButton" style="margin-top:-10px; margin-bottom: 10px">
+                            Guardar
+                        </button>
+                        <button type="button" class="btn btn-secondary" id="cancelButton" style="margin-top:-10px; margin-bottom: 10px" data-bs-dismiss="modal">
+                            Cancelar
+                        </button>
+                    </div>
+                </form>
+                <!--/ Add edificios form -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- #region Estilos CSS -->
+<style>
+    .error-message2 {
+        color: red;
+        font-size: 0.875rem;
+        margin-top: 5px;
+    }
+
+    .error-message3 {
+        color: red;
+        font-size: 0.875rem;
+        text-align: center;
+        margin-top: 5px;
+    }
+
+    .input2 {
+        margin-bottom: 10px;
+    }
+
+    .button2 {
+        margin-top: 10px;
+    }
+</style>
+<!-- #endregion -->
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const form = document.getElementById("addEdificioForm");
+      const cancelButton = document.getElementById("cancelButton");
+      const modal = document.getElementById("addEdificioModal");
+      const nameInput = document.getElementById("name");
+      const descriptionInput = document.getElementById("description");
+      const nameErrorDiv = document.getElementById("stateNameError");
+      const descriptionErrorDiv = document.getElementById("stateDescriptionError");
+
+      function resetForm() {
+        form.reset();
+        nameErrorDiv.textContent = "";
+        descriptionErrorDiv.textContent = "";
+        const addingErr = document.getElementById("addingNamesError");
+        if (addingErr) addingErr.textContent = "";
+      }
+
+      modal.addEventListener("hidden.bs.modal", resetForm);
+
+      cancelButton.addEventListener("click", function () {
+        resetForm();
+        const bsModal = bootstrap.Modal.getInstance(modal);
+        if (bsModal) bsModal.hide();
+      });
+
+      form.addEventListener("submit", function (e) {
+        e.preventDefault();
+
+        const nameValue = nameInput.value.trim();
+        const descriptionValue = descriptionInput.value.trim();
+
+        nameErrorDiv.textContent = "";
+        descriptionErrorDiv.textContent = "";
+
+        let isValid = true;
+
+        if (!nameValue || nameValue.length < 3 || nameValue.length > 50) {
+          nameErrorDiv.textContent = "El nombre debe tener entre 3 y 50 caracteres.";
+          isValid = false;
+        }
+
+        if (!descriptionValue || descriptionValue.length < 3 || descriptionValue.length > 150) {
+          descriptionErrorDiv.textContent = "La descripción debe tener entre 3 y 150 caracteres.";
+          isValid = false;
+        }
+
+        if (isValid) {
+          form.submit();
+        }
+      });
+
+      // Limpieza de mensajes al escribir (igual que en modal 1)
+      nameInput.addEventListener("input", () => nameErrorDiv.textContent = "");
+      descriptionInput.addEventListener("input", () => descriptionErrorDiv.textContent = "");
+    });
+</script>

@@ -1,0 +1,212 @@
+{
+  "Employees": [
+    {
+      "id": 482849,
+      "name": "julio",
+      "last_name": "alvarado",
+      "creation_date": "2024-12-27T00:00:00",
+      "email": "julio@gmail.com",
+      "state": "Activo"
+    },
+    {
+      "id": 983742,
+      "name": "maria",
+      "last_name": "garcia",
+      "creation_date": "2024-11-15T00:00:00",
+      "email": "maria.garcia@example.com",
+      "state": "Inactivo"
+    },
+    {
+      "id": 284910,
+      "name": "carlos",
+      "last_name": "rodriguez",
+      "creation_date": "2024-12-20T00:00:00",
+      "email": "carlos.rodriguez@example.com",
+      "state": "Activo"
+    },
+    {
+      "id": 394821,
+      "name": "laura",
+      "last_name": "sanchez",
+      "creation_date": "2024-12-01T00:00:00",
+      "email": "laura.sanchez@example.com",
+      "state": "Activo"
+    },
+    {
+      "id": 658392,
+      "name": "pedro",
+      "last_name": "perez",
+      "creation_date": "2024-12-10T00:00:00",
+      "email": "pedro.perez@example.com",
+      "state": "Inactivo"
+    },
+    {
+      "id": 374812,
+      "name": "antonio",
+      "last_name": "lopez",
+      "creation_date": "2024-10-18T00:00:00",
+      "email": "antonio.lopez@example.com",
+      "state": "Activo"
+    },
+    {
+      "id": 293481,
+      "name": "ana",
+      "last_name": "martinez",
+      "creation_date": "2024-11-25T00:00:00",
+      "email": "ana.martinez@example.com",
+      "state": "Inactivo"
+    },
+    {
+      "id": 947312,
+      "name": "sofia",
+      "last_name": "hernandez",
+      "creation_date": "2024-11-11T00:00:00",
+      "email": "sofia.hernandez@example.com",
+      "state": "Activo"
+    },
+    {
+      "id": 128437,
+      "name": "diego",
+      "last_name": "cruz",
+      "creation_date": "2024-12-09T00:00:00",
+      "email": "diego.cruz@example.com",
+      "state": "Inactivo"
+    },
+    {
+      "id": 312984,
+      "name": "valeria",
+      "last_name": "morales",
+      "creation_date": "2024-12-03T00:00:00",
+      "email": "valeria.morales@example.com",
+      "state": "Activo"
+    },
+    {
+      "id": 572194,
+      "name": "daniel",
+      "last_name": "gutierrez",
+      "creation_date": "2024-11-27T00:00:00",
+      "email": "daniel.gutierrez@example.com",
+      "state": "Activo"
+    },
+    {
+      "id": 814293,
+      "name": "isabel",
+      "last_name": "ramos",
+      "creation_date": "2024-11-05T00:00:00",
+      "email": "isabel.ramos@example.com",
+      "state": "Inactivo"
+    },
+    {
+      "id": 472819,
+      "name": "alejandro",
+      "last_name": "mendoza",
+      "creation_date": "2024-11-01T00:00:00",
+      "email": "alejandro.mendoza@example.com",
+      "state": "Activo"
+    },
+    {
+      "id": 912384,
+      "name": "luis",
+      "last_name": "flores",
+      "creation_date": "2024-12-22T00:00:00",
+      "email": "luis.flores@example.com",
+      "state": "Inactivo"
+    },
+    {
+      "id": 234819,
+      "name": "emilia",
+      "last_name": "romero",
+      "creation_date": "2024-10-20T00:00:00",
+      "email": "emilia.romero@example.com",
+      "state": "Activo"
+    },
+    {
+      "id": 389127,
+      "name": "miguel",
+      "last_name": "ortega",
+      "creation_date": "2024-11-30T00:00:00",
+      "email": "miguel.ortega@example.com",
+      "state": "Activo"
+    },
+    {
+      "id": 481927,
+      "name": "gabriela",
+      "last_name": "valencia",
+      "creation_date": "2024-12-08T00:00:00",
+      "email": "gabriela.valencia@example.com",
+      "state": "Inactivo"
+    },
+    {
+      "id": 128374,
+      "name": "ricardo",
+      "last_name": "fernandez",
+      "creation_date": "2024-11-14T00:00:00",
+      "email": "ricardo.fernandez@example.com",
+      "state": "Activo"
+    },
+    {
+      "id": 349182,
+      "name": "catalina",
+      "last_name": "reyes",
+      "creation_date": "2024-12-12T00:00:00",
+      "email": "catalina.reyes@example.com",
+      "state": "Activo"
+    },
+    {
+      "id": 658123,
+      "name": "sebastian",
+      "last_name": "vera",
+      "creation_date": "2024-10-23T00:00:00",
+      "email": "sebastian.vera@example.com",
+      "state": "Inactivo"
+    },
+    {
+      "id": 902381,
+      "name": "victoria",
+      "last_name": "esquivel",
+      "creation_date": "2024-11-04T00:00:00",
+      "email": "victoria.esquivel@example.com",
+      "state": "Activo"
+    },
+    {
+      "id": 784321,
+      "name": "andres",
+      "last_name": "rios",
+      "creation_date": "2024-12-29T00:00:00",
+      "email": "andres.rios@example.com",
+      "state": "Inactivo"
+    },
+    {
+      "id": 347812,
+      "name": "claudia",
+      "last_name": "navarro",
+      "creation_date": "2024-12-06T00:00:00",
+      "email": "claudia.navarro@example.com",
+      "state": "Activo"
+    },
+    {
+      "id": 214987,
+      "name": "felipe",
+      "last_name": "araya",
+      "creation_date": "2024-11-13T00:00:00",
+      "email": "felipe.araya@example.com",
+      "state": "Activo"
+    },
+    {
+      "id": 192837,
+      "name": "luciana",
+      "last_name": "blanco",
+      "creation_date": "2024-11-26T00:00:00",
+      "email": "luciana.blanco@example.com",
+      "state": "Inactivo"
+    },
+    {
+      "id": 598321,
+      "name": "nicolas",
+      "last_name": "mejia",
+      "creation_date": "2024-12-19T00:00:00",
+      "email": "nicolas.mejia@example.com",
+      "state": "Activo"
+    }
+  ]
+}

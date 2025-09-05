@@ -1,0 +1,108 @@
+{
+  "Users": [
+    {
+      "name": "julio",
+      "last_name": "alvarado",
+      "creation_date": "2024-12-27T00:00:00",
+      "role": "Administrador",
+      "email": "julio@gmail.com",
+      "state": "Activo"
+    },
+    {
+      "name": "maria",
+      "last_name": "garcia",
+      "role": "Super Administrador",
+      "creation_date": "2024-11-15T00:00:00",
+      "email": "maria.garcia@example.com",
+      "state": "Inactivo"
+    },
+    {
+      "name": "carlos",
+      "last_name": "rodriguez",
+      "role": "Gerente de Proyectos",
+      "creation_date": "2024-12-20T00:00:00",
+      "email": "carlos.rodriguez@example.com",
+      "state": "Activo"
+    },
+    {
+      "name": "laura",
+      "last_name": "sanchez",
+      "role": "Jefe de Ventas",
+      "creation_date": "2024-12-01T00:00:00",
+      "email": "laura.sanchez@example.com",
+      "state": "Activo"
+    },
+    {
+      "name": "pedro",
+      "last_name": "perez",
+      "role": "Usuario Regular",
+      "creation_date": "2024-12-10T00:00:00",
+      "email": "pedro.perez@example.com",
+      "state": "Inactivo"
+    },
+    {
+      "name": "antonio",
+      "last_name": "lopez",
+      "role": "Colaborador",
+      "creation_date": "2024-10-18T00:00:00",
+      "email": "antonio.lopez@example.com",
+      "state": "Activo"
+    },
+    {
+      "name": "ana",
+      "last_name": "martinez",
+      "role": "Moderador",
+      "creation_date": "2024-11-25T00:00:00",
+      "email": "ana.martinez@example.com",
+      "state": "Inactivo"
+    },
+    {
+      "name": "sofia",
+      "last_name": "hernandez",
+      "role": "Editor",
+      "creation_date": "2024-11-11T00:00:00",
+      "email": "sofia.hernandez@example.com",
+      "state": "Activo"
+    },
+    {
+      "name": "diego",
+      "last_name": "cruz",
+      "role": "Administrador de Contenido",
+      "creation_date": "2024-12-09T00:00:00",
+      "email": "diego.cruz@example.com",
+      "state": "Inactivo"
+    },
+    {
+      "name": "valeria",
+      "last_name": "morales",
+      "role": "Representante de Ventas",
+      "creation_date": "2024-12-03T00:00:00",
+      "email": "valeria.morales@example.com",
+      "state": "Activo"
+    },
+    {
+      "name": "daniel",
+      "last_name": "gutierrez",
+      "role": "Soporte Técnico",
+      "creation_date": "2024-11-27T00:00:00",
+      "email": "daniel.gutierrez@example.com",
+      "state": "Activo"
+    },
+    {
+      "name": "isabel",
+      "last_name": "ramos",
+      "role": "Auditor",
+      "creation_date": "2024-11-05T00:00:00",
+      "email": "isabel.ramos@example.com",
+      "state": "Inactivo"
+    },
+    {
+      "name": "alejandro",
+      "last_name": "mendoza",
+      "role": "Administrador de Sistemas",
+      "creation_date": "2024-10-30T00:00:00",
+      "email": "alejandro.mendoza@example.com",
+      "state": "Activo"
+    }
+  ]
+}

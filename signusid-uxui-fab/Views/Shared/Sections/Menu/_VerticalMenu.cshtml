@@ -1,0 +1,269 @@
+@{
+    TempData.Keep();
+
+    // Ruta actual normalizada (sin slash final, en minúsculas)
+    var currentPageRaw = ViewContext.HttpContext.Request.Path.Value ?? "";
+    var currentPage = currentPageRaw.TrimEnd('/').ToLowerInvariant();
+
+    bool inGestion = currentPage.StartsWith("/gestionservicio");
+    bool isGestionServicios = currentPage.StartsWith("/gestionservicio/gestionservicios");
+    bool isAdministracionTickets = currentPage.StartsWith("/gestionservicio/administraciontickets");
+    bool isControlTrafico = currentPage.StartsWith("/gestionservicio/controltrafico");
+    bool isTimeTracker = currentPage.StartsWith("/gestionservicio/timetracker");
+    bool isContratos = currentPage.StartsWith("/gestionservicio/contratos");
+    bool isGarantias = currentPage.StartsWith("/gestionservicio/garantias");
+    bool isProyectos = currentPage.StartsWith("/gestionservicio/proyectos");
+
+
+    bool inAdministration2 = currentPage.StartsWith("/administration");
+    bool inCategories = currentPage.StartsWith("/administration/listcategories");
+    bool inEstados = currentPage.StartsWith("/administration/estados");
+    bool inMarcas = currentPage.StartsWith("/administration/listbrands");
+    bool inModelos = currentPage.StartsWith("/administration/modelos");
+    bool inReportes = currentPage.StartsWith("/administration/reportes");
+
+    bool inInventarios = currentPage.StartsWith("/inventario");
+    bool inBodegas = currentPage.StartsWith("/inventario/bodegas");
+    bool inRepuestos = currentPage.StartsWith("/inventario/repuestos");
+    bool inMateriales = currentPage.StartsWith("/inventario/materiales");
+
+    bool inConfig = currentPage.StartsWith("/configuracion");
+    bool inUsuarios = currentPage.StartsWith("/configuracion/list");
+    bool inRoles = currentPage.StartsWith("/configuracion/roles");
+    bool inPermisos = currentPage.StartsWith("/configuracion/permisos");
+    bool inCargaM = currentPage.StartsWith("/configuracion/cargamasiva");
+
+    bool inEmpresa = currentPage.StartsWith("/empresa");
+    bool inEmpresas = currentPage.StartsWith("/empresa/empresas");
+}
+
+<link rel="stylesheet" href="~/vendor/css/theme-default.css" />
+
+<aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
+    <div class='app-brand demo @(ViewData["navbarFull"] != null && Convert.ToBoolean(ViewData["navbarFull"]) ? "d-xl-none" : "")'>
+        <a asp-controller="GestionServicio" asp-action="GestionServicios" class="app-brand-link">
+            <img src="~/img/serviceTrackLogo.svg" class="img-fluid" style="height: 70px;" alt="ServiceTrackID logo" />
+        </a>
+     
+    </div>
+
+    <div class="menu-inner-shadow"></div>
+
+    <ul class="menu-inner py-1">
+
+        <!-- Grupo: Administración / Servicios -->
+        <li class="menu-item@(inGestion ? " active open" : "")" data-menu-id="gestion">
+            <a href="javascript:void(0);" class="menu-link menu-toggle">
+                <i class="menu-icon tf-icons ti ti-ticket" aria-hidden="true"></i>
+                <div data-i18n="Administracion">Gestión de Servicio</div>
+            </a>
+
+            <!-- Importante: menu-sub SIEMPRE dentro de li.menu-item -->
+            <ul class="menu-sub" style="@(inGestion ? "display:block" : "")">
+                <li class="menu-item@(isAdministracionTickets ? " active" : "")">
+                    <a asp-controller="GestionServicio" asp-action="AdministracionTickets" class="menu-link">
+                        <div data-i18n="">Administración de Tickets</div>
+                    </a>
+                </li>
+                <li class="menu-item@(isControlTrafico ? " active" : "")">
+                    <a asp-controller="GestionServicio" asp-action="ControlTrafico" class="menu-link">
+                        <div data-i18n="">Control de Tráfico</div>
+                    </a>
+                </li>
+                <li class="menu-item@(isGestionServicios ? " active" : "")">
+                    <a asp-controller="GestionServicio" asp-action="GestionServicios" class="menu-link">
+                        <div data-i18n="">Gestión de Servicio</div>
+                    </a>
+                </li>
+                <li class="menu-item@(isTimeTracker ? " active" : "")">
+                    <a asp-controller="GestionServicio" asp-action="TimeTracker" class="menu-link">
+                        <div data-i18n="">Time Tracker</div>
+                    </a>
+                </li>
+                <li class="menu-item@(isContratos ? " active" : "")">
+                    <a asp-controller="GestionServicio" asp-action="Contratos" class="menu-link">
+                        <div data-i18n="">Contratos</div>
+                    </a>
+                </li>
+                <li class="menu-item@(isGarantias ? " active" : "")">
+                    <a asp-controller="GestionServicio" asp-action="Garantias" class="menu-link">
+                        <div data-i18n="">Garantías</div>
+                    </a>
+                </li>
+                <li class="menu-item@(isProyectos ? " active" : "")">
+                    <a asp-controller="GestionServicio" asp-action="Proyectos" class="menu-link">
+                        <div data-i18n="">Proyectos</div>
+                    </a>
+                </li>
+            </ul>
+        </li>
+        <li class="menu-item@(inAdministration2 ? " active open" : "")" data-menu-id="administracion">
+            <a href="javascript:void(0);" class="menu-link menu-toggle">
+                <i class="menu-icon tf-icons ti ti-briefcase" aria-hidden="true"></i>
+                <div data-i18n="Administracion">Administración</div>
+            </a>
+
+            <!-- Importante: menu-sub SIEMPRE dentro de li.menu-item -->
+            <ul class="menu-sub" style="@(inAdministration2 ? "display:block" : "")">
+                <li class="menu-item@(inCategories ? " active" : "")">
+                    <a asp-controller="Administration" asp-action="ListCategories" class="menu-link">
+                        <div data-i18n="">Categoria</div>
+                    </a>
+                </li>
+                <li class="menu-item@(inEstados ? " active" : "")">
+                    <a asp-controller="Administration" asp-action="Estados" class="menu-link">
+                        <div data-i18n="">Estados</div>
+                    </a>
+                </li>
+                <li class="menu-item@(inMarcas ? " active" : "")">
+                    <a asp-controller="Administration" asp-action="ListBrands" class="menu-link">
+                        <div data-i18n="">Marcas</div>
+                    </a>
+                </li>
+                <li class="menu-item@(inModelos ? " active" : "")">
+                    <a asp-controller="Administration" asp-action="Modelos" class="menu-link">
+                        <div data-i18n="">Modelos</div>
+                    </a>
+                </li>
+                <li class="menu-item@(inReportes ? " active" : "")">
+                    <a asp-controller="Administration" asp-action="Reportes" class="menu-link">
+                        <div data-i18n="">Reportes</div>
+                    </a>
+                </li>
+            </ul>
+        </li>
+        <li class="menu-item@(inInventarios ? " active open" : "")" data-menu-id="inventarios">
+            <a href="javascript:void(0);" class="menu-link menu-toggle">
+                <i class="menu-icon tf-icons ti ti-packages" aria-hidden="true"></i>
+                <div data-i18n="Inventarios">Inventarios</div>
+            </a>
+
+            <!-- Importante: menu-sub SIEMPRE dentro de li.menu-item -->
+            <ul class="menu-sub" style="@(inInventarios ? "display:block" : "")">
+                <li class="menu-item@(inBodegas ? " active" : "")">
+                    <a asp-controller="Inventario" asp-action="Bodegas" class="menu-link">
+                        <div data-i18n="">Bodegas</div>
+                    </a>
+                </li>
+                <li class="menu-item@(inRepuestos ? " active" : "")">
+                    <a asp-controller="Inventario" asp-action="Repuestos" class="menu-link">
+                        <div data-i18n="">Repuestos</div>
+                    </a>
+                </li>
+                <li class="menu-item@(inMateriales ? " active" : "")">
+                    <a asp-controller="Inventario" asp-action="Materiales" class="menu-link">
+                        <div data-i18n="">Materiales</div>
+                    </a>
+                </li>
+
+            </ul>
+        </li>
+        <li class="menu-item@(inEmpresa ? " active open" : "")" data-menu-id="empresa">
+            <a href="javascript:void(0);" class="menu-link menu-toggle">
+                <i class="menu-icon tf-icons ti ti-settings" aria-hidden="true"></i>
+                <div data-i18n="Empresa">Empresa</div>
+            </a>
+
+            <!-- Importante: menu-sub SIEMPRE dentro de li.menu-item -->
+            <ul class="menu-sub" style="@(inEmpresa ? "display:block" : "")">
+                <li class="menu-item@(inEmpresas ? " active" : "")">
+                    <a asp-controller="Empresa" asp-action="Empresas" class="menu-link">
+                        <div data-i18n="">Empresas</div>
+                    </a>
+                </li>
+               
+            </ul>
+        </li>
+        <li class="menu-item@(inConfig ? " active open" : "")" data-menu-id="configuracion">
+            <a href="javascript:void(0);" class="menu-link menu-toggle">
+                <i class="menu-icon tf-icons ti ti-settings" aria-hidden="true"></i>
+                <div data-i18n="Config">Configuración</div>
+            </a>
+
+            <!-- Importante: menu-sub SIEMPRE dentro de li.menu-item -->
+            <ul class="menu-sub" style="@(inConfig ? "display:block" : "")">
+                <li class="menu-item@(inUsuarios ? " active" : "")">
+                    <a asp-controller="Configuracion" asp-action="List" class="menu-link">
+                        <div data-i18n="">Usuarios</div>
+                    </a>
+                </li>
+                <li class="menu-item@(inRoles ? " active" : "")">
+                    <a asp-controller="Configuracion" asp-action="Roles" class="menu-link">
+                        <div data-i18n="">Roles</div>
+                    </a>
+                </li>
+                <li class="menu-item@(inPermisos ? " active" : "")">
+                    <a asp-controller="Configuracion" asp-action="Permisos" class="menu-link">
+                        <div data-i18n="">Permisos</div>
+                    </a>
+                </li>
+                <li class="menu-item@(inCargaM ? " active" : "")">
+                    <a asp-controller="Configuracion" asp-action="CargaMasiva" class="menu-link">
+                        <div data-i18n="">Carga Masiva</div>
+                    </a>
+                </li>
+            </ul>
+        </li>
+
+
+
+        @* Aquí puedes agregar más grupos/items con el mismo patrón *@
+
+    </ul>
+</aside>
+
+<script>
+    // Sigue existiendo el guardado de estado, pero ya no dependemos de él para que se vea
+    document.addEventListener("DOMContentLoaded", function () {
+      const OPEN_MENUS_KEY = "openMenus";
+      const FIRST_LOAD_KEY = "menuFirstLoad";
+      let openMenus = JSON.parse(localStorage.getItem(OPEN_MENUS_KEY));
+      const isFirstLoad = localStorage.getItem(FIRST_LOAD_KEY) !== "false";
+
+      if (isFirstLoad) {
+        openMenus = [];
+        document.querySelectorAll(".menu-sub .active").forEach(activeItem => {
+          const parentMenuItem = activeItem.closest(".menu-item[data-menu-id]");
+          if (parentMenuItem) {
+            const id = parentMenuItem.getAttribute("data-menu-id");
+            if (id && !openMenus.includes(id)) openMenus.push(id);
+          }
+        });
+        localStorage.setItem(OPEN_MENUS_KEY, JSON.stringify(openMenus));
+        localStorage.setItem(FIRST_LOAD_KEY, "false");
+      }
+
+      (openMenus || []).forEach(id => {
+        const el = document.querySelector(`[data-menu-id='${id}']`);
+        if (el) {
+          el.classList.add("open");
+          const sub = el.querySelector(".menu-sub");
+          if (sub) sub.style.display = "block";
+        }
+      });
+
+      document.querySelectorAll(".menu-toggle").forEach(toggle => {
+        toggle.addEventListener("click", function () {
+          const parent = this.closest(".menu-item");
+          const subMenu = parent.querySelector(".menu-sub");
+          const id = parent.getAttribute("data-menu-id");
+          if (!subMenu || !id) return;
+
+          const isOpen = parent.classList.contains("open");
+          subMenu.style.display = isOpen ? "none" : "block";
+          parent.classList.toggle("open");
+
+          let saved = JSON.parse(localStorage.getItem(OPEN_MENUS_KEY)) || [];
+          if (isOpen) saved = saved.filter(val => val !== id);
+          else if (!saved.includes(id)) saved.push(id);
+          localStorage.setItem(OPEN_MENUS_KEY, JSON.stringify(saved));
+        });
+      });
+    });
+</script>
+
+<style>
+    #layout-menu {
+        overflow-y: auto;
+    }
+</style>

@@ -1,0 +1,1064 @@
+@using AspnetCoreMvcFull.Models.Mensajes
+@{
+    ViewData["Title"] = "Control de Tráfico";
+}
+
+<link href="~/css/controTrafico.css" rel="stylesheet" />
+
+<div class="card" style="padding: 1rem 1rem 1rem 1rem;">
+    <!-- Form GET sólo para búsqueda (puede ir al inicio de la vista) -->
+    <form id="frmSearch" method="get" action="@Url.Action("ControlTrafico")"></form>
+
+    <form id="frmControlTrafico" asp-controller="GestionServicio" asp-action="InsertarControTrafico" method="post">
+        <input type="hidden" id="EstadoFormulario" name="EstadoFormulario" value="Insertar" />
+        <input type="hidden" name="ticket" value="" />
+        <!-- Header alineado -->
+        <div class="row align-items-center g-2 mb-3">
+            <!-- Izquierda: título -->
+            <div class="col-12 col-md-auto">
+                <h4 class="mb-0" style="color:#606060">Control de Tráfico</h4>
+            </div>
+
+            <!-- Derecha: checks -->
+            <div class="col-12 col-md">
+                <div id="channelGroup"
+                     class="channel-checks d-flex flex-wrap gap-3 justify-content-md-end justify-content-center">
+                    <label>
+                        <input class="chx-canal" type="checkbox" name="CanalEmail" value="true" style="accent-color:#ff5100;">
+                        <input type="hidden" name="CanalEmail" value="false" /> Email
+                    </label>
+                    <label>
+                        <input class="chx-canal" type="checkbox" name="CanalWeb" value="true" style="accent-color:#ff5100;">
+                        <input type="hidden" name="CanalWeb" value="false" /> Web
+                    </label>
+                    <label>
+                        <input class="chx-canal" type="checkbox" name="CanalPresencial" value="true" style="accent-color:#ff5100;">
+                        <input type="hidden" name="CanalPresencial" value="false" /> Presencial
+                    </label>
+                    <label>
+                        <input class="chx-canal" type="checkbox" name="CanalTelefono" value="true" style="accent-color:#ff5100;">
+                        <input type="hidden" name="CanalTelefono" value="false" /> Teléfono
+                    </label>
+                    <label>
+                        <input class="chx-canal" type="checkbox" name="CanalChatbot" value="true" style="accent-color:#ff5100;">
+                        <input type="hidden" name="CanalChatbot" value="false" /> Chatbot
+                    </label>
+                </div>
+                <!-- error de canales -->
+                <div id="canalesError" class="field-error"></div>
+            </div>
+        </div>
+
+
+
+        <!-- Grid -->
+        <div class="traffic-grid">
+            <!-- Fila 1 -->
+            <div class="row gx-3 gy-3 align-items-start">
+
+
+                <!-- Empresa -->
+                <div class="col-12 col-md-4">
+                    <div class="field-wrap">
+                        <label class="form-label" style="color:#606060">Empresa*</label>
+                        <select name="EmpresaId" id="selectEmpresa" class="form-select select-light">
+                            <option value="" selected disabled>Seleccione un elemento</option>
+                        </select>
+                        <div id="empresaError" class="field-error"></div>
+                    </div>
+
+                </div>
+
+
+                <!-- Contrato (NO requerido) -->
+                <div class="col-12 col-md-4">
+                    <div class="field-wrap">
+                        <label style="color:#606060" class="form-label">Contrato Número</label>
+                        <select name="ContratoId" id="selectContrato" class="form-select select-light">
+                            <option value="">Sin contrato</option>
+                        </select>
+                        <div id="contratoError" class="field-error"></div>
+                    </div>
+                </div>
+
+                <!-- Buscador -->
+                <!-- Buscador -->
+                <div class="col-12 col-md-4">
+                    <div class="field-wrap">
+                        <label style="visibility:hidden">Buscar</label>
+                        <div class="row g-2 align-items-end">
+                            <div class="col">
+                                <input form="frmSearch" type="text" name="q" class="traffic-input h52"
+                                       placeholder="Buscar" value="@(Model?.Query ?? "")" />
+                                <input form="frmSearch" type="hidden" name="page" value="1" />
+                                <input form="frmSearch" type="hidden" name="pageSize" value="@Model.PageSize" />
+                            </div>
+                            <div class="col-auto">
+                                <button form="frmSearch" type="submit" class="btn-primary-ux" style="min-width:120px">Buscar</button>
+                            </div>
+                        </div>
+                        <!-- 🔽 placeholder para mantener altura igual que las demás -->
+                        <div class="field-error">&nbsp;</div>
+                    </div>
+                </div>
+
+            </div>
+
+
+            <!-- Fila 2 -->
+            <div class="row gx-3 gy-3">
+
+                <!-- Solicitante -->
+                <div class="col-12 col-md-4">
+                    <div class="field-wrap">
+                        <label style="color:#606060" class="form-label">Solicitante*</label>
+                        <select name="SolicitanteId" id="selectSolicitante" class="form-select select-light">
+                            <option value="">Seleccione un elemento</option>
+                            @foreach (var opt in (IEnumerable<SelectListItem>)ViewBag.Solicitantes)
+                            {
+                                <option value="@opt.Value">@opt.Text</option>
+                            }
+                        </select>
+                        <div id="solicitanteError" class="field-error"></div>
+                    </div>
+                </div>
+
+                <!-- Tel + Email -->
+                <div class="col-12 col-md-4">
+                    <div class="field-wrap">
+                        <div class="tel-email">
+                            <div class="field-half">
+                                <label class="form-label" style="color:#606060">Tel para el Servicio*</label>
+                                <input name="TelefonoServicio" id="TelefonoServicio" class="traffic-input h52" />
+                                <div id="telefonoEmailError" class="field-error"></div>
+                            </div>
+
+                            <div class="field-half">
+                                <label class="form-label" style="color:#606060">Email para el Servicio*</label>
+                                <input name="EmailServicio" id="EmailServicio" class="traffic-input h52" />
+                                <div id="telefonoEmailError2" class="field-error"></div>
+                            </div>
+                        </div>
+                        <!-- 🔻 elimina este si lo tenías aquí fuera -->
+                        <!-- <div id="telefonoEmailError" class="field-error"></div> -->
+                    </div>
+                </div>
+
+
+                <!-- Asignado -->
+                <div class="col-12 col-md-4">
+                    <div class="field-wrap">
+                        <label class="form-label" style="color:#606060">Asignar Incidente a:</label>
+                        <select name="AsignadoAId" id="selectAsignado" class="form-select select-light">
+                            <option value="" selected disabled>Seleccione un elemento</option>
+                            @foreach (var opt in (IEnumerable<SelectListItem>)ViewBag.Asignados)
+                            {
+                                <option value="@opt.Value">@opt.Text</option>
+                            }
+                        </select>
+                        <div id="asignadoError" class="field-error"></div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Fila 3 -->
+            <div class="row gx-3 gy-3">
+                <!-- Razón de Servicios (md-4) -->
+                <div class="col-12 col-md-4">
+                    <div class="field-wrap">
+                        <label style="color:#606060" class="form-label">Razón de Servicios*</label>
+                        <select name="RazonServicioId" id="selectRazonServicio" class="form-select select-light">
+                            <option value="" selected disabled>Seleccione un elemento</option>
+                            @foreach (var opt in (IEnumerable<SelectListItem>)ViewBag.RazonesServicio)
+                            {
+                                <option value="@opt.Value">@opt.Text</option>
+                            }
+                        </select>
+                        <div id="razonError"></div>
+                    </div>
+
+
+                </div>
+
+
+                <!-- Lugar de Servicio (md-2) -->
+                <div class="col-12 col-md-2">
+                    <div class="field-wrap">
+                        <label class="form-label" style="color:#606060">Lugar de Servicio*</label>
+
+                        <div class="inline-checks inline-eq">
+                            <label class="radio-square">
+                                <input type="radio" name="LugarServicio" value="0" checked>
+                                <span>Remoto</span>
+                            </label>
+
+                            <label class="radio-square">
+                                <input type="radio" name="LugarServicio" value="1">
+                                <span>Presencial</span>
+                            </label>
+                        </div>
+                        <div id="lugarServicioError"></div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- Dirección para el Servicio (md-6) -->
+                <div class="col-12 col-md-6">
+                    <div class="field-wrap">
+                        <label style="color:#606060" class="form-label">Dirección para el Servicio</label>
+                        <textarea name="DireccionServicio" id="DireccionServicio" class="traffic-textarea"></textarea>
+                        <div id="direccionError"></div>
+                    </div>
+
+
+                </div>
+            </div>
+
+
+            <!-- Fila 4 (todo alineado como la segunda imagen) -->
+            <div class="row gx-3 gy-3">
+                <!-- Columna izquierda: Fecha + Hora (apilados) -->
+                <div class="col-12 col-md-4">
+
+                    <!-- Fecha Próximo Servicio -->
+                    <div class="field-wrap">
+                        <label class="form-label" style="color:#606060">Fecha Próximo Servicio</label>
+                        <div class="d-flex align-items-center gap-2">
+                            <input type="text"
+                                   class="traffic-input h52"
+                                   id="FechaProximoServicio"
+                                   name="FechaProximoServicio"
+                                   placeholder="mm/dd/yy"
+                                   readonly />
+
+                            <button class="btn btn-outline-orange d-inline-flex align-items-center justify-content-center"
+                                    type="button" id="btnCalendarioServicio"
+                                    style="min-width:52px; height:44px; padding:0 12px; border-radius:12px;">
+                                <img src="@Url.Content("~/img/calendario_icono.svg")" alt="Calendario" width="20" height="20" />
+                            </button>
+                        </div>
+                        <div id="fechaError" class="field-error"></div>
+                    </div>
+
+                    <!-- Hora + flags (misma anchura total que arriba) -->
+                    <div class="field-wrap mt-3">
+                        <label class="form-label" style="color:#606060">Hora para el Servicio</label>
+
+                        <div class="row g-2 align-items-end">
+                            <!-- Select hora -->
+                            <div class="col-12 col-sm-6 col-lg-7">
+                                <select name="HoraServicio" id="HoraServicio"
+                                        class="form-select time-select h52"
+                                        data-selected="@ViewBag.HoraServicio">
+                                    <option value="">hh:mm</option>
+                                </select>
+                            </div>
+
+                            <!-- Checkboxes (GD / SC / S-ID) -->
+                            <div class="col-12 col-sm-6 col-lg-5">
+                                <div class="hour-flags d-flex flex-nowrap align-items-center gap-3 h52 px-3 rounded-3">
+
+                                    <label class="mb-0 d-flex align-items-center gap-2">
+                                        <input type="checkbox" name="GD" value="true" style="accent-color:#ff5100;" id="flagGD">
+                                        <input type="hidden" name="GD" value="false" />GD
+                                    </label>
+
+                                    <label class="mb-0 d-flex align-items-center gap-2">
+                                        <input type="checkbox" name="SC" value="true" style="accent-color:#ff5100;" id="flagSC">
+                                        <input type="hidden" name="SC" value="false" />SC
+                                    </label>
+
+                                    <label class="mb-0 d-flex align-items-center gap-2">
+                                        <input type="checkbox" name="SID" value="true" style="accent-color:#ff5100;" id="flagSID">
+                                        <input type="hidden" name="SID" value="false" />S-ID
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="horaError" class="field-error"></div>
+                    </div>
+                </div>
+                <style>
+                    .hour-flags {
+                        flex-wrap: nowrap !important; /* no permitir saltos */
+                        min-width: 0; /* evita desbordes raros */
+                    }
+
+                        .hour-flags label {
+                            white-space: nowrap; /* que cada etiqueta no haga wrap */
+                            flex: 0 0 auto; /* no intentar expandirse */
+                        }
+
+                </style>
+                <!-- Columna derecha: Descripción -->
+                <div class="col-12 col-md-8">
+                    <div class="field-wrap">
+                        <label class="form-label" style="color:#606060">Descripción de Incidente</label>
+                        <textarea name="DescripcionIncidente" id="DescripcionIncidente"
+                                  class="traffic-textarea" style="min-height:130px;"></textarea>
+                        <div id="descripcionError" class="field-error"></div>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- Fila de botones (solo botones centrados) -->
+            <div class="row g-3 mt-3">
+                <div class="col-12 d-flex justify-content-center">
+                    <div class="d-flex justify-content-center gap-3">
+                        <button type="submit" class="btn-primary-ux btn-ux-sm">Guardar</button>
+                        <button type="button" id="btnBorrar" class="btn-secondary-ux btn-ux-sm">Borrar</button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </form>
+
+
+    <style>
+        /* Cabecera: título a la izq, canales a la der */
+        .traffic-head2 {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .channel-checks {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        /* Solo texto de error (sin iconos ni bordes) */
+        .error-text {
+            position: static;
+        }
+
+        /* Mensaje de error de canales: fijo arriba a la derecha,
+                                                     no mueve el grupo de checkboxes */
+        .field-wrap {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .field-error {
+            position: static;
+            margin-top: 4px;
+            font-size: 12px;
+            line-height: 1.2;
+            color: #e53935;
+            min-height: 16px; /* reserva alto aunque esté vacío */
+        }
+
+        /* Para el header de canales, unifícalo a .field-error para reservar alto */
+        #canalesError {
+            text-align: right; /* en desktop queda alineado a la derecha */
+        }
+
+        /* (Opcional) si quieres que Tel/Email no desacomode nada */
+        .tel-email {
+            display: flex;
+            gap: 12px;
+        }
+
+        .field-half {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Solo encabezados */
+        .table thead th {
+            white-space: normal !important; /* permite salto de línea */
+            overflow: visible !important;
+            text-overflow: clip !important;
+            overflow-wrap: anywhere; /* rompe palabras largas si hace falta */
+        }
+
+    </style>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+          const group = document.querySelector('.hour-flags');
+          if (!group) return;
+
+          // todos los checkboxes del grupo (GD, SC, SID)
+          const checks = group.querySelectorAll('input[type="checkbox"]');
+
+          // helper: pone en false los hidden del resto
+          function setHiddenFalse(exceptName) {
+            checks.forEach(chk => {
+              if (chk.name !== exceptName) {
+                const hid = chk.parentElement.querySelector(`input[type="hidden"][name="${chk.name}"]`);
+                if (hid) hid.value = 'false';
+              }
+            });
+          }
+
+          checks.forEach(chk => {
+            chk.addEventListener('change', () => {
+              if (chk.checked) {
+                // si este se marca, desmarco todos los demás
+                checks.forEach(other => {
+                  if (other !== chk) {
+                    other.checked = false;
+                  }
+                });
+                setHiddenFalse(chk.name);
+                // tip: no cambiamos el hidden "de este", el binder tomará el true del checkbox
+              } else {
+                // se permitió dejar los tres desmarcados (ninguno seleccionado)
+                // si quisieras forzar que siempre haya uno, vuelve a marcarlo:
+                // chk.checked = true;
+              }
+            });
+          });
+        });
+    </script>
+
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            fetch('@Url.Content("~/GestionServicio/ObtenerEmpresasService")')
+                .then(response => response.json())
+                .then(data => {
+                    const select = document.getElementById('selectEmpresa');
+                    data.forEach(item => {
+                        const option = document.createElement('option');
+                        option.value = item.id;
+                        option.textContent = item.texto;
+                        select.appendChild(option);
+                    });
+                });
+        });
+    </script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const selectA = document.getElementById('selectEmpresa');
+            const selectB = document.getElementById('selectContrato');
+
+            selectA.addEventListener('change', function () {
+                const companyId = this.value;
+
+                // Reset y deshabilita el select B
+                selectB.innerHTML = '<option value="">Seleccione un elemento</option>';
+                //selectB.disabled = true;
+
+                if (companyId) {
+                    fetch(`@Url.Content("~/GestionServicio/ObtenerContratosServices")?idCompany=${companyId}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            data.forEach(item => {
+                                const option = document.createElement('option');
+                                option.value = item.id;
+                                option.textContent = item.texto;
+                                selectB.appendChild(option);
+                            });
+                            //selectB.disabled = false;
+                        });
+                }
+            });
+        });
+    </script>
+
+    <script>
+        async function cargarContratosService(ubicacionA, ubicacionB) {
+            const selectA = document.getElementById('selectEmpresa');
+            const selectB = document.getElementById('selectContrato');
+
+
+            // Asignar A y cargar B
+            selectA.value = ubicacionA;
+            await fetch(`@Url.Content("~/GestionServicio/ObtenerContratosServices")?idCompany=${ubicacionA}`)
+                .then(response => response.json())
+                .then(data => {
+                    selectB.innerHTML = '<option value="">Seleccione un elemento</option>';
+                    data.forEach(item => {
+                        const option = document.createElement('option');
+                        option.value = item.id;
+                        option.textContent = item.texto;
+                        selectB.appendChild(option);
+                    });
+                    selectB.value = ubicacionB;
+                });
+
+
+
+        }
+    </script>
+
+
+    <br />
+    @model AspnetCoreMvcFull.Models.Common.PagedResult<AspnetCoreMvcFull.Models.Contro_de_Trafico.ControlTraficoPostDto>
+
+    <style>
+
+        .select-light {
+            background-color: #eeeeee;
+        }
+    </style>
+
+    <form asp-controller="GestionServicio" asp-action="ControlTrafico" method="get">
+        <div class="card-datatable table-responsive border" style="padding: .5rem;">
+            <style>
+                .card-datatable {
+                    border: 1px solid #dee2e6;
+                    border-radius: 8px;
+                    overflow: hidden;
+                    background: #fff
+                }
+
+                    .card-datatable table {
+                        border-bottom: 1px solid #dee2e6
+                    }
+                /* ancho y centrado del checkbox */
+                .w-5 {
+                    width: 5%
+                }
+
+                .w-10 {
+                    width: 10%
+                }
+
+                .w-20 {
+                    width: 20%
+                }
+
+                .w-35 {
+                    width: 35%
+                }
+
+                .w-50 {
+                    width: 50%
+                }
+
+                .text-center {
+                    text-align: center
+                }
+
+                table th,
+                table td {
+                    white-space: nowrap; /* No permite saltos de línea dentro de la celda */
+                    overflow: visible !important;
+                    text-overflow: unset !important;
+                    max-width: none !important; /* Evita que se limite el ancho */
+                }
+
+                .table-responsive {
+                    overflow-x: auto;
+                }
+
+            </style>
+            <div class="table-responsive table-scroll">
+                <table class="datatables-basic table table-stretch">
+                    <thead>
+                        <tr>
+                            <th>Número de contrato</th>
+                            <th>Razón del servicio</th>
+                            <th>Proveedor</th>
+                            <th>Fecha</th>
+                            <th>Asignado</th>
+                            <th>N ticket</th>
+                            <th>Fecha próximo servicio</th>
+                            <th class="text-end">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Items != null && Model.Items.Any())
+                        {
+                            foreach (var item in Model.Items)
+                            {
+                                <tr>
+                                    <td style="font-size:12.5px" class="text-truncate">@item.ContratoId</td>
+                                    <td style="font-size:12.5px" class="d-none d-sm-table-cell text-truncate">@item.RazonServicioId</td>
+                                    <td style="font-size:12.5px" class="d-none d-sm-table-cell text-truncate">@item.Proveedor</td>
+                                    <td style="font-size:12.5px" class="d-none d-md-table-cell text-truncate">@item.Fecha</td>
+                                    <td style="font-size:12.5px" class="d-none d-lg-table-cell text-truncate">@item.AsignadoAId</td>
+                                    <td style="font-size:12.5px" class="d-none d-sm-table-cell">@item.ticket</td>
+                                    <td style="font-size:12.5px" class="d-none d-md-table-cell text-truncate">@item.FechaProximoServicio</td>
+                                    <td class="text-end">
+                                        <div class="d-inline-flex gap-2">
+                                            <a class="btn btn-edit d-flex align-items-center justify-content-center p-1 px-2"
+                                               title="Editar"
+                                               data-contrato="@item.ContratoId"
+                                               data-ticket="@item.ticket"
+                                               style="background-color:#00A5B8;border:none;border-radius:6px;height:28px;min-width:40px;">
+                                                <img src="~/img/editar_icono.svg" alt="Editar" style="width:16px;height:16px;">
+                                            </a>
+                                            <button type="button" class="btn d-flex align-items-center justify-content-center p-1 px-2"
+                                                    title="Borrar"
+                                                    data-bs-toggle="modal" data-bs-target="#trafficDeleteModal"
+                                                    data-contrato="@item.ContratoId"
+                                                    data-ticket="@item.ticket"
+                                                    style="background-color:#666;border:none;border-radius:6px;height:28px;min-width:40px;">
+                                                <img src="~/img/eliminar_icono.svg" alt="Eliminar" style="width:16px;height:16px;">
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="7" class="text-center text-muted py-4">Sin resultados.</td>
+                            </tr>
+                        }
+                    </tbody>
+
+                </table>
+            </div>
+
+
+            @{
+                var page = Model.CurrentPage;
+                var pageSize = Model.PageSize;
+                var total = Model.TotalItems;
+                var totalPages = Model.TotalPages;
+                var q = Model.Query ?? "";
+            }
+
+            <!-- Pie: info + paginación SIEMPRE visible -->
+            <div class="d-flex justify-content-end mt-2">
+                <nav aria-label="Paginación">
+                    <ul class="pagination flex-wrap mb-0">
+                        <li class="page-item @(page == 1 ? "disabled" : "")">
+                            <a class="page-link" href="@Url.Action("ControlTrafico", new { page = 1, pageSize, q })">««</a>
+                        </li>
+                        <li class="page-item @(page == 1 ? "disabled" : "")">
+                            <a class="page-link" href="@Url.Action("ControlTrafico", new { page = Math.Max(1, page - 1), pageSize, q })">«</a>
+                        </li>
+
+                        @for (var i = 1; i <= totalPages; i++)
+                        {
+                            if (totalPages == 1 || i == 1 || i == totalPages || (i >= page - 2 && i <= page + 2))
+                            {
+                                <li class="page-item @(i == page ? "active" : "")">
+                                    <a class="page-link" href="@Url.Action("ControlTrafico", new { page = i, pageSize, q })">@i</a>
+                                </li>
+                            }
+                            else if (i == page + 3 || i == page - 3)
+                            {
+                                <li class="page-item disabled"><span class="page-link">…</span></li>
+                            }
+                        }
+
+                        <li class="page-item @(page >= totalPages ? "disabled" : "")">
+                            <a class="page-link" href="@Url.Action("ControlTrafico", new { page = Math.Min(totalPages, page + 1), pageSize, q })">»</a>
+                        </li>
+                        <li class="page-item @(page >= totalPages ? "disabled" : "")">
+                            <a class="page-link" href="@Url.Action("ControlTrafico", new { page = totalPages, pageSize, q })">»»</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Modal específico Control de Tráfico -->
+<div class="modal fade" id="trafficDeleteModal"
+     tabindex="-1" aria-labelledby="trafficDeleteLabel" aria-hidden="true"
+     data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog">
+        <!-- sin modal-dialog-centered -->
+        <div class="modal-content" style="border-radius:14px;">
+            <div class="modal-header">
+                <h5 class="modal-title" id="trafficDeleteLabel">Confirmar eliminación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+
+            <div class="modal-body">
+                <p class="mb-1">¿Seguro que deseas eliminar este registro?</p>
+                <small class="text-muted d-block">Contrato: <span id="trafDelContratoText">—</span></small>
+                <small class="text-muted d-block">Ticket: <span id="trafDelTicketText">—</span></small>
+            </div>
+
+            <div class="modal-footer">
+                <form asp-controller="GestionServicio" asp-action="EliminarControlTrafico" method="post" class="d-inline">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="ticket" id="trafDelTicketInput" value="">
+                    <button type="submit" id="trafConfirmDeleteBtn" class="btn btn-danger">Eliminar</button>
+                </form>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+@{
+    AlertMessage? alertMessage = null;
+
+    if (TempData["Alert"] is string alertJson)
+    {
+        try
+        {
+            alertMessage = System.Text.Json.JsonSerializer.Deserialize<AlertMessage>(alertJson);
+            TempData.Remove("Alert");
+        }
+        catch { alertMessage = null; }
+    }
+}
+
+@if (alertMessage != null)
+{
+    var jsonAlert = Json.Serialize(alertMessage); // serializa para usarlo en JS
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            var alertData = @Html.Raw(jsonAlert);
+            console.log("SCRIPT DE ALERTA ACTIVADO");
+            console.log(alertData);
+
+            var deleteModal = document.getElementById('deleteModal');
+            var deleteModalLabel = document.getElementById('deleteModalLabel');
+            var deleteModalBody = document.getElementById('deleteModalBody');
+            var confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+            var modalHeader = deleteModal.querySelector('.modal-header');
+
+            deleteModalLabel.textContent = (alertData.tipo.toLowerCase() === "success") ? "Éxito" : "Error";
+            deleteModalBody.innerHTML = alertData.mensaje;
+
+            // Aplicar colores por defecto según tipo
+            if (alertData.tipo.toLowerCase() === "success") {
+                modalHeader.style.backgroundColor = "transparent";
+                deleteModalLabel.style.color = "#606060";
+            } else {
+                modalHeader.style.backgroundColor = "#FF5100";
+                deleteModalLabel.style.color = "white";
+            }
+
+            confirmDeleteBtn.classList.add('d-none');
+
+            var modal = new bootstrap.Modal(deleteModal);
+            modal.show();
+
+            deleteModal.addEventListener('hidden.bs.modal', function () {
+                history.replaceState(null, '', window.location.pathname);
+            });
+        });
+    </script>
+
+}
+
+<!-- Modal de confirmación -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Confirmar eliminación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="deleteModalBody">
+                <!-- Este texto se actualizará dinámicamente -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <a id="confirmDeleteBtn" class="btn btn-danger d-none" href="#">Borrar</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+    // ----------------- Helpers -----------------
+    function setSelectValueSafe(selectEl, value) {
+      if (!selectEl) return;
+      if (!value) { selectEl.value = ''; return; }
+      selectEl.value = value;                         // intento exacto
+      if (selectEl.value === value) return;
+      const v = String(value).trim().toLowerCase();   // intento case-insensitive
+      const opt = Array.from(selectEl.options)
+        .find(o => String(o.value).trim().toLowerCase() === v);
+      if (opt) { opt.selected = true; return; }
+      selectEl.value = '';                            // no existe -> Sin contrato
+    }
+
+    // async function cargarContratos(empresaId, selectedValue) {
+    //   const selContrato = document.getElementById('selectContrato');
+    //   // SIEMPRE dejar solo "Sin contrato" al iniciar
+    //   selContrato.innerHTML = '';
+    //   selContrato.append(new Option('Sin contrato', ''));
+
+    //   if (!empresaId) { selContrato.value = ''; return; }
+
+    //   try {
+    //     const url = '@Url.Action("ContratosPorEmpresa", "GestionServicio")' + '?empresaId=' + encodeURIComponent(empresaId);
+    //     const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+    //     if (!res.ok) throw new Error('HTTP ' + res.status);
+    //     const data = await res.json(); // [{value,text}]
+
+    //     data.forEach(o => selContrato.append(new Option(o.text, o.value)));
+
+    //     // preseleccionar (solo en edición)
+    //     if (selectedValue != null) setSelectValueSafe(selContrato, selectedValue);
+    //   } catch (e) {
+    //     console.error('Error cargando contratos:', e);
+    //     selContrato.value = '';
+    //   }
+    // }
+
+    // canales: sincronizar hidden para que se envíen aunque estén disabled
+    function syncCanalHidden() {
+      const g = document.getElementById('channelGroup');
+      if (!g) return;
+      g.querySelectorAll('.chx-canal').forEach(chk => {
+        const hid = g.querySelector(`input[type="hidden"][name="${chk.name}"]`);
+        if (hid) hid.value = chk.checked ? 'true' : 'false';
+      });
+    }
+    function setCanalesDisabled(disabled) {
+      syncCanalHidden();
+      document.querySelectorAll('#channelGroup .chx-canal').forEach(chk => chk.disabled = disabled);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const form        = document.getElementById('frmControlTrafico');
+     // const selEmpresa  = document.getElementById('selectEmpresa');
+      //const selContrato = document.getElementById('selectContrato');
+
+      // 1) Asegurar que "Contrato" arranque solo con "Sin contrato"
+     // selContrato.innerHTML = '';
+      //selContrato.append(new Option('Sin contrato', ''));
+
+      // 2) Cambio manual de empresa => cargar SOLO contratos de esa empresa
+    //  selEmpresa?.addEventListener('change', () => cargarContratos(selEmpresa.value, null));
+
+      // 3) Canales: single-select + sincronizar hidden
+      const checks = document.querySelectorAll('#channelGroup .chx-canal');
+      checks.forEach(ch => {
+        ch.addEventListener('change', () => {
+          if (ch.checked) checks.forEach(o => { if (o !== ch) o.checked = false; });
+          syncCanalHidden();
+        });
+      });
+      form?.addEventListener('submit', () => syncCanalHidden());
+
+      // 4) EDITAR: setear empresa -> cargar contratos filtrados -> preseleccionar contrato
+      document.querySelectorAll('.btn-edit').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const ticket = btn.dataset.ticket;
+          const url = '@Url.Action("ObtenerControlTrafico", "GestionServicio")' + '?ticket=' + encodeURIComponent(ticket);
+          const res = await fetch(url, { headers: { 'Accept':'application/json' } });
+          const data = await res.json();
+          if (!data.ok) { alert('No encontrado'); return; }
+
+          document.getElementById('EstadoFormulario').value = 'Editar';
+          document.querySelector('input[name="ticket"]').value = data.ticket;
+
+          // Empresa primero
+         // selEmpresa.value = data.empresaId || '';
+          // Ahora SÍ: cargar contratos de ESA empresa y dejar seleccionado el guardado
+        //  await cargarContratos(data.empresaId || '', data.contratoId || '');
+
+          // Si por algún motivo el contrato no llega en la lista, insértalo y selecciónalo
+          // if (data.contratoId && selContrato.value !== data.contratoId) {
+          //   const label = data.contratoLabel || 'Contrato seleccionado';
+          //   const opt = new Option(label, data.contratoId, true, true);
+          //   selContrato.add(opt, Math.min(1, selContrato.options.length)); // tras "Sin contrato"
+          //   selContrato.value = data.contratoId;
+          // }
+
+          // Resto de selects
+          setSelectValueSafe(document.getElementById('selectSolicitante'),   data.solicitanteId || '');
+          setSelectValueSafe(document.getElementById('selectAsignado'),      data.asignadoAId || '');
+          setSelectValueSafe(document.getElementById('selectRazonServicio'), data.razonServicioId || '');
+
+          // Canales: setear y deshabilitar (pero se enviarán por hidden)
+          const g = document.getElementById('channelGroup');
+          g.querySelector('input[name="CanalEmail"]').checked       = !!data.canalEmail;
+          g.querySelector('input[name="CanalWeb"]').checked         = !!data.canalWeb;
+          g.querySelector('input[name="CanalPresencial"]').checked  = !!data.canalPresencial;
+          g.querySelector('input[name="CanalTelefono"]').checked    = !!data.canalTelefono;
+          g.querySelector('input[name="CanalChatbot"]').checked     = !!data.canalChatbot;
+          setCanalesDisabled(true);
+
+          // Radios + inputs
+          form.querySelector(`input[name="LugarServicio"][value="${data.lugarServicio ?? 0}"]`).checked = true;
+          document.getElementById('TelefonoServicio').value     = data.telefonoServicio ?? '';
+          document.getElementById('EmailServicio').value        = data.emailServicio ?? '';
+          document.getElementById('DireccionServicio').value    = data.direccionServicio ?? '';
+          document.getElementById('DescripcionIncidente').value = data.descripcionIncidente ?? '';
+
+          document.getElementById('selectEmpresa').value = data.empresaId ?? '';
+          document.getElementById('selectContrato').value = data.contratoId ?? '';
+
+
+            await cargarContratosService(data.empresaId || '', data.contratoId || '');
+
+            setDateField('FechaProximoServicio', data.fechaProximoServicio, { allowPast: true });
+            document.getElementById('HoraServicio').value = data.horaServicio || '';
+            document.getElementById('flagGD').checked  = !!data.gd;
+            document.getElementById('flagSC').checked  = !!data.sc;
+            document.getElementById('flagSID').checked = !!data.sid;
+            setFlagsDisabled(true);
+
+        });
+      });
+
+              function setDateField(id, iso, { allowPast = false } = {}) {
+      const el = document.getElementById(id);
+      if (!el) return;
+
+      const v = (iso || '').slice(0, 10); // 'YYYY-MM-DD'
+      const fp = el._flatpickr;
+
+      if (fp) {
+        // guardar minDate y levantar restricción si vamos a permitir pasado (editar)
+        const prevMin = fp.config.minDate;
+        if (allowPast) fp.set('minDate', null);
+
+        if (v) fp.setDate(v, true); else fp.clear();
+
+        // restaurar minDate
+        if (allowPast) fp.set('minDate', prevMin);
+      } else {
+        el.value = v; // fallback si no hay flatpickr
+      }
+    }
+
+
+      // 5) BORRAR: re-habilitar canales y limpiar (además de tu reset)
+      document.getElementById('btnBorrar')?.addEventListener('click', () => {
+        setCanalesDisabled(false);
+        document.querySelectorAll('#channelGroup .chx-canal').forEach(chk => chk.checked = false);
+        syncCanalHidden();
+        ['flagGD','flagSC','flagSID'].forEach(id => {
+          const chk = document.getElementById(id);
+          if (!chk) return;
+          chk.checked = false;
+          const hid = chk.parentElement.querySelector(`input[type="hidden"][name="${chk.name}"]`);
+          if (hid) hid.value = 'false';
+        });
+        setFlagsDisabled(false);
+            // deja "Contrato" solo con "Sin contrato" si limpiás empresa
+        // if (!selEmpresa.value) {
+        //   selContrato.innerHTML = '';
+        //   selContrato.append(new Option('Sin contrato', ''));
+        // }
+      });
+    });
+</script>
+
+<script>
+    // ---- FLAGS GD/SC/SID ----
+    function syncFlagHidden() {
+      ['flagGD','flagSC','flagSID'].forEach(id => {
+        const chk = document.getElementById(id);
+        if (!chk) return;
+        const hid = chk.parentElement.querySelector(`input[type="hidden"][name="${chk.name}"]`);
+        if (hid) hid.value = chk.checked ? 'true' : 'false';
+      });
+    }
+
+    function setFlagsDisabled(disabled) {
+      // MUY IMPORTANTE: sincroniza antes de deshabilitar (inputs disabled no se envían)
+      syncFlagHidden();
+      ['flagGD','flagSC','flagSID'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.disabled = disabled;
+      });
+    }
+    document.getElementById('frmControlTrafico')?.addEventListener('submit', () => {
+      syncFlagHidden();
+    });
+
+</script>
+
+
+
+<script>
+    // Función para limpiar duplicados en el select
+    function limpiarDuplicadosSelect(selectId) {
+      const select = document.getElementById(selectId);
+      if (!select) return;
+
+      const seen = new Set();
+      [...select.options].forEach(opt => {
+        if (seen.has(opt.value + "|" + opt.text)) {
+          opt.remove(); // elimina duplicado
+        } else {
+          seen.add(opt.value + "|" + opt.text);
+        }
+      });
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      const selectContrato = document.getElementById("selectContrato");
+
+      if (!selectContrato) return;
+
+      // 1. Al cambiar el select
+      selectContrato.addEventListener("change", () => {
+        limpiarDuplicadosSelect("selectContrato");
+      });
+
+      // 2. Cada vez que se inserte algo nuevo dentro del select (Mutación del DOM)
+      const observer = new MutationObserver(() => {
+        limpiarDuplicadosSelect("selectContrato");
+      });
+
+      observer.observe(selectContrato, { childList: true });
+    });
+</script>
+
+
+
+
+<link href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="~/js/control-trafico.js"></script>
+
+
+<style>
+    /* body {
+                                                    background-color: #FFE2DA;
+
+                                                } */
+
+
+    .btn-orange {
+        background-color: #FF5100;
+        color: white;
+    }
+
+        .btn-orange:hover {
+            background-color: #e46b0f;
+            color: white;
+        }
+
+    .btn-outline-orange {
+        background-color: #FF5100;
+        color: white;
+        border: none;
+        transition: background-color 0.2s ease, color 0.2s ease;
+    }
+
+        .btn-outline-orange:hover {
+            border: 1px solid #FFA45B;
+            color: white;
+            background-color: #FFA45B;
+        }
+
+
+    .select-light {
+        background-color: #eeeeee;
+    }
+
+    h4 {
+        color: #353535;
+    }
+
+</style>
+

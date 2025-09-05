@@ -1,0 +1,590 @@
+@using AspnetCoreMvcFull.Models.Mensajes
+@{
+    ViewData["Title"] = "Pisos";
+}
+
+@section VendorStyles {
+    <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css">
+    <link rel="stylesheet" href="~/vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css">
+    <link rel="stylesheet" href="~/vendor/libs/datatables-buttons-bs5/buttons.bootstrap5.css">
+    <link rel="stylesheet" href="~/vendor/libs/&#64;form-validation/form-validation.css" />
+}
+
+@section VendorScripts {
+    <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
+
+    <script src="~/vendor/libs/&#64;form-validation/popular.js"></script>
+    <script src="~/vendor/libs/&#64;form-validation/bootstrap5.js"></script>
+    <script src="~/vendor/libs/&#64;form-validation/auto-focus.js"></script>
+
+}
+
+@section PageScripts {
+    <script src="~/js/pisos-features.js"></script>
+
+}
+
+@* ************** Content ************** *@
+
+
+
+
+<div class="card" style="padding: 1rem 1rem 1rem 1rem;">
+
+    @model AspnetCoreMvcFull.Models.Pisos.PisosViewModel
+
+    <form method="get" action="@Url.Action("Pisos", "Empresa")">
+        <div class="col-12 px-0">
+            <h4 id="tituloUbicacion" class="mb-2" style="color:#606060;">@ViewBag.NombreUbicacionB</h4>
+
+
+            <!-- FILA 1: Búsqueda + Filtros alineados -->
+            <div class="row g-2 mt-1 align-items-end">
+                <!-- IZQUIERDA: Búsqueda + Buscar -->
+                <div class="col-md-6 d-flex align-items-end gap-2">
+                    <input type="text" class="form-control"
+                           placeholder="..."
+                           name="search" value="@ViewBag.SearchQuery">
+
+                    <button class="btn btn-primary w-auto" type="submit" style="font-size: 14px;">
+                        Buscar
+                    </button>
+                </div>
+
+                <!-- DERECHA: Select + Filtrar alineado a la derecha -->
+                <div class="col-md-6 d-flex justify-content-end align-items-end gap-2">
+                    @{
+                        var selectedFilter = ViewBag.Filter?.ToString();
+                    }
+
+                    <select id="filterAssets" name="hasAssets" class="form-control" style="min-width: 180px;">
+                        <option value="" selected="@(selectedFilter == "" ? "selected" : null)">-- Todos --</option>
+                        <option value="withAssets" selected="@(selectedFilter == "withAssets" ? "selected" : null)">Con activos asignados</option>
+                        <option value="withoutAssets" selected="@(selectedFilter == "withoutAssets" ? "selected" : null)">Sin activos asignados</option>
+                    </select>
+
+                    <button type="submit" class="btn btn-primary w-auto" style="white-space: nowrap;">
+                        Filtrar
+                    </button>
+                </div>
+            </div>
+
+            <!-- FILA 2: Mostrar cantidad + Botón Agregar -->
+            <div class="row g-3 mt-4 mb-4 align-items-end">
+                <!-- IZQUIERDA: Selector Mostrar X estados -->
+                <div class="col-lg-6 d-flex flex-wrap align-items-center gap-2">
+                    @{
+                        int pageSize = Int32.TryParse(ViewData["Categories_Per_Page"]?.ToString(), out int pageSizeResult) ? pageSizeResult : 10;
+                    }
+
+                    <label for="pageSize" class="mb-0">Mostrar</label>
+
+                    <select name="pageSize" class="form-select form-select-sm w-auto h-75" onchange="this.form.submit()">
+                        @{
+                            for (int i = 5; i <= 20; i += 5)
+                            {
+                                <option value="@i" selected="@(i == pageSize ? "selected" : null)">@i</option>
+                            }
+                        }
+                    </select>
+
+                    <span>@ViewBag.NombreUbicacionB</span>
+
+                    <!-- Mantener filtros -->
+                    <input type="hidden" name="search" value="@ViewBag.SearchQuery" />
+                    <input type="hidden" name="hasAssets" value="@ViewBag.Filter" />
+                </div>
+
+                <!-- DERECHA: Input + Botones en la misma línea -->
+                <!-- DERECHA: Input + Botones perfectamente alineados -->
+                <!-- DERECHA: Input + Botones perfectamente alineados (responsivo) -->
+                <div class="col-lg-6">
+                    <div class="d-flex flex-column flex-md-row justify-content-md-end align-items-stretch align-items-md-end gap-2">
+
+                        <!-- Input (con expansión en md en adelante) -->
+                        <div class="flex-grow-1" style="min-width: 180px;">
+                            <input type="text"
+                                   class="form-control"
+                                   placeholder="Asignar Nombre Personalizado"
+                                   name="customName"
+                                   id="customName" />
+                        </div>
+
+                        <!-- Botón Registrar -->
+                        <button type="button" class="btn btn-primary" id="btnRegistrar" style="min-width: 99px;">
+                            Registrar
+                        </button>
+
+                        <!-- Botón +Nuevo -->
+                        <button id="buttonAddStates" type="button" data-bs-target="#addPisoModal"
+                                data-bs-toggle="modal" data-context="new"
+                                class="btn btn-primary"
+                                style="white-space: nowrap; min-width: 99px;">
+                            + Nuevo
+                        </button>
+                    </div>
+                </div>
+
+
+            </div>
+
+
+
+        </div>
+
+    </form>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+          const btnRegistrar = document.getElementById("btnRegistrar");
+          const inputNombre = document.getElementById("customName");
+          const titulo = document.getElementById("tituloUbicacion");
+
+          btnRegistrar.addEventListener("click", async function () {
+            const nombre = inputNombre.value.trim();
+            if (!nombre) return;
+
+            // (Opcional) Anti-Forgery:
+            // const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+
+            btnRegistrar.disabled = true;
+
+            try {
+              const response = await fetch('@Url.Action("GuardarNombreUbicacionB", "Empresa")', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/x-www-form-urlencoded',
+                  // 'RequestVerificationToken': token // <-- si usas ValidateAntiForgeryToken
+                },
+                body: new URLSearchParams({ nombre: nombre })
+              });
+
+              if (!response.ok) throw new Error('Error de red');
+
+              const result = await response.json();
+
+              if (result.success) {
+                // Recargar la página dirigiéndose al action Pisos
+                window.location.replace('@Url.Action("Pisos", "Empresa")');
+                return;
+              } else {
+                alert("Error al guardar: " + (result.error ?? 'desconocido'));
+              }
+            } catch (err) {
+              console.error(err);
+              alert("No se pudo guardar. Intenta de nuevo.");
+            } finally {
+              btnRegistrar.disabled = false;
+            }
+          });
+        });
+    </script>
+
+
+    <div class="card-datatable table-responsive border" style="padding: 0.5rem 0.5rem 0.5rem 0.5rem;">
+        <style>
+            .card-datatable {
+                border: 1px solid #dee2e6;
+                border-radius: 8px;
+                overflow: hidden;
+                background-color: #fff;
+            }
+
+                .card-datatable table {
+                    border-bottom: 1px solid #dee2e6;
+                }
+        </style>
+        <button id="deleteBatchBtn" class="btn btn-sm mb-3" title="Borrar en batch" disabled data-bs-toggle="modal" data-bs-target="#deleteModal" style="background-color: #c4c4c4; border: none; border-radius: 6px; height: 28px; min-width: 40px;">
+            <img src="~/img/eliminar_icono.svg" alt="Eliminar seleccionados" style="width: 16px; height: 16px;">
+        </button>
+        <table class="datatables-basic table">
+            <thead>
+                <tr>
+                    <th style="width: 5%; text-align: center;"><input style="transform: scale(1.5); accent-color: #ff5100;" type="checkbox" id="select_all" /></th>
+                    <th class="d-none">ID</th>
+                    <th style="width: 25%;">
+                         Nombre 
+                    </th>
+                    <th style="width: 40%;">
+                        Descripción
+                      
+                    </th>
+                    <th style="width: 25%;">
+                         Edificio
+                    </th>
+                    <th style="width: 10%; text-align: center;">
+                        Activos
+                    </th>
+                    <th style="width: 25%;">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var piso in Model.Pisos)
+                {
+                    <tr>
+                        <td class="text-center"><input type="checkbox" style="transform: scale(1.5); accent-color: #ff5100;" class="checkbox-item" data-id="@piso.buildingSysId" /></td>
+                        <td class="d-none">@piso.buildingSysId</td>
+                        <td>@piso.name</td>
+                        <td>@piso.description</td>
+                        <td>@piso.Edificio</td>
+                        <td>@piso.Activos</td>
+                        <td>
+                            <div class="d-flex justify-content-start gap-2">
+                                <a class="btn btn-edit d-flex align-items-center justify-content-center p-1 px-2"
+                                   title="Editar"
+                                   data-id="@piso.buildingSysId"
+                                   data-name="@piso.name"
+                                   data-name-edificio="@piso.Edificio"
+                                   data-description="@piso.description" style="background-color: #00A5B8; border: none; border-radius: 6px; height: 28px; min-width: 40px;">
+                                    <img src="~/img/editar_icono.svg" alt="Editar" style="width: 16px; height: 16px;">
+                                </a>
+
+                                <button class="btn d-flex align-items-center justify-content-center p-1 px-2" title="Borrar"
+                                        data-bs-toggle="modal" data-bs-target="#deleteModal"
+                                        data-id-piso="@piso.buildingSysId"
+                                        data-name="@piso.name" data-assets="@piso.Activos" style="background-color: #666666; border: none; border-radius: 6px; height: 28px; min-width: 40px;">
+                                    <img src="~/img/eliminar_icono.svg" alt="Eliminar" style="width: 16px; height: 16px;">
+                                </button>
+                            </div>
+                        
+
+
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        @{
+            //Variable que contiene el numero de categorias por pagina
+            int pageSize2 = Int32.TryParse(ViewData["Categories_Per_Page"]?.ToString(), out int
+            pageSizeResult2) ?
+            pageSizeResult2 : 5;
+        }
+      
+        <!-- Paginación -->
+        <!-- Contenedor de paginación responsivo -->
+        <nav aria-label="Page navigation" style="margin-top: 0.5rem;">
+            <div class="d-flex justify-content-sm-end justify-content-center">
+              
+
+                <!-- Paginación -->
+                <ul class="pagination flex-wrap justify-content-center justify-content-sm-end">
+                    <!-- Ir a la primera página -->
+                    @if (Model.CurrentPage > 1)
+                    {
+                        <li class="page-item">
+                            <a class="page-link" href="@Url.Action("Pisos", new { page = 1,pageSize = pageSize2,hasAssets = ViewContext.HttpContext.Request.Query["hasAssets"], search = Model.search })" aria-label="First">
+                                <span aria-hidden="true">&laquo;&laquo;</span>
+                            </a>
+                        </li>
+                    }
+
+                    <!-- Ir a la página anterior -->
+                    @if (Model.CurrentPage > 1)
+                    {
+                        <li class="page-item">
+                            <a class="page-link" href="@Url.Action("Pisos", new { page = Model.CurrentPage - 1,pageSize = pageSize2, hasAssets = ViewContext.HttpContext.Request.Query["hasAssets"], search = Model.search })" aria-label="Previous">
+                                <span aria-hidden="true">&laquo;</span>
+                            </a>
+                        </li>
+                    }
+
+                    <!-- Mostrar números de páginas -->
+                    @for (var i = 1; i <= Model.TotalPages; i++)
+                    {
+                        @if (i == 1 || i == Model.TotalPages || (i >= Model.CurrentPage - 2 && i <= Model.CurrentPage + 2))
+                        {
+                            <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
+                                <a class="page-link" href="@Url.Action("Pisos", new { page = i,pageSize = pageSize2, hasAssets = ViewContext.HttpContext.Request.Query["hasAssets"], search = Model.search })">@i</a>
+                            </li>
+                        }
+
+                        @if (i == Model.CurrentPage + 2 && Model.CurrentPage + 2 < Model.TotalPages)
+                        {
+                            <li class="page-item disabled">
+                                <span class="page-link">...</span>
+                            </li>
+                        }
+                    }
+
+                    <!-- Ir a la página siguiente -->
+                    @if (Model.CurrentPage < Model.TotalPages)
+                    {
+                        <li class="page-item">
+                            <a class="page-link" href="@Url.Action("Pisos", new { page = Model.CurrentPage + 1, pageSize = pageSize2,hasAssets = ViewContext.HttpContext.Request.Query["hasAssets"], search = Model.search })" aria-label="Next">
+                                <span aria-hidden="true">&raquo;</span>
+                            </a>
+                        </li>
+                    }
+
+                    <!-- Ir a la última página -->
+                    @if (Model.CurrentPage < Model.TotalPages)
+                    {
+                        <li class="page-item">
+                            <a class="page-link" href="@Url.Action("Pisos", new { page = Model.TotalPages,pageSize = pageSize2, hasAssets = ViewContext.HttpContext.Request.Query["hasAssets"], search = Model.search })" aria-label="Last">
+                                <span aria-hidden="true">&raquo;&raquo;</span>
+                            </a>
+                        </li>
+                    }
+                </ul>
+            </div>
+        </nav>
+    </div>
+    <style>
+        /* Contenedor de los botones */
+        .btn-container {
+            display: flex;
+            justify-content: start;
+            gap: 10px; /* Espacio entre los botones */
+            flex-wrap: wrap; /* Permite que los botones se apilen en pantallas pequeñas */
+        }
+
+            /* Los botones no deben apilarse hasta que la pantalla sea pequeña */
+            .btn-container .btn {
+                margin-bottom: 5px; /* Espacio vertical entre los botones si se apilan */
+            }
+
+    </style>
+
+       
+
+
+</div>
+
+<script>
+        const eliminarIndividualPisosUrl = '@Url.Action("EliminarIndividualPisos", "Empresa")';
+            const eliminarBatchPisosUrl = '@Url.Action("EliminarBatchPisos", "Empresa")';
+    </script>
+
+<!-- Modal de confirmación -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Confirmar eliminación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="deleteModalBody">
+                <!-- Este texto se actualizará dinámicamente -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <a id="confirmDeleteBtn" class="btn btn-sig d-none" href="#">Borrar</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .btn-sig,
+    .btn-sig:visited {
+        background-color: #ff5100;
+        color: #fff;
+        border: 1px solid #ff5100;
+        display: inline-block;
+        padding: .5rem 1rem;
+        border-radius: .5rem;
+        text-decoration: none;
+        font-weight: 600;
+        transition: background-color .15s ease;
+    }
+
+        /* Hover un poco más claro */
+        .btn-sig:hover,
+        .btn-sig:focus {
+            background-color: #ff6a26; /* más claro que #ff5100 */
+            border-color: #ff6a26;
+            color: #fff;
+        }
+</style>
+    @{
+        AlertMessage? alertMessage = null;
+
+        if (TempData["Alert"] is string alertJson)
+        {
+            try
+            {
+                alertMessage = System.Text.Json.JsonSerializer.Deserialize<AlertMessage>(alertJson);
+                TempData.Remove("Alert");
+            }
+            catch { alertMessage = null; }
+        }
+    }
+
+    @if (alertMessage != null)
+    {
+        var jsonAlert = Json.Serialize(alertMessage); // serializa para usarlo en JS
+
+        <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                var alertData = @Html.Raw(jsonAlert);
+                console.log("SCRIPT DE ALERTA ACTIVADO");
+                console.log(alertData);
+                var deleteModalLabel = document.getElementById('deleteModalLabel');
+                var deleteModalBody = document.getElementById('deleteModalBody');
+                var confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+
+                deleteModalLabel.textContent = (alertData.tipo.toLowerCase() === "success") ? "Éxito" : "Error";
+                deleteModalBody.innerHTML = alertData.mensaje;
+                confirmDeleteBtn.classList.add('d-none');
+
+                var deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+                deleteModal.show();
+
+                document.getElementById('deleteModal').addEventListener('hidden.bs.modal', function () {
+                    history.replaceState(null, '', window.location.pathname);
+                });
+            });
+        </script>
+    }
+
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    $(document).ready(function () {
+        $('#addPisoModal').on('show.bs.modal', function () {
+            $.ajax({
+                url: '@Url.Action("GetCompanies", "Empresa")',
+                type: 'GET',
+                dataType: 'json',
+                    success: function (data) {
+                    console.log(data);
+                    let select = $('#companySelect');
+
+                    select.empty();
+                    select.append('<option value="">Seleccione un edificio</option>');
+
+                    if (data.length === 0 || data.message) {
+                        select.append('<option value="">No hay empresas disponibles</option>');
+                    } else {
+                        $.each(data, function (index, company) {
+                           
+                            select.append('<option value="' + company.companySysId + '">' + company.name + ' - ' + company.description + '</option>');
+                        });
+                    }
+                },
+
+                error: function () {
+                    console.log("Error al cargar las empresas.");
+                }
+            });
+        });
+    });
+</script>
+<script>
+      $(document).ready(function () {
+        $('#editPisoModal').on('show.bs.modal', function () {
+            $.ajax({
+                url: '@Url.Action("GetCompanies", "Empresa")',
+                type: 'GET',
+                dataType: 'json',
+                success: function (data) {
+                    console.log(data);
+                    let select = $('#companySelect2');
+                    select.empty();
+                    select.append('<option value="">Seleccione un edificio</option>');
+
+                    if (data.length === 0 || data.message) {
+                        select.append('<option value="">No hay empresas disponibles</option>');
+                    } else {
+                        $.each(data, function (index, company) {
+                            select.append('<option value="' + company.companySysId + '">' + company.name  + ' - ' + company.description + '</option>');
+                        });
+                    }
+                },
+                error: function () {
+                    console.log("Error al cargar las empresas.");
+                }
+            });
+        });
+    });
+
+</script>
+    <!-- Modal de alerta -->
+    <div class="modal fade" id="alertModal" tabindex="-1" aria-labelledby="alertModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="alertModalLabel">Mensaje</h5>
+                    <button type="button" class="btn-close text-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body" id="alertModalBody">
+                    <!-- Aquí va el mensaje dinámico -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @{
+        var alertMessage2 = TempData["Alert2"] as string;
+    }
+    @if (!string.IsNullOrEmpty(alertMessage2))
+    {
+        <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                const alertModalBody = document.getElementById("alertModalBody");
+                alertModalBody.textContent = "@alertMessage2";
+
+                const alertModal = new bootstrap.Modal(document.getElementById("alertModal"));
+                alertModal.show();
+            });
+        </script>
+        TempData.Remove("Alert2");
+    }
+
+    <style>
+        #alertModal .modal-header.bg-primary {
+            background-color: #7961f0 !important;
+        }
+    </style>
+
+    <br />
+<div class="card">
+    <h5 class="card-header h3 mb-2">Sincronización</h5>
+    <div class="card-body mb-3">
+        <form asp-controller="Empresa" asp-action="SincronizarPisos" method="post" enctype="multipart/form-data">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-6">
+                    <label for="excelFile" class="form-label">Subir archivo Excel (.xlsx):</label>
+                    <input type="file" name="excelFile" id="excelFile" accept=".xlsx" class="form-control" required />
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-primary-purple w-100">
+                        <i class="fa fa-upload me-1"></i> Sincronizar Pisos
+                    </button>
+                </div>
+            </div>
+        </form>
+
+        <!-- Botón de descarga debajo -->
+        <div class="row mt-4">
+            <div class="col-md-3">
+                <a asp-controller="Empresa" asp-action="DescargarPlantillaPisos" class="btn btn-outline-secondary w-100">
+                    <i class="fa fa-download me-1"></i> Descargar plantilla Excel
+                </a>
+            </div>
+        </div>
+    </div>
+
+
+    <style>
+        .btn-primary-purple {
+            background-color: #ff5100 !important;
+            border-color: #ff5100 !important;
+            color: white;
+        }
+
+            .btn-primary-purple:hover {
+                background-color: #ff7c48 !important;
+                border-color: #ff7c48 !important;
+                color: white;
+            }
+    </style>
+</div>
+
+
+
+@await Html.PartialAsync("../_Partials/_Modals/ModalAddPiso")
+@await Html.PartialAsync("../_Partials/_Modals/ModalEditPiso")

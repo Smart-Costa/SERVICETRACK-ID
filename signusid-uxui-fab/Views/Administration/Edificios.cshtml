@@ -1,0 +1,353 @@
+@using AspnetCoreMvcFull.Models.Mensajes
+@{
+    ViewData["Title"] = "Edificios";
+}
+
+@section VendorStyles {
+    <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css">
+    <link rel="stylesheet" href="~/vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css">
+    <link rel="stylesheet" href="~/vendor/libs/datatables-buttons-bs5/buttons.bootstrap5.css">
+    <link rel="stylesheet" href="~/vendor/libs/&#64;form-validation/form-validation.css" />
+}
+
+@section VendorScripts {
+    <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
+
+    <script src="~/vendor/libs/&#64;form-validation/popular.js"></script>
+    <script src="~/vendor/libs/&#64;form-validation/bootstrap5.js"></script>
+    <script src="~/vendor/libs/&#64;form-validation/auto-focus.js"></script>
+
+}
+
+@section PageScripts {
+    <script src="~/js/edificios-features.js"></script>
+}
+
+@* ************** Content ************** *@
+
+
+
+
+<div class="card p-3">
+
+    @model AspnetCoreMvcFull.Models.Edificios.EdificiosViewModel
+
+
+    <h4 class="mb-1">Edificios</h4>
+    <br />
+    <div class="row mb-3">
+
+
+      <!-- Formulario de búsqueda -->
+      <div class="col-md-6">
+          <form method="get" action="@Url.Action("Edificios", "Administration")" class="d-flex align-items-center">
+                <!-- Select para elegir tipo de búsqueda -->
+                <div style="position: relative;">
+                    <select name="searchType" class="form-control mx-1" style="width: auto; padding-right: 30px;">
+                        <option value="name" selected>Por Nombre</option>
+                        <option value="description">Por Descripción</option>
+                    </select>
+                    <i class="fas fa-chevron-down" style="position: absolute; top: 50%; right: 10px; transform: translateY(-50%); pointer-events: none;"></i>
+                </div>
+
+
+              <div class="input-group w-100">
+                  <!-- Input de búsqueda -->
+                  <input type="text" name="search" id="searchInput" class="form-control" placeholder="Buscar por nombre o descripción" value="@ViewBag.SearchQuery" />
+            
+                  <!-- Botón para limpiar el input -->
+                  <button type="button" class="btn btn-outline-secondary" id="clearSearch" title="Limpiar búsqueda">
+                      <i class="fas fa-times"></i>
+                  </button>
+            
+                  <!-- Botón de búsqueda -->
+                  <button type="submit" class="btn btn-primary">
+                   Buscar
+                  </button>
+              </div>
+           
+          </form>
+      </div>
+
+        <!-- Formulario de filtro -->
+        <div class="col-md-6">
+            <form method="get" action="@Url.Action("Edificios")" class="d-flex align-items-center" style="position: relative;">
+                <div class="form-group w-100 me-3" style="position: relative;">
+                    <select id="filterAssets" name="hasAssets" class="form-control" style="padding-right: 30px;">
+                        <option value="">-- Todos --</option>
+                        <option value="withAssets">Con activos asignados</option>
+                        <option value="withoutAssets">Sin activos asignados</option>
+                    </select>
+                    <i class="fas fa-chevron-down" style="position: absolute; top: 50%; right: 15px; transform: translateY(-50%); pointer-events: none;"></i>
+                </div>
+                <button type="submit" class="btn btn-primary">Filtrar</button>
+            </form>
+        </div>
+
+    </div>
+
+    <!-- Botón + Nuevo Edificio -->
+    <button id="buttonAddStates" type="button" data-bs-target="#addEdificioModal" data-bs-toggle="modal" data-context="new" class="btn btn-primary align-self-end" style="white-space: nowrap;">+ Nuevo Edificio</button>
+
+    <div class="card-datatable table-responsive border" style="padding: 0.25rem 0.5rem 0rem 0.5rem;">
+        <button id="deleteBatchBtn" class="btn btn-sm btn-danger mb-3" title="Borrar en batch" disabled data-bs-toggle="modal" data-bs-target="#deleteModal">
+            <i class="fas fa-trash"></i>
+        </button>
+        <table class="datatables-basic table pb-1">
+            <thead>
+                <tr>
+                    <th><input type="checkbox" id="select_all" /></th>
+                    <th class="d-none">ID</th>
+                    <th>    <a style="color: black; text-decoration: none;" href="@Url.Action("Edificios", new { sortColumn = "name", sortDirection = ViewBag.SortColumn == "name" && ViewBag.SortDirection == "asc" ? "desc" : "asc", page = Model.CurrentPage, search = ViewBag.SearchQuery })">
+                            Nombre @if (ViewBag.SortColumn == "name")
+                            {
+                                <i class="fas fa-sort-@ViewBag.SortDirection"></i>
+                            }
+                        </a>
+                    </th>
+                    <th>
+                       <a style="color: black; text-decoration: none;" href="@Url.Action("Edificios", new { sortColumn = "description", sortDirection = ViewBag.SortColumn == "description" && ViewBag.SortDirection == "asc" ? "desc" : "asc", page = Model.CurrentPage, search = ViewBag.SearchQuery })">
+                            Descripción @if (ViewBag.SortColumn == "description")
+                            {
+                                <i class="fas fa-sort-@ViewBag.SortDirection"></i>
+                            }
+                        </a>
+                    </th>
+                    <th>
+                           <a style="color: black; text-decoration: none;" href="@Url.Action("Edificios", new { sortColumn = "assignatedAssets", sortDirection = ViewBag.SortColumn == "assignatedAssets" && ViewBag.SortDirection == "asc" ? "desc" : "asc", page = Model.CurrentPage, search = ViewBag.SearchQuery })">
+                            Activos @if (ViewBag.SortColumn == "Activos")
+                            {
+                                <i class="fas fa-sort-@ViewBag.SortDirection"></i>
+                            }
+                        </a>
+                    </th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var edificio in Model.Edificios)
+                {
+                    <tr>
+                         <td>
+                            <input type="checkbox" class="checkbox-item" data-id="@edificio.companySysId" />
+                        </td>
+                        <td class="d-none">@edificio.companySysId</td>
+                        <td>@edificio.name</td>
+                        <td>@edificio.description</td>
+                        <td>@edificio.Activos</td>
+                        <td>
+                            <div class="btn-container">
+                                <a class="btn btn-sm btn-primary2 btn-edit"
+                                   title="Editar"
+                                   data-id="@edificio.companySysId"
+                                   data-name="@edificio.name"
+                                   data-description="@edificio.description">
+                                    <i class="fas fa-edit text-white"></i>
+                                </a>
+
+                                <button class="btn btn-sm btn-danger" title="Borrar"
+                                        data-bs-toggle="modal" data-bs-target="#deleteModal"
+                                        data-id-edificio="@edificio.companySysId"
+                                        data-name="@edificio.name" data-assets="@edificio.Activos">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                           
+                           
+
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <style>
+        /* Contenedor de los botones */
+        .btn-container {
+            display: flex;
+            justify-content: start;
+            gap: 10px; /* Espacio entre los botones */
+            flex-wrap: wrap; /* Permite que los botones se apilen en pantallas pequeñas */
+        }
+
+            /* Los botones no deben apilarse hasta que la pantalla sea pequeña */
+            .btn-container .btn {
+                margin-bottom: 5px; /* Espacio vertical entre los botones si se apilan */
+            }
+
+    </style>
+    <!-- Paginación -->
+    <nav aria-label="Page navigation">
+        <ul class="pagination justify-content-end">
+            <!-- Ir a la primera página -->
+            @if (Model.CurrentPage > 1)
+            {
+                <li class="page-item">
+                    <a class="page-link" href="@Url.Action("Edificios", new { page = 1, hasAssets = ViewContext.HttpContext.Request.Query["hasAssets"], search = Model.search })" aria-label="First">
+                        <span aria-hidden="true">&laquo;&laquo;</span>
+                    </a>
+                </li>
+            }
+
+            <!-- Ir a la página anterior -->
+            @if (Model.CurrentPage > 1)
+            {
+                <li class="page-item">
+                    <a class="page-link" href="@Url.Action("Edificios", new { page = Model.CurrentPage - 1, hasAssets = ViewContext.HttpContext.Request.Query["hasAssets"], search = Model.search })" aria-label="Previous">
+                        <span aria-hidden="true">&laquo;</span>
+                    </a>
+                </li>
+            }
+
+            <!-- Mostrar números de páginas (4-5 páginas cercanas) -->
+            @for (var i = 1; i <= Model.TotalPages; i++)
+            {
+                @if (i == 1 || i == Model.TotalPages || (i >= Model.CurrentPage - 2 && i <= Model.CurrentPage + 2))
+                {
+                    <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
+                        <a class="page-link" href="@Url.Action("Edificios", new { page = i, hasAssets = ViewContext.HttpContext.Request.Query["hasAssets"], search = Model.search })">@i</a>
+                    </li>
+                }
+
+                @if (i == Model.CurrentPage + 2 && Model.CurrentPage + 2 < Model.TotalPages)
+                {
+                    <li class="page-item disabled">
+                        <span class="page-link">...</span>
+                    </li>
+                }
+            }
+
+            <!-- Ir a la página siguiente -->
+            @if (Model.CurrentPage < Model.TotalPages)
+            {
+                <li class="page-item">
+                    <a class="page-link" href="@Url.Action("Edificios", new { page = Model.CurrentPage + 1, hasAssets = ViewContext.HttpContext.Request.Query["hasAssets"], search = Model.search })" aria-label="Next">
+                        <span aria-hidden="true">&raquo;</span>
+                    </a>
+                </li>
+            }
+
+            <!-- Ir a la última página -->
+            @if (Model.CurrentPage < Model.TotalPages)
+            {
+                <li class="page-item">
+                    <a class="page-link" href="@Url.Action("Edificios", new { page = Model.TotalPages, hasAssets = ViewContext.HttpContext.Request.Query["hasAssets"], search = Model.search })" aria-label="Last">
+                        <span aria-hidden="true">&raquo;&raquo;</span>
+                    </a>
+                </li>
+            }
+        </ul>
+
+        <!-- Mostrar la información de la página actual y total de páginas -->
+        <div class="pagination-info">
+            <span>Página @Model.CurrentPage de @Model.TotalPages</span>
+        </div>
+    </nav>
+
+
+
+</div>
+
+
+<!-- Modal de confirmación -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Confirmar eliminación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="deleteModalBody">
+                <!-- Este texto se actualizará dinámicamente -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <a id="confirmDeleteBtn" class="btn btn-danger d-none" href="#">Borrar</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@{
+    var alert = ViewContext.HttpContext.Request.Query["alert"].FirstOrDefault();
+    AlertMessage? alertMessage = null;
+
+    if (!string.IsNullOrEmpty(alert))
+    {
+        try
+        {
+            alertMessage = System.Text.Json.JsonSerializer.Deserialize<AlertMessage>(alert);
+        }
+        catch { alertMessage = null; } // En caso de error, evitar que la página falle
+    }
+}
+
+@if (alertMessage != null)
+{
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            var deleteModalLabel = document.getElementById('deleteModalLabel');
+            var deleteModalBody = document.getElementById('deleteModalBody');
+            var confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+
+            var tipo = @Html.Raw(Json.Serialize(alertMessage.Tipo)); 
+            deleteModalLabel.textContent = (tipo.toLowerCase() === "success") ? "Éxito" : "Error";
+            deleteModalBody.innerHTML = `@Html.Raw(Json.Serialize(alertMessage.Mensaje))`;
+            confirmDeleteBtn.classList.add('d-none');
+
+            var deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+            deleteModal.show();
+
+            document.getElementById('deleteModal').addEventListener('hidden.bs.modal', function () {
+                window.location.href = '/Administration/Edificios';
+            });
+        });
+    </script>
+}
+
+
+
+
+
+
+
+<!-- Modal de advertencia para no editable -->
+@*  <div class="modal fade" id="nonEditableModal" tabindex="-1" aria-labelledby="nonEditableModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="nonEditableModalLabel">Edición no permitida</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="nonEditableModalBody">
+                <!-- Este texto se actualizará dinámicamente con el nombre del estado -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div> *@
+
+
+<script>
+    const fill_selected_state_data = (name, description) => {
+      // Actualizar los campos del formulario con los valores seleccionados
+      document.getElementById("name").value = name;
+      document.getElementById("description").value = description;
+    };
+
+    function setupEditContext(element, name, description) {
+      const form = document.getElementById("addStateModal");
+      form.setAttribute("data-context", "edit");
+      fill_selected_state_data(name, description);
+
+    }
+
+</script>
+
+
+
+@await Html.PartialAsync("../_Partials/_Modals/ModalAddEdificio")
+@await Html.PartialAsync("../_Partials/_Modals/ModalEditEdificio")
