@@ -407,6 +407,8 @@ WHERE ID_EMPRESA = @ID;";
     }
 
 
+
+
     [HttpGet]
     public async Task<IActionResult> Historial(Guid id, int top = 200)
     {
