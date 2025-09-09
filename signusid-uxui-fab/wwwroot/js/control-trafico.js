@@ -1,8 +1,36 @@
 // wwwroot/js/control-trafico.js
+
+function parseLocalDate(val) {
+  if (!val) return null;
+
+  let y, m, d;
+
+  if (val.includes('-')) {
+    // Esperado: YYYY-MM-DD
+    const parts = val.split('-').map(Number);
+    if (parts.length !== 3) return null;
+    [y, m, d] = parts;
+  } else if (val.includes('/')) {
+    // Soporte a mm/dd/yyyy ó dd/mm/yyyy
+    const [a, b, c] = val.split('/');
+    const n1 = Number(a), n2 = Number(b), n3 = Number(c);
+    if (!n3) return null;
+    if (n1 > 12) { d = n1; m = n2; y = n3; }        // dd/mm/yyyy
+    else if (n2 > 12) { m = n1; d = n2; y = n3; }   // mm/dd/yyyy
+    else { m = n1; d = n2; y = n3; }                // por defecto mm/dd/yyyy
+  } else {
+    return null;
+  }
+
+  const dt = new Date(y, (m || 1) - 1, d || 1); // LOCAL
+  dt.setHours(0, 0, 0, 0);
+  return isNaN(dt) ? null : dt;
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   const form = document.getElementById('frmControlTrafico');
 
-  // Campos y su contenedor de error
+  // --- Campos y sus contenedores de error ---
   const fields = {
     solicitante: { el: document.getElementById('selectSolicitante'), err: 'solicitanteError', required: true, type: 'select' },
     empresa: { el: document.getElementById('selectEmpresa'), err: 'empresaError', required: true, type: 'select' },
@@ -16,11 +44,26 @@ document.addEventListener('DOMContentLoaded', () => {
     descripcion: { el: document.getElementById('DescripcionIncidente'), err: 'descripcionError', required: true, type: 'text' }
   };
 
+  // --- IDs de errores de grupos ---
   const canalesErrId = 'canalesError';
   const lugarErrId = 'lugarServicioError';
+  const proveedorErrId = 'proveedorError'; // <-- nuevo
 
+  // --- Helpers de error ---
   const clearError = id => { const c = document.getElementById(id); if (c) c.innerHTML = ''; };
   const showError = (id, msg) => { const c = document.getElementById(id); if (c) c.innerHTML = `<span class="error-text">${msg}</span>`; };
+
+  // Si por alguna razón no existe parseLocalDate, usa un fallback simple (no pisa tu implementación si ya existe)
+  if (typeof window.parseLocalDate !== 'function') {
+    window.parseLocalDate = (v) => {
+      // espera "YYYY-MM-DD"
+      if (!v) return null;
+      const [y, m, d] = v.split('-').map(Number);
+      if (!y || !m || !d) return null;
+      const dt = new Date(y, m - 1, d, 0, 0, 0, 0);
+      return isNaN(dt) ? null : dt;
+    };
+  }
 
   function validate() {
     let ok = true;
@@ -30,106 +73,122 @@ document.addEventListener('DOMContentLoaded', () => {
     const canalesSel = document.querySelectorAll('#channelGroup .chx-canal:checked').length;
     if (canalesSel === 0) { showError(canalesErrId, 'Obligatorio'); ok = false; }
 
-    // Lugar de servicio: radio seleccionado
+    // Lugar de servicio: debe haber radio seleccionado
     clearError(lugarErrId);
     if (!document.querySelector('input[name="LugarServicio"]:checked')) {
-      showError(lugarErrId, 'Obligatorio');
-      ok = false;
+      showError(lugarErrId, 'Obligatorio'); ok = false;
     }
 
-    // Campos normales
-    // Campos normales
+    // Proveedor (GD / SC / S-ID): al menos uno
+    clearError(proveedorErrId);
+    const proveedorSel = ['flagGD', 'flagSC', 'flagSID']
+      .map(id => document.getElementById(id))
+      .filter(el => el && el.checked).length;
+    if (proveedorSel === 0) {
+      showError(proveedorErrId, 'Obligatorio'); ok = false;
+    }
+
+    // Campos individuales
     for (const k in fields) {
       const f = fields[k];
       if (!f.required) { clearError(f.err); continue; }
 
       const val = (f.el?.value ?? '').trim();
 
-      // Mensaje "obligatorio" específico por campo
+      // Si está vacío
       if (!val) {
         const msg =
           f.el?.id === 'EmailServicio' ? 'Email obligatorio' :
             f.el?.id === 'TelefonoServicio' ? 'Teléfono obligatorio' :
               'Obligatorio';
-
         showError(f.err, msg);
         ok = false;
-        continue; // no sigas validando este campo si está vacío
+        continue;
       }
 
       // Email formato
       if (f.type === 'email') {
         const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!re.test(val)) {
-          showError(f.err, 'Email inválido');
-          ok = false;
-        } else {
-          clearError(f.err);
-        }
+        if (!re.test(val)) { showError(f.err, 'Email inválido'); ok = false; }
+        else { clearError(f.err); }
 
         // Teléfono formato
       } else if (f.el?.id === 'TelefonoServicio') {
         // 7-20 caracteres: dígitos, espacios y + ( ) -
         const phoneRe = /^[0-9\s()+-]{7,20}$/;
-        if (!phoneRe.test(val)) {
-          showError(f.err, 'Teléfono inválido');
-          ok = false;
-        } else {
-          clearError(f.err);
-        }
+        if (!phoneRe.test(val)) { showError(f.err, 'Teléfono inválido'); ok = false; }
+        else { clearError(f.err); }
 
       } else {
         clearError(f.err);
       }
     }
 
-
-    // ✅ Validación extra: fecha no menor a hoy
+    // Fecha no menor a hoy (comparación local)
     {
       const el = fields.fecha.el;
       if (el && el.value) {
         const today = new Date(); today.setHours(0, 0, 0, 0);
-        const d = new Date(el.value);
-        if (!isNaN(d) && d < today) {
+        const d = parseLocalDate(el.value);
+        if (!d || d < today) {
           showError(fields.fecha.err, 'Debe ser hoy o posterior');
           ok = false;
+        } else {
+          clearError(fields.fecha.err);
         }
       }
     }
 
     if (!ok) {
-      // scroll suave al primer mensaje visible
       const firstMsg = document.querySelector('.error-text');
       if (firstMsg) firstMsg.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
     return ok;
   }
 
-
-  // Submit
+  // --- Submit ---
   form?.addEventListener('submit', (e) => {
     if (!validate()) e.preventDefault();
   });
 
-  // Limpiar mensajes al cambiar/escribir
+  // --- Limpiar mensajes al cambiar/escribir ---
   Object.values(fields).forEach(f => {
     const evt = (f.type === 'text' || f.type === 'email') ? 'input' : 'change';
     f.el?.addEventListener(evt, () => clearError(f.err));
   });
+
+  // Canales
   document.querySelectorAll('#channelGroup .chx-canal').forEach(ch =>
     ch.addEventListener('change', () => clearError(canalesErrId))
   );
+
+  // Lugar
   document.querySelectorAll('input[name="LugarServicio"]').forEach(r =>
     r.addEventListener('change', () => clearError(lugarErrId))
   );
 
-  // Borrar: también limpia mensajes
+  // Proveedor (GD/SC/S-ID): limpia error al tocar cualquiera
+  document.querySelectorAll('#flagGD, #flagSC, #flagSID').forEach(ch =>
+    ch.addEventListener('change', () => clearError(proveedorErrId))
+  );
+
+  // (Opcional) Forzar que sólo uno de GD/SC/S-ID pueda estar marcado
+  const provChecks = Array.from(document.querySelectorAll('#flagGD, #flagSC, #flagSID'));
+  provChecks.forEach(ch => {
+    ch.addEventListener('change', () => {
+      if (ch.checked) provChecks.forEach(o => { if (o !== ch) o.checked = false; });
+      clearError(proveedorErrId);
+    });
+  });
+
+  // --- Borrar: limpiar todos los mensajes ---
   document.getElementById('btnBorrar')?.addEventListener('click', () => {
     Object.values(fields).forEach(f => clearError(f.err));
-    clearError(canalesErrId); clearError(lugarErrId);
+    clearError(canalesErrId);
+    clearError(lugarErrId);
+    clearError(proveedorErrId);
   });
 });
-
 
 
 
@@ -219,28 +278,28 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   // Delegación para el botón Editar
-  document.addEventListener('click', function (e) {
-    const btn = e.target.closest('.btn-edit');
-    if (!btn) return;
+  //document.addEventListener('click', function (e) {
+  //  const btn = e.target.closest('.btn-edit');
+  //  if (!btn) return;
 
-    e.preventDefault();
+  //  e.preventDefault();
 
-    const ticket = btn.dataset.ticket;
-    if (!ticket) return;
+  //  const ticket = btn.dataset.ticket;
+  //  if (!ticket) return;
 
-    fetch(`/GestionServicio/ObtenerControlTrafico?ticket=${encodeURIComponent(ticket)}`, {
-      headers: { 'Accept': 'application/json' }
-    })
-      .then(r => { if (!r.ok) throw new Error('No encontrado'); return r.json(); })
-      .then(d => {
-        if (!d.ok) throw new Error(d.message || 'Error');
-        fillFormWithData(d);
-      })
-      .catch(err => {
-        console.error(err);
-        //alert(`No se pudo cargar el ticket #${ticket}`);
-      });
-  });
+  //  fetch(`/GestionServicio/ObtenerControlTrafico?ticket=${encodeURIComponent(ticket)}`, {
+  //    headers: { 'Accept': 'application/json' }
+  //  })
+  //    .then(r => { if (!r.ok) throw new Error('No encontrado'); return r.json(); })
+  //    .then(d => {
+  //      if (!d.ok) throw new Error(d.message || 'Error');
+  //      fillFormWithData(d);
+  //    })
+  //    .catch(err => {
+  //      console.error(err);
+  //      //alert(`No se pudo cargar el ticket #${ticket}`);
+  //    });
+  //});
 
   // (ya tienes cableado el botón Borrar para volver a "Insertar")
 });
@@ -409,3 +468,81 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 });
 
+
+document.addEventListener('DOMContentLoaded', () => {
+  const selHora = document.getElementById('HoraServicio');
+  const inpFecha = document.getElementById('FechaProximoServicio');
+  if (!selHora || !inpFecha) return;
+
+  // Usa tu parseLocalDate si ya la tienes definida
+  const toLocalDate = (str) => {
+    if (!str) return null;
+    if (typeof parseLocalDate === 'function') return parseLocalDate(str);
+    const d = new Date(str);
+    return isNaN(d) ? null : d;
+  };
+
+  const two = (n) => String(n).padStart(2, '0');
+  const sameDay = (a, b) =>
+    a && b &&
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate();
+
+  function rebuildHoraOptions() {
+    // guarda lo que había seleccionado para respetarlo cuando NO sea hoy
+    const presetAttr = selHora.getAttribute('data-selected');
+    const presetPrev = selHora.value || (presetAttr || '');
+
+    // limpia
+    selHora.innerHTML = '';
+    selHora.add(new Option('hh:mm', ''));
+
+    // ¿la fecha es HOY?
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const selDate = toLocalDate(inpFecha.value);
+    const isToday = sameDay(selDate, today);
+
+    // si es HOY, agregamos "Ahora (HH:MM)" y lo AUTOSELECCIONAMOS
+    let nowValue = null;
+    if (isToday) {
+      const now = new Date();
+      nowValue = `${two(now.getHours())}:${two(now.getMinutes())}`;
+      const optNow = new Option(`${nowValue}`, nowValue);
+      selHora.add(optNow); // quedará como segunda opción
+    }
+
+    // Intervalos regulares (15 min)
+    const step = 15; // ajusta si quieres
+    for (let h = 0; h < 24; h++) {
+      for (let m = 0; m < 60; m += step) {
+        const v = `${two(h)}:${two(m)}`;
+        if (v === nowValue) continue; // evita duplicar la opción "Ahora"
+        selHora.add(new Option(v, v));
+      }
+    }
+
+    // Selección final:
+    if (isToday && nowValue) {
+      selHora.value = nowValue;               // ← autoselecciona la hora actual
+    } else if (presetPrev) {
+      selHora.value = presetPrev;             // respeta valor previo si NO es hoy
+    } else {
+      selHora.value = '';                     // deja "hh:mm"
+    }
+  }
+
+  // reconstruye al cargar (por si ya viene fecha)
+  rebuildHoraOptions();
+
+  // reconstruye cuando cambie la fecha
+  inpFecha.addEventListener('change', rebuildHoraOptions);
+
+  // si usas flatpickr, engancha onChange también
+  if (inpFecha._flatpickr && Array.isArray(inpFecha._flatpickr.config.onChange)) {
+    inpFecha._flatpickr.config.onChange.push(() => rebuildHoraOptions());
+  }
+
+  // por si quieres llamarlo manualmente tras setear la fecha en tu flujo de edición:
+  window.rebuildHoraOptions = rebuildHoraOptions;
+});

@@ -686,7 +686,11 @@ ORDER BY NOMBRE;";
 
         // No hay duplicado → insertar normal
         var idCreado = await InsertEmpresaAsync(model);
+<<<<<<< HEAD
 
+=======
+ 
+>>>>>>> 7d12d64cbdef8cf0b30790f8e8971c2c4c4d9652
 
         TempData["AlertTitle"] = "Éxito";
         TempData["Alert"] = "Empresa registrada correctamente";
@@ -754,6 +758,7 @@ SELECT
       return (0, 0);
     }
 
+<<<<<<< HEAD
     public static async Task<int> DeleteEmpresaAsync(Guid id)
     {
       string cs = System.Configuration.ConfigurationManager
@@ -765,10 +770,24 @@ SELECT
 
       try
       {
+=======
+   public static async Task<int> DeleteEmpresaAsync(Guid id)
+{
+    string cs = System.Configuration.ConfigurationManager
+        .ConnectionStrings["ServerDiverscan"].ConnectionString;
+
+    using var cn = new SqlConnection(cs);
+    await cn.OpenAsync();
+    using var tx = cn.BeginTransaction();
+
+    try
+    {
+>>>>>>> 7d12d64cbdef8cf0b30790f8e8971c2c4c4d9652
         // 0) Verifica que exista
         const string SQL_EXISTS = "SELECT 1 FROM dbo.EMPRESA WITH (NOLOCK) WHERE ID_EMPRESA = @ID;";
         using (var cmdExists = new SqlCommand(SQL_EXISTS, cn, tx))
         {
+<<<<<<< HEAD
           cmdExists.Parameters.Add("@ID", SqlDbType.UniqueIdentifier).Value = id;
           var exists = await cmdExists.ExecuteScalarAsync();
           if (exists == null)
@@ -776,6 +795,15 @@ SELECT
             tx.Rollback();
             return 0; // no encontrada
           }
+=======
+            cmdExists.Parameters.Add("@ID", SqlDbType.UniqueIdentifier).Value = id;
+            var exists = await cmdExists.ExecuteScalarAsync();
+            if (exists == null)
+            {
+                tx.Rollback();
+                return 0; // no encontrada
+            }
+>>>>>>> 7d12d64cbdef8cf0b30790f8e8971c2c4c4d9652
         }
 
         // 1) Bloquear si está usada en otras tablas (regla de negocio)
@@ -785,6 +813,7 @@ SELECT
   (SELECT COUNT(*) FROM dbo.CONTROL_TRAFICO WITH (NOLOCK) WHERE EmpresaId  = @ID) AS C_Trafico;";
         using (var cmdCheck = new SqlCommand(SQL_CHECKS, cn, tx))
         {
+<<<<<<< HEAD
           cmdCheck.Parameters.Add("@ID", SqlDbType.UniqueIdentifier).Value = id;
           using var rd = await cmdCheck.ExecuteReaderAsync();
           int cContratos = 0, cTrafico = 0;
@@ -800,6 +829,23 @@ SELECT
             tx.Rollback();
             return -2; // referenciada en otras tablas
           }
+=======
+            cmdCheck.Parameters.Add("@ID", SqlDbType.UniqueIdentifier).Value = id;
+            using var rd = await cmdCheck.ExecuteReaderAsync();
+            int cContratos = 0, cTrafico = 0;
+            if (await rd.ReadAsync())
+            {
+                cContratos = Convert.ToInt32(rd["C_Contratos"]);
+                cTrafico   = Convert.ToInt32(rd["C_Trafico"]);
+            }
+            rd.Close();
+
+            if (cContratos > 0 || cTrafico > 0)
+            {
+                tx.Rollback();
+                return -2; // referenciada en otras tablas
+            }
+>>>>>>> 7d12d64cbdef8cf0b30790f8e8971c2c4c4d9652
         }
 
         // 2) Romper autorrelación: poner en NULL a los que apunten a esta empresa
@@ -809,8 +855,13 @@ SET ID_EMPRESA_RELACIONADA = NULL
 WHERE ID_EMPRESA_RELACIONADA = @ID;";
         using (var cmdNull = new SqlCommand(SQL_NULL_SELF, cn, tx))
         {
+<<<<<<< HEAD
           cmdNull.Parameters.Add("@ID", SqlDbType.UniqueIdentifier).Value = id;
           await cmdNull.ExecuteNonQueryAsync();
+=======
+            cmdNull.Parameters.Add("@ID", SqlDbType.UniqueIdentifier).Value = id;
+            await cmdNull.ExecuteNonQueryAsync();
+>>>>>>> 7d12d64cbdef8cf0b30790f8e8971c2c4c4d9652
         }
 
         // 3) Borrar la empresa
@@ -818,12 +869,18 @@ WHERE ID_EMPRESA_RELACIONADA = @ID;";
         int rows;
         using (var cmdDel = new SqlCommand(SQL_DELETE, cn, tx))
         {
+<<<<<<< HEAD
           cmdDel.Parameters.Add("@ID", SqlDbType.UniqueIdentifier).Value = id;
           rows = await cmdDel.ExecuteNonQueryAsync(); // 1 si eliminó
+=======
+            cmdDel.Parameters.Add("@ID", SqlDbType.UniqueIdentifier).Value = id;
+            rows = await cmdDel.ExecuteNonQueryAsync(); // 1 si eliminó
+>>>>>>> 7d12d64cbdef8cf0b30790f8e8971c2c4c4d9652
         }
 
         tx.Commit();
         return rows;
+<<<<<<< HEAD
       }
       catch
       {
@@ -831,6 +888,15 @@ WHERE ID_EMPRESA_RELACIONADA = @ID;";
         throw;
       }
     }
+=======
+    }
+    catch
+    {
+        try { tx.Rollback(); } catch { /* noop */ }
+        throw;
+    }
+}
+>>>>>>> 7d12d64cbdef8cf0b30790f8e8971c2c4c4d9652
 
 
 

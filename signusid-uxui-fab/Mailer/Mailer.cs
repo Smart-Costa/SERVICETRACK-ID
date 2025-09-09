@@ -3,6 +3,7 @@ using MailKit.Net.Smtp;
 using MailKit.Security;
 using MimeKit;
 using MimeKit.Utils;
+using System.Security.Authentication;
 
 namespace AspnetCoreMvcFull.Mailer
 {
@@ -92,7 +93,7 @@ namespace AspnetCoreMvcFull.Mailer
       var results = new List<MailResult>();
 
       // Preferir 465 (HostGator). Para Outlook, más abajo te muestro cómo fijar 587.
-      foreach (var port in PreferredPorts(cfg.Port))
+      foreach (var port in PreferredPorts(cfg))
       {
         using var logger = new ProtocolLogger(logFile);
         using var smtp = new MailKit.Net.Smtp.SmtpClient(logger) { Timeout = 15000 };
@@ -163,24 +164,37 @@ namespace AspnetCoreMvcFull.Mailer
     // ===== Helpers =====
 
     // Para HostGator: intenta 465 y luego 587. Para Outlook, usa 587 (ver nota al final).
-    private static IEnumerable<int> PreferredPorts(int configured)
+    private static IEnumerable<int> PreferredPorts(SmtpSettings cfg)
     {
-      if (configured == 465) return new[] { 465, 587 };
-      if (configured == 587) return new[] { 587, 465 };
+      // Office 365: solo 587
+      if (cfg.Host.EndsWith("office365.com", StringComparison.OrdinalIgnoreCase))
+        return new[] { 587 };
+
+      // HostGator u otros: conserva preferencia
+      if (cfg.Port == 465) return new[] { 465, 587 };
+      if (cfg.Port == 587) return new[] { 587, 465 };
       return new[] { 465, 587 };
     }
 
     private static async Task ConnectAndAuthAsync(MailKit.Net.Smtp.SmtpClient smtp, SmtpSettings cfg, int port, CancellationToken ct)
     {
-      var ssl = (port == 465) ? SecureSocketOptions.SslOnConnect : SecureSocketOptions.StartTls;
-      await smtp.ConnectAsync(cfg.Host, port, ssl, ct);
+      // Opcional pero recomendado: limitar protocolos
+      smtp.SslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13;
 
-      // La mayoría de servidores cPanel/O365 usan LOGIN/PLAIN; quitamos XOAUTH2
-      smtp.AuthenticationMechanisms.Remove("XOAUTH2");
+      if (cfg.Host.EndsWith("office365.com", StringComparison.OrdinalIgnoreCase))
+      {
+        // O365 SIEMPRE por 587 + STARTTLS
+        await smtp.ConnectAsync(cfg.Host, port, SecureSocketOptions.StartTls, ct);
+      }
+      else
+      {
+        var ssl = (port == 465) ? SecureSocketOptions.SslOnConnect : SecureSocketOptions.StartTls;
+        await smtp.ConnectAsync(cfg.Host, port, ssl, ct);
+      }
 
+      smtp.AuthenticationMechanisms.Remove("XOAUTH2"); // seguimos con user/pass
       await smtp.AuthenticateAsync(cfg.User, cfg.Pass, ct);
     }
-
     private static async Task SafeReconnectAsync(MailKit.Net.Smtp.SmtpClient smtp, SmtpSettings cfg, int port, CancellationToken ct)
     {
       if (smtp.IsConnected) { try { await smtp.DisconnectAsync(true, ct); } catch { } }

@@ -101,7 +101,6 @@
                         <div class="field-error">&nbsp;</div>
                     </div>
                 </div>
-
             </div>
 
 
@@ -255,12 +254,13 @@
                                         data-selected="@ViewBag.HoraServicio">
                                     <option value="">hh:mm</option>
                                 </select>
+                                <!-- error de hora -->
+                                <div id="horaError" class="field-error"></div>
                             </div>
 
                             <!-- Checkboxes (GD / SC / S-ID) -->
                             <div class="col-12 col-sm-6 col-lg-5">
-                                <div class="hour-flags d-flex flex-nowrap align-items-center gap-3 h52 px-3 rounded-3">
-
+                                <div class="hour-flags d-flex w-100 align-items-center gap-3 h52 px-3 rounded-3">
                                     <label class="mb-0 d-flex align-items-center gap-2">
                                         <input type="checkbox" name="GD" value="true" style="accent-color:#ff5100;" id="flagGD">
                                         <input type="hidden" name="GD" value="false" />GD
@@ -271,16 +271,31 @@
                                         <input type="hidden" name="SC" value="false" />SC
                                     </label>
 
+                                    <!-- S-ID a la derecha -->
                                     <label class="mb-0 d-flex align-items-center gap-2">
                                         <input type="checkbox" name="SID" value="true" style="accent-color:#ff5100;" id="flagSID">
                                         <input type="hidden" name="SID" value="false" />S-ID
                                     </label>
                                 </div>
+                                <!-- error de proveedor (GD/SC/S-ID) -->
+                                <div id="proveedorError" class="field-error mt-1"></div>
                             </div>
                         </div>
 
-                        <div id="horaError" class="field-error"></div>
+                        <style>
+                            .hour-flags {
+                                display: flex;
+                                width: 100%;
+                                align-items: center;
+                                gap: 12px;
+                            }
+                                /* Empuja el último label (S-ID) al extremo derecho */
+                                .hour-flags label:last-child {
+                                    margin-left: auto;
+                                }
+                        </style>
                     </div>
+
                 </div>
                 <style>
                     .hour-flags {
@@ -772,245 +787,264 @@
 
 
 <script>
-    // ----------------- Helpers -----------------
-    function setSelectValueSafe(selectEl, value) {
-      if (!selectEl) return;
-      if (!value) { selectEl.value = ''; return; }
-      selectEl.value = value;                         // intento exacto
-      if (selectEl.value === value) return;
-      const v = String(value).trim().toLowerCase();   // intento case-insensitive
-      const opt = Array.from(selectEl.options)
-        .find(o => String(o.value).trim().toLowerCase() === v);
-      if (opt) { opt.selected = true; return; }
-      selectEl.value = '';                            // no existe -> Sin contrato
-    }
+    (() => {
+      // ===================== Helpers comunes =====================
+      const $ = (sel, ctx=document) => ctx.querySelector(sel);
+      const $$ = (sel, ctx=document) => [...ctx.querySelectorAll(sel)];
 
-    // async function cargarContratos(empresaId, selectedValue) {
-    //   const selContrato = document.getElementById('selectContrato');
-    //   // SIEMPRE dejar solo "Sin contrato" al iniciar
-    //   selContrato.innerHTML = '';
-    //   selContrato.append(new Option('Sin contrato', ''));
-
-    //   if (!empresaId) { selContrato.value = ''; return; }
-
-    //   try {
-    //     const url = '@Url.Action("ContratosPorEmpresa", "GestionServicio")' + '?empresaId=' + encodeURIComponent(empresaId);
-    //     const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
-    //     if (!res.ok) throw new Error('HTTP ' + res.status);
-    //     const data = await res.json(); // [{value,text}]
-
-    //     data.forEach(o => selContrato.append(new Option(o.text, o.value)));
-
-    //     // preseleccionar (solo en edición)
-    //     if (selectedValue != null) setSelectValueSafe(selContrato, selectedValue);
-    //   } catch (e) {
-    //     console.error('Error cargando contratos:', e);
-    //     selContrato.value = '';
-    //   }
-    // }
-
-    // canales: sincronizar hidden para que se envíen aunque estén disabled
-    function syncCanalHidden() {
-      const g = document.getElementById('channelGroup');
-      if (!g) return;
-      g.querySelectorAll('.chx-canal').forEach(chk => {
-        const hid = g.querySelector(`input[type="hidden"][name="${chk.name}"]`);
-        if (hid) hid.value = chk.checked ? 'true' : 'false';
-      });
-    }
-    function setCanalesDisabled(disabled) {
-      syncCanalHidden();
-      document.querySelectorAll('#channelGroup .chx-canal').forEach(chk => chk.disabled = disabled);
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-      const form        = document.getElementById('frmControlTrafico');
-     // const selEmpresa  = document.getElementById('selectEmpresa');
-      //const selContrato = document.getElementById('selectContrato');
-
-      // 1) Asegurar que "Contrato" arranque solo con "Sin contrato"
-     // selContrato.innerHTML = '';
-      //selContrato.append(new Option('Sin contrato', ''));
-
-      // 2) Cambio manual de empresa => cargar SOLO contratos de esa empresa
-    //  selEmpresa?.addEventListener('change', () => cargarContratos(selEmpresa.value, null));
-
-      // 3) Canales: single-select + sincronizar hidden
-      const checks = document.querySelectorAll('#channelGroup .chx-canal');
-      checks.forEach(ch => {
-        ch.addEventListener('change', () => {
-          if (ch.checked) checks.forEach(o => { if (o !== ch) o.checked = false; });
-          syncCanalHidden();
-        });
-      });
-      form?.addEventListener('submit', () => syncCanalHidden());
-
-      // 4) EDITAR: setear empresa -> cargar contratos filtrados -> preseleccionar contrato
-      document.querySelectorAll('.btn-edit').forEach(btn => {
-        btn.addEventListener('click', async () => {
-          const ticket = btn.dataset.ticket;
-          const url = '@Url.Action("ObtenerControlTrafico", "GestionServicio")' + '?ticket=' + encodeURIComponent(ticket);
-          const res = await fetch(url, { headers: { 'Accept':'application/json' } });
-          const data = await res.json();
-          if (!data.ok) { alert('No encontrado'); return; }
-
-          document.getElementById('EstadoFormulario').value = 'Editar';
-          document.querySelector('input[name="ticket"]').value = data.ticket;
-
-          // Empresa primero
-         // selEmpresa.value = data.empresaId || '';
-          // Ahora SÍ: cargar contratos de ESA empresa y dejar seleccionado el guardado
-        //  await cargarContratos(data.empresaId || '', data.contratoId || '');
-
-          // Si por algún motivo el contrato no llega en la lista, insértalo y selecciónalo
-          // if (data.contratoId && selContrato.value !== data.contratoId) {
-          //   const label = data.contratoLabel || 'Contrato seleccionado';
-          //   const opt = new Option(label, data.contratoId, true, true);
-          //   selContrato.add(opt, Math.min(1, selContrato.options.length)); // tras "Sin contrato"
-          //   selContrato.value = data.contratoId;
-          // }
-
-          // Resto de selects
-          setSelectValueSafe(document.getElementById('selectSolicitante'),   data.solicitanteId || '');
-          setSelectValueSafe(document.getElementById('selectAsignado'),      data.asignadoAId || '');
-          setSelectValueSafe(document.getElementById('selectRazonServicio'), data.razonServicioId || '');
-
-          // Canales: setear y deshabilitar (pero se enviarán por hidden)
-          const g = document.getElementById('channelGroup');
-          g.querySelector('input[name="CanalEmail"]').checked       = !!data.canalEmail;
-          g.querySelector('input[name="CanalWeb"]').checked         = !!data.canalWeb;
-          g.querySelector('input[name="CanalPresencial"]').checked  = !!data.canalPresencial;
-          g.querySelector('input[name="CanalTelefono"]').checked    = !!data.canalTelefono;
-          g.querySelector('input[name="CanalChatbot"]').checked     = !!data.canalChatbot;
-          setCanalesDisabled(true);
-
-          // Radios + inputs
-          form.querySelector(`input[name="LugarServicio"][value="${data.lugarServicio ?? 0}"]`).checked = true;
-          document.getElementById('TelefonoServicio').value     = data.telefonoServicio ?? '';
-          document.getElementById('EmailServicio').value        = data.emailServicio ?? '';
-          document.getElementById('DireccionServicio').value    = data.direccionServicio ?? '';
-          document.getElementById('DescripcionIncidente').value = data.descripcionIncidente ?? '';
-
-          document.getElementById('selectEmpresa').value = data.empresaId ?? '';
-          document.getElementById('selectContrato').value = data.contratoId ?? '';
-
-
-            await cargarContratosService(data.empresaId || '', data.contratoId || '');
-
-            setDateField('FechaProximoServicio', data.fechaProximoServicio, { allowPast: true });
-            document.getElementById('HoraServicio').value = data.horaServicio || '';
-            document.getElementById('flagGD').checked  = !!data.gd;
-            document.getElementById('flagSC').checked  = !!data.sc;
-            document.getElementById('flagSID').checked = !!data.sid;
-            setFlagsDisabled(true);
-
-        });
-      });
-
-              function setDateField(id, iso, { allowPast = false } = {}) {
-      const el = document.getElementById(id);
-      if (!el) return;
-
-      const v = (iso || '').slice(0, 10); // 'YYYY-MM-DD'
-      const fp = el._flatpickr;
-
-      if (fp) {
-        // guardar minDate y levantar restricción si vamos a permitir pasado (editar)
-        const prevMin = fp.config.minDate;
-        if (allowPast) fp.set('minDate', null);
-
-        if (v) fp.setDate(v, true); else fp.clear();
-
-        // restaurar minDate
-        if (allowPast) fp.set('minDate', prevMin);
-      } else {
-        el.value = v; // fallback si no hay flatpickr
+      function setSelectValueSafe(selectEl, value) {
+        if (!selectEl) return;
+        if (!value) { selectEl.value = ''; return; }
+        selectEl.value = value;                          // intento exacto
+        if (selectEl.value === value) return;
+        const v = String(value).trim().toLowerCase();    // intento case-insensitive
+        const opt = [...selectEl.options].find(o => String(o.value).trim().toLowerCase() === v);
+        if (opt) { opt.selected = true; return; }
+        selectEl.value = '';                              // no existe -> queda vacío
       }
-    }
 
+      async function cargarContratosService(empresaId, selectedValue) {
+        const selContrato = $('#selectContrato');
+        if (!selContrato) return;
 
-      // 5) BORRAR: re-habilitar canales y limpiar (además de tu reset)
-      document.getElementById('btnBorrar')?.addEventListener('click', () => {
-        setCanalesDisabled(false);
-        document.querySelectorAll('#channelGroup .chx-canal').forEach(chk => chk.checked = false);
-        syncCanalHidden();
+        // siempre dejar "Sin contrato" al inicio
+        selContrato.innerHTML = '';
+        selContrato.append(new Option('Sin contrato', ''));
+
+        if (!empresaId) { selContrato.value = ''; return; }
+
+        const url = '@Url.Action("ContratosPorEmpresa", "GestionServicio")' + '?empresaId=' + encodeURIComponent(empresaId);
+        const res = await fetch(url, { headers: { 'Accept':'application/json' } });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json(); // [{value,text}]
+        data.forEach(o => selContrato.append(new Option(o.text, o.value)));
+
+        if (selectedValue) setSelectValueSafe(selContrato, selectedValue);
+        dedupeSelect(selContrato);
+      }
+
+      function ensureTimeOptions() {
+        const sel = $('#HoraServicio');
+        if (!sel || sel.dataset.populated === '1') return;
+        const step = 15;
+        for (let h = 0; h < 24; h++) {
+          for (let m = 0; m < 60; m += step) {
+            const hh = String(h).padStart(2, '0');
+            const mm = String(m).padStart(2, '0');
+            sel.add(new Option(`${hh}:${mm}`, `${hh}:${mm}`));
+          }
+        }
+        sel.dataset.populated = '1';
+      }
+
+      function setTimeSelectValue(val) {
+        const sel = $('#HoraServicio');
+        ensureTimeOptions();
+        if (!val) { sel.value = ''; return; }
+        sel.value = val;
+        if (sel.value !== val) { // no existe → agregar
+          sel.add(new Option(val, val), 1);
+          sel.value = val;
+        }
+      }
+
+      function setDateField(inputId, ymd, { allowPast=false } = {}) {
+        const el = document.getElementById(inputId);
+        if (!el) return;
+        if (el._flatpickr) {
+          const prevMin = el._flatpickr.config.minDate;
+          if (allowPast) el._flatpickr.set('minDate', null);
+          if (ymd) el._flatpickr.setDate(ymd, true); else el._flatpickr.clear();
+          if (allowPast) el._flatpickr.set('minDate', prevMin);
+        } else {
+          el.value = ymd || '';
+        }
+      }
+
+      // --- canales (checkboxes con hidden espelho) ---
+      function syncCanalHidden() {
+        const g = $('#channelGroup');
+        if (!g) return;
+        $$('.chx-canal', g).forEach(chk => {
+          const hid = g.querySelector(`input[type="hidden"][name="${chk.name}"]`);
+          if (hid) hid.value = chk.checked ? 'true' : 'false';
+        });
+      }
+      function setCanalesDisabled(disabled) {
+        syncCanalHidden(); // primero sincroniza (disabled no envía)
+        $$('#channelGroup .chx-canal').forEach(chk => chk.disabled = disabled);
+      }
+
+      // --- flags (GD / SC / SID) con hidden espejo + single-select ---
+      function syncFlagHidden() {
         ['flagGD','flagSC','flagSID'].forEach(id => {
           const chk = document.getElementById(id);
           if (!chk) return;
-          chk.checked = false;
           const hid = chk.parentElement.querySelector(`input[type="hidden"][name="${chk.name}"]`);
-          if (hid) hid.value = 'false';
+          if (hid) hid.value = chk.checked ? 'true' : 'false';
         });
-        setFlagsDisabled(false);
-            // deja "Contrato" solo con "Sin contrato" si limpiás empresa
-        // if (!selEmpresa.value) {
-        //   selContrato.innerHTML = '';
-        //   selContrato.append(new Option('Sin contrato', ''));
-        // }
-      });
-    });
-</script>
+      }
+      function setFlagsDisabled(disabled) {
+        syncFlagHidden();
+        ['flagGD','flagSC','flagSID'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.disabled = disabled;
+        });
+      }
 
-<script>
-    // ---- FLAGS GD/SC/SID ----
-    function syncFlagHidden() {
-      ['flagGD','flagSC','flagSID'].forEach(id => {
-        const chk = document.getElementById(id);
-        if (!chk) return;
-        const hid = chk.parentElement.querySelector(`input[type="hidden"][name="${chk.name}"]`);
-        if (hid) hid.value = chk.checked ? 'true' : 'false';
-      });
-    }
+      function dedupeSelect(selectEl) {
+        const seen = new Set();
+        [...selectEl.options].forEach(opt => {
+          const key = opt.value + '|' + opt.text;
+          if (seen.has(key)) opt.remove(); else seen.add(key);
+        });
+      }
 
-    function setFlagsDisabled(disabled) {
-      // MUY IMPORTANTE: sincroniza antes de deshabilitar (inputs disabled no se envían)
-      syncFlagHidden();
-      ['flagGD','flagSC','flagSID'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.disabled = disabled;
-      });
-    }
-    document.getElementById('frmControlTrafico')?.addEventListener('submit', () => {
-      syncFlagHidden();
-    });
+      // ===================== Carga de ticket (único handler) =====================
+      let loadSeq = 0; // evita condiciones de carrera
 
-</script>
+      async function loadTicket(ticket) {
+        const mySeq = ++loadSeq;
+        const res = await fetch('@Url.Action("ObtenerControlTrafico", "GestionServicio")' + '?ticket=' + encodeURIComponent(ticket),
+                                { headers: { 'Accept':'application/json' } });
+        const d = await res.json();
+        if (mySeq !== loadSeq) return;         // respuesta vieja
+        if (!d.ok) { alert('No encontrado'); return; }
 
+        // Modo edición
+        $('#EstadoFormulario').value = 'Editar';
+        document.querySelector('input[name="ticket"]').value = d.ticket ?? '';
 
+        // Canales → set + bloquear (se enviarán por los hidden)
+        const g = $('#channelGroup');
+        g.querySelector('[name="CanalEmail"]').checked       = !!d.canalEmail;
+        g.querySelector('[name="CanalWeb"]').checked         = !!d.canalWeb;
+        g.querySelector('[name="CanalPresencial"]').checked  = !!d.canalPresencial;
+        g.querySelector('[name="CanalTelefono"]').checked    = !!d.canalTelefono;
+        g.querySelector('[name="CanalChatbot"]').checked     = !!d.canalChatbot;
+        setCanalesDisabled(true);
 
-<script>
-    // Función para limpiar duplicados en el select
-    function limpiarDuplicadosSelect(selectId) {
-      const select = document.getElementById(selectId);
-      if (!select) return;
+        // Empresa → cargar contratos de ESA empresa → seleccionar contrato
+        const selEmpresa  = $('#selectEmpresa');
+        selEmpresa.value  = d.empresaId || '';
+        await cargarContratosService(d.empresaId || '', d.contratoId || '');
 
-      const seen = new Set();
-      [...select.options].forEach(opt => {
-        if (seen.has(opt.value + "|" + opt.text)) {
-          opt.remove(); // elimina duplicado
-        } else {
-          seen.add(opt.value + "|" + opt.text);
+        // Por si el contrato no vino en la lista (pertenece a otra empresa, etc.)
+        if (d.contratoId) {
+          const selContrato = $('#selectContrato');
+          if (selContrato.value !== d.contratoId) {
+            const label = d.contratoLabel || d.contratoId;
+            selContrato.add(new Option(label, d.contratoId), Math.min(1, selContrato.options.length));
+            selContrato.value = d.contratoId;
+            dedupeSelect(selContrato);
+          }
+        }
+
+        // Otros selects simples
+        setSelectValueSafe($('#selectSolicitante'),   d.solicitanteId || '');
+        setSelectValueSafe($('#selectAsignado'),      d.asignadoAId || '');
+        setSelectValueSafe($('#selectRazonServicio'), d.razonServicioId || '');
+
+        // Radios + inputs
+        const radio = document.querySelector(`input[name="LugarServicio"][value="${d.lugarServicio ?? 0}"]`);
+        if (radio) radio.checked = true;
+        $('#TelefonoServicio').value     = d.telefonoServicio ?? '';
+        $('#EmailServicio').value        = d.emailServicio ?? '';
+        $('#DireccionServicio').value    = d.direccionServicio ?? '';
+        $('#DescripcionIncidente').value = d.descripcionIncidente ?? '';
+
+        // Fecha / Hora
+        setDateField('FechaProximoServicio', d.fechaProximoServicio, { allowPast:true });
+        setTimeSelectValue(d.horaServicio || '');
+
+        // Flags
+        $('#flagGD')?.setAttribute('checked', (!!d.gd).toString());
+        $('#flagSC')?.setAttribute('checked', (!!d.sc).toString());
+        $('#flagSID')?.setAttribute('checked', (!!d.sid).toString());
+        $('#flagGD').checked  = !!d.gd;
+        $('#flagSC').checked  = !!d.sc;
+        $('#flagSID').checked = !!d.sid;
+        setFlagsDisabled(true);
+      }
+
+      // ===================== Wiring =====================
+      document.addEventListener('DOMContentLoaded', () => {
+        const form = $('#frmControlTrafico');
+
+        // Canales: modo single-select + sincronizar hidden en cada cambio
+        const canales = $$('#channelGroup .chx-canal');
+        canales.forEach(ch => {
+          ch.addEventListener('change', () => {
+            if (ch.checked) canales.forEach(o => { if (o !== ch) o.checked = false; });
+            syncCanalHidden();
+          });
+        });
+        form?.addEventListener('submit', () => {
+          syncCanalHidden();
+          syncFlagHidden();
+        });
+
+        // Flags: single-select (GD/SC/SID)
+        ['flagGD','flagSC','flagSID'].forEach(id => {
+          const el = document.getElementById(id);
+          if (!el) return;
+          el.addEventListener('change', () => {
+            if (el.checked) {
+              ['flagGD','flagSC','flagSID'].forEach(otro => {
+                if (otro !== id) {
+                  const chk = document.getElementById(otro);
+                  if (chk) chk.checked = false;
+                }
+              });
+            }
+            syncFlagHidden();
+          });
+        });
+
+        // Borrar / reset visual básico
+        $('#btnBorrar')?.addEventListener('click', () => {
+          setCanalesDisabled(false);
+          canales.forEach(chk => chk.checked = false);
+          syncCanalHidden();
+
+          ['flagGD','flagSC','flagSID'].forEach(id => {
+            const chk = document.getElementById(id);
+            if (chk) chk.checked = false;
+          });
+          setFlagsDisabled(false);
+
+          // si quieres limpiar el select de contrato cuando empresa se limpia, hazlo aquí
+          // const selEmpresa = $('#selectEmpresa');
+          // const selContrato = $('#selectContrato');
+          // if (selEmpresa && !selEmpresa.value && selContrato) {
+          //   selContrato.innerHTML = '';
+          //   selContrato.append(new Option('Sin contrato',''));
+          // }
+        });
+
+        // Cambio manual de empresa ⇒ cargar contratos de esa empresa (sin preselección)
+        $('#selectEmpresa')?.addEventListener('change', e => {
+          cargarContratosService(e.target.value, null);
+        });
+
+        // Dedupe dinámico por si el backend o edición reinyecta opciones
+        const selContrato = $('#selectContrato');
+        if (selContrato) {
+          selContrato.addEventListener('change', () => dedupeSelect(selContrato));
+          const obs = new MutationObserver(() => dedupeSelect(selContrato));
+          obs.observe(selContrato, { childList: true });
         }
       });
-    }
 
-    document.addEventListener("DOMContentLoaded", () => {
-      const selectContrato = document.getElementById("selectContrato");
-
-      if (!selectContrato) return;
-
-      // 1. Al cambiar el select
-      selectContrato.addEventListener("change", () => {
-        limpiarDuplicadosSelect("selectContrato");
+      // Handler único delegado para Editar
+      document.addEventListener('click', (e) => {
+        const btn = e.target.closest('.btn-edit');
+        if (!btn) return;
+        e.preventDefault();
+        const ticket = btn.dataset.ticket;
+        if (ticket) loadTicket(ticket);
       });
-
-      // 2. Cada vez que se inserte algo nuevo dentro del select (Mutación del DOM)
-      const observer = new MutationObserver(() => {
-        limpiarDuplicadosSelect("selectContrato");
-      });
-
-      observer.observe(selectContrato, { childList: true });
-    });
+    })();
 </script>
 
 

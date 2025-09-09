@@ -75,5 +75,8 @@ namespace AspnetCoreMvcFull.Models.Empresa
     [Column("IDENTIFICACION")]
     [StringLength(200)]
     public string? Identificacion { get; set; }
+
+    [Column("ID_EMPRESA_RELACIONADA")]
+    public Guid? EmpresaRelacionadaId { get; set; }
   }
 }
