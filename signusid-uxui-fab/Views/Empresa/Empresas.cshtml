@@ -3,6 +3,22 @@
     ViewData["Title"] = "Empresas";
 }
 
+@{
+    var http = ViewContext?.HttpContext;
+    var query = http?.Request?.Query;
+
+    var page = Model?.CurrentPage ?? (query != null && int.TryParse(query["page"], out var p) ? p : 1);
+    var pageSize = Model?.PageSize ?? (query != null && int.TryParse(query["pageSize"], out var ps) ? ps : 5);
+    var total = Model?.TotalItems ?? 0;
+    var totalPages = Math.Max(1, (int)Math.Ceiling((double)total / Math.Max(1, pageSize)));
+    var q = Model?.Query ?? (query?["q"].ToString() ?? "");
+    var todos = query?["todos"].ToString() ?? "";
+
+    var from = total == 0 ? 0 : ((page - 1) * pageSize + 1);
+    var to = total == 0 ? 0 : Math.Min(page * pageSize, total);
+}
+
+<script src="~/js/empresas.js"></script>
 
 @model AspnetCoreMvcFull.Models.Empresa.EmpresaIndexVm
 
@@ -15,51 +31,84 @@
     <div class="p-3 rounded mb-4" style="border: 1px solid #d6d6d6;">
 
         @* <-- borde suave que encierra TODO menos el título *@
-        <form asp-action="GuardarEmpresa" method="post">
-            <input type="hidden" name="estadoFomrulario" value="Insertar" />
-            <input type="hidden" name="IdEmpresa" value="Insertar" />
+        <form id="formEmpresa" asp-controller="Empresa" asp-action="GuardarEmpresa" method="post" novalidate>
+
+            <input type="hidden" name="estadoFomrulario"
+                   value="@(Model?.FormData?.IdEmpresa != Guid.Empty ? "Editar" : "Insertar")" />
+            <input type="hidden" name="IdEmpresa"
+                   value="@(Model?.FormData?.IdEmpresa != Guid.Empty ? Model.FormData.IdEmpresa : Guid.Empty)" />
+            <input type="hidden" name="page" value="@(page)" />
+            <input type="hidden" name="pageSize" value="@pageSize" />
+            <input type="hidden" name="q" value="@q" />
+            <input type="hidden" name="todos" value="@todos" />
+
             @Html.AntiForgeryToken()
 
             <div class="row g-4">
                 <!-- Fila 1: Nombre / Dirección -->
                 <div class="col-12 col-md-6">
                     <label for="Nombre" class="form-label">Nombre de la Empresa</label>
-                    <input id="Nombre" name="Nombre" class="form-control  " />
+                    <input id="Nombre" name="Nombre" class="form-control" value="@Model?.FormData?.Nombre" />
+                    <div id="err-Nombre" class="text-danger small d-none">Obligatorio</div>
                 </div>
+
+                <!-- Dirección -->
                 <div class="col-12 col-md-6">
                     <label for="DireccionEmpresa" class="form-label">Dirección</label>
-                    <input id="DireccionEmpresa" name="DireccionEmpresa" class="form-control  " />
+                    <input id="DireccionEmpresa" name="DireccionEmpresa" class="form-control" value="@Model?.FormData?.DireccionEmpresa" />
+                    <div id="err-DireccionEmpresa" class="text-danger small d-none">Obligatorio</div>
                 </div>
 
                 <!-- Fila 2: Identificación / Empresa Relacionada / Dirección (opcional) -->
                 <div class="col-12 col-md-3">
                     <label for="IdentificacionERelacionada" class="form-label">Identificación</label>
-                    <input id="IdentificacionERelacionada" name="IdentificacionERelacionada" class="form-control  " />
+                    <input id="IdentificacionERelacionada"
+                           name="IdentificacionERelacionada"
+                           class="form-control"
+                           value="@Model?.FormData?.IdentificacionERelacionada"/>
                 </div>
+
                 <div class="col-12 col-md-3">
-                    <label for="EmpresaRelacionada" class="form-label">Empresa Relacionada</label>
-                    <input id="EmpresaRelacionada" name="EmpresaRelacionada" class="form-control  " />
+                    <label for="EmpresaRelacionadaId" class="form-label">Empresa Relacionada</label>
+                    <select id="EmpresaRelacionadaId" name="EmpresaRelacionadaId"
+                            class="form-select"
+                            style="appearance:none;-webkit-appearance:none;-moz-appearance:none;background-image:none;">
+                        <option value="">Seleccione una empresa</option>
+                        @foreach (var opt in Model.EmpresasOptions)
+                        {
+                            <option value="@opt.Value"
+                                    selected="@(Model?.FormData?.EmpresaRelacionadaId?.ToString() == opt.Value ? "selected" : null)">
+                                @opt.Text
+                            </option>
+                        }
+                    </select>
+
                 </div>
+
                 <div class="col-12 col-md-6">
                     <label for="DireccionERelacionada" class="form-label">Dirección (opcional)</label>
-                    <input id="DireccionERelacionada" name="DireccionERelacionada" class="form-control  " />
+                    <input id="DireccionERelacionada" name="DireccionERelacionada" class="form-control" value="@Model?.FormData?.DireccionERelacionada" />
                 </div>
 
                 <!-- Fila 3: Email / Teléfono / Ciudad / Estado -->
                 <div class="col-12 col-md-3">
                     <label for="Email" class="form-label">Email</label>
-                    <input id="Email" name="Email" type="email" class="form-control  " />
+                    <input id="Email" name="Email" type="email" class="form-control" value="@Model?.FormData?.Email" />
+                    <div id="err-Email" class="text-danger small d-none">Obligatorio</div>
                 </div>
+
                 <div class="col-12 col-md-3">
                     <label for="Telefono" class="form-label">Teléfono</label>
-                    <input id="Telefono" name="Telefono" class="form-control  " />
+                    <input id="Telefono" name="Telefono" class="form-control" value="@Model?.FormData?.Telefono" />
                 </div>
                 <div class="col-12 col-md-3">
-                    <label for="Ciudad" class="form-label">Ciudad</label>
-                    <select id="Ciudad" name="Ciudad" class="form-select select-light">
+                    <label for="Pais" class="form-label">País*</label>
+                    <select id="Pais" name="Pais" class="form-select select-light">
                         <option value="">Seleccione un elemento</option>
                     </select>
+                    <div id="err-Pais" class="text-danger small d-none">Obligatorio</div>
                 </div>
+     
                 <div class="col-12 col-md-3">
                     <label for="Estado" class="form-label">Estado</label>
                     <select id="Estado" name="Estado" class="form-select select-light">
@@ -70,7 +119,7 @@
                 <!-- Fila 4: Forma de Pago / Condición Financiera / Código Postal / País -->
                 <!-- Forma de Pago -->
                 <div class="col-12 col-md-3">
-                    <label for="FormaPago" class="form-label">Forma de Pago<span class="text-danger">*</span></label>
+                    <label for="FormaPago" class="form-label">Forma de Pago*</label>
                     <select id="FormaPago" name="FormaPago" class="form-select select-light">
                         <option value="">Seleccione un elemento</option>
                         <option value="Prepago" selected="@(Model?.FormData?.FormaPago == "Prepago" ? "selected" : null)">Prepago</option>
@@ -78,28 +127,56 @@
                         <option value="15 dias Credito" selected="@(Model?.FormData?.FormaPago == "15 dias Credito" ? "selected" : null)">15 dias Credito</option>
                         <option value="60 dias Credito" selected="@(Model?.FormData?.FormaPago == "60 dias Credito" ? "selected" : null)">60 dias Credito</option>
                     </select>
+                    <div id="err-FormaPago" class="text-danger small d-none">Obligatorio</div>
                 </div>
 
                 <!-- Condición Financiera de Servicio -->
                 <div class="col-12 col-md-3">
-                    <label for="CondicionFinanciera" class="form-label">Condición Financiera de Servicio<span class="text-danger">*</span></label>
+                    <label for="CondicionFinanciera" class="form-label">Condición Financiera de Servicio*</label>
                     <select id="CondicionFinanciera" name="CondicionFinanciera" class="form-select select-light">
                         <option value="">Seleccione un elemento</option>
                         <option value="Activa" selected="@(Model?.FormData?.CondicionFinanciera == "Activa" ? "selected" : null)">Activa</option>
                         <option value="Bloqueada por pago" selected="@(Model?.FormData?.CondicionFinanciera == "Bloqueada por pago" ? "selected" : null)">Bloqueada por pago</option>
+                        <option value="Bloqueada por pago" selected="@(Model?.FormData?.CondicionFinanciera == "Sin contrato" ? "selected" : null)">Sin Contrato</option>
                     </select>
                 </div>
                 <div class="col-12 col-md-3">
                     <label for="CodigoPostal" class="form-label">Código Postal</label>
-                    <input id="CodigoPostal" name="CodigoPostal" class="form-control  " />
+                    <input id="CodigoPostal" name="CodigoPostal" class="form-control" value="@Model?.FormData?.CodigoPostal" />
                 </div>
                 <div class="col-12 col-md-3">
-                    <label for="Pais" class="form-label">País*</label>
-                    <select id="Pais" name="Pais" class="form-select select-light">
+                    <label for="Ciudad" class="form-label">Ciudad</label>
+                    <select id="Ciudad" name="Ciudad" class="form-select select-light">
                         <option value="">Seleccione un elemento</option>
                     </select>
                 </div>
             </div>
+            <script>
+                // document.addEventListener('DOMContentLoaded', () => {
+                //   const sel   = document.getElementById('EmpresaRelacionadaId');
+                //   const ident = document.getElementById('IdentificacionERelacionada');
+                //   if (ident) ident.readOnly = true;
+
+                //   async function updateIdentFromServer() {
+                //     if (!sel || !ident) return;
+                //     const id = sel.value;
+                //     if (!id) { ident.value = ''; return; }
+
+                //     try {
+                //       const url = '@Url.Action("Info", "Empresa")' + '?id=' + encodeURIComponent(id);
+                //       const res = await fetch(url, { headers: { 'Accept': 'application/json' }});
+                //       if (!res.ok) return;
+                //       const data = await res.json();
+                //       ident.value = data?.identificacion ?? '';
+                //     } catch { /* noop */ }
+                //   }
+
+                //   if (sel) {
+                //     sel.addEventListener('change', updateIdentFromServer);
+                //     if (sel.value) updateIdentFromServer(); // precarga
+                //   }
+                // });
+            </script>
 
             <!-- Fila final: Estatus + Identificación (total col-md-3) | Botón a la derecha -->
             <div class="row g-3 align-items-end mt-3">
@@ -108,31 +185,35 @@
                     <div class="row g-3">
                         <div class="col-6">
                             <select id="Estatus" name="Estatus" class="form-select">
-                                <option value="" selected disabled hidden>Estatus</option>
-                                <option value="Prepago" selected="@(Model?.FormData?.Estatus == "Activo" ? "selected" : null)">Activo</option>
-                                <option value="5 dias Credito" selected="@(Model?.FormData?.Estatus == "Inactivo" ? "selected" : null)">Inactivo</option>
+                                <option value="" selected="@(string.IsNullOrEmpty(Model?.FormData?.Estatus) ? "selected" : null)" hidden>Estatus</option>
+                                <option value="Activo" selected="@(Model?.FormData?.Estatus == "Activo" ? "selected" : null)">Activo</option>
+                                <option value="Inactivo" selected="@(Model?.FormData?.Estatus == "Inactivo" ? "selected" : null)">Inactivo</option>
                             </select>
                         </div>
                         <div class="col-6">
                             <input id="Identificacion"
                                    name="Identificacion"
                                    class="form-control"
-                                   placeholder="Identificación" />
+                                   placeholder="Identificación"
+                                   value="@Model?.FormData?.Identificacion"
+                                   inputmode="numeric"
+                                   maxlength="7"
+                                   pattern="^\d{1,7}$"
+                                   required />
+
+
                         </div>
                     </div>
                 </div>
 
                 <!-- DERECHA: Botón Registrar Contacto alineado al borde derecho -->
                 <div class="col-12 col-md-9 d-grid d-md-flex justify-content-md-end">
-                    <a asp-action="RegistrarContacto"
-                       class="btn text-white"
+                    <a class="btn text-white"
                        style="background-color:#FF5100;border-color:#FF5100;">
                         <span class="fw-bold me-2">+</span> Registrar Contacto
                     </a>
                 </div>
             </div>
-
-
 
             <!-- Acciones -->
             <div class="d-flex justify-content-center gap-3 mt-4">
@@ -140,26 +221,110 @@
                         style="background-color:#FF5100;border-color:#FF5100;">
                     Guardar
                 </button>
-                <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
+                <button type="button" class="btn btn-secondary" id="btnCancelar">Cancelar</button>
             </div>
         </form>
     </div>
 
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+          const idMain = document.getElementById('Identificacion');
 
-    <form asp-controller="GestionServicio" asp-action="ControlTrafico" method="get">
+          // En cada input/pegado: solo dígitos y máximo 7
+          if (idMain) {
+            idMain.addEventListener('input', function (e) {
+              const onlyDigits = e.target.value.replace(/\D+/g, '');
+              e.target.value = onlyDigits.slice(0, 7);
+            });
+          }
+
+          // Validación en submit: requerido + 1..7 dígitos (mismo modal que usas)
+          const form = document.querySelector('form[asp-action="GuardarEmpresa"]');
+          if (form && idMain) {
+            form.addEventListener('submit', function (ev) {
+              const val = (idMain.value || '').trim();
+              if (!/^\d{1,7}$/.test(val)) {
+                ev.preventDefault();
+                const titleEl = document.getElementById('alertModalLabel');
+                const bodyEl  = document.getElementById('alertModalBody');
+                if (titleEl) titleEl.textContent = 'Validación';
+                if (bodyEl)  bodyEl.textContent  =
+                  'La Identificación es obligatoria, solo números y máximo 7 dígitos.';
+
+                new bootstrap.Modal(document.getElementById('alertModal')).show();
+                idMain.focus();
+              }
+            });
+          }
+        });
+    </script>
+
+    <style>
+        .btn-orange {
+            background: #FF5100;
+            border-color: #FF5100;
+            color: #fff
+        }
+
+            .btn-orange:hover {
+                filter: brightness(1.07)
+            }
+    </style>
+    <style>
+        /* solo para el select de estatus */
+        .no-caret {
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: none !important; /* sin ícono */
+            padding-right: .75rem; /* compensa el espacio del caret eliminado */
+        }
+    </style>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+          const btnReset = document.getElementById('btnResetFiltros');
+          if (!btnReset) return;
+
+          btnReset.addEventListener('click', () => {
+            const form = btnReset.closest('form');
+            if (!form) return;
+
+            const q       = form.querySelector('#qInput');
+            const estatus = form.querySelector('#estatus');
+            const pageHid = form.querySelector('input[name="page"]');
+
+            if (q) q.value = '';
+            if (estatus) estatus.value = '';     // deja "---Todos---"
+            if (pageHid) pageHid.value = 1;      // vuelve a página 1
+
+            form.submit();
+          });
+        });
+    </script>
+
+
+    @{
+        var qVal = Model?.Query ?? Context?.Request?.Query["q"].ToString();
+        var todosVal = Model?.Todos ?? Context?.Request?.Query["todos"].ToString();
+        var estatusVal = Model?.EstatusFilter ?? Context?.Request?.Query["estatus"].ToString();
+        var pageSizeCurrent = Model?.PageSize ?? 5;
+    }
+
+
+    <form asp-controller="Empresa" asp-action="Empresas" method="get">
 
         <!-- AQUI DEBERIAN DE IR LOS FILTROS -->
         <!-- FILTROS: Fila 1 -->
         <div class="row gx-2 gy-2 align-items-center mb-2">
-            <!-- IZQUIERDA (más ancha) -->
             <div class="col-12 col-lg-9">
                 <div class="row gx-2 gy-2 align-items-center">
-                    <!-- Empresa (se expande) -->
+                    <!-- Empresa -->
                     <div class="col">
-                        <input type="text" name="q" class="form-control" placeholder="Empresa" />
+                        <input type="text" name="q" id="qInput" class="form-control" placeholder="Empresa" value="@qVal" />
                     </div>
 
-                    <!-- Buscar (tamaño contenido) -->
+                    <!-- Buscar -->
                     <div class="col-auto">
                         <button type="submit" name="cmd" value="buscar"
                                 class="btn text-white"
@@ -168,14 +333,18 @@
                         </button>
                     </div>
 
-                    <!-- ---Todos--- (se expande igual que Empresa) -->
+                    <!-- ---Todos--- como select sin flecha -->
                     <div class="col">
-                        <input type="text" name="todos" class="form-control" placeholder="---Todos---" />
+                        <select id="estatus" name="estatus" class="form-select no-caret">
+                            <option value="" selected="@(string.IsNullOrEmpty(estatusVal) ? "selected" : null)">---Todos---</option>
+                            <option value="Activo" selected="@(estatusVal == "Activo" ? "selected" : null)">Activo</option>
+                            <option value="Inactivo" selected="@(estatusVal == "Inactivo" ? "selected" : null)">Inactivo</option>
+                        </select>
                     </div>
                 </div>
             </div>
 
-            <!-- DERECHA: Filtrar + Limpiar alineados a la derecha -->
+            <!-- DERECHA: Filtrar / Limpiar -->
             <div class="col-12 col-lg-3">
                 <div class="d-flex justify-content-lg-end align-items-center gap-2">
                     <button type="submit" name="cmd" value="filtrar"
@@ -183,38 +352,36 @@
                             style="background-color:#FF5100;border-color:#FF5100;">
                         Filtrar
                     </button>
-                    <button type="reset" class="btn btn-secondary">Limpiar Filtro</button>
+                    <button type="button" class="btn btn-secondary" id="btnResetFiltros">Limpiar Filtro</button>
                 </div>
             </div>
         </div>
 
-
-
-
-        <!-- FILTROS: Fila 2 (alineada con la fila 1: 9/3) -->
+        <!-- FILA 2: Mostrar X -->
         <div class="row align-items-center mb-2">
             <div class="col-12 col-lg-9 d-flex flex-wrap align-items-center gap-2">
                 <span>Mostrar</span>
+
+                <input type="hidden" name="page" id="pageHidden" value="@(Model?.CurrentPage ?? 1)" />
+
                 <select id="pageSize" name="pageSize" class="form-select form-select-sm w-auto">
-                    <option value="1">1</option>
-                    <option value="5" selected>5</option>
-                    <option value="10">10</option>
-                    <option value="20">20</option>
+                    <option value="1" selected="@(pageSizeCurrent == 1 ? "selected" : null)">1</option>
+                    <option value="5" selected="@(pageSizeCurrent == 5 ? "selected" : null)">5</option>
+                    <option value="10" selected="@(pageSizeCurrent == 10 ? "selected" : null)">10</option>
+                    <option value="20" selected="@(pageSizeCurrent == 20 ? "selected" : null)">20</option>
                 </select>
+
                 <span>Empresa</span>
             </div>
 
             <div class="col-12 col-lg-3 d-flex justify-content-lg-end mt-2 mt-lg-0">
-                <a asp-action="RegistrarEmpresa"
+                <a asp-action="Empresas"
                    class="btn text-white"
                    style="background-color:#FF5100;border-color:#FF5100;">
                     <span class="fw-bold me-2">+</span> Registrar Empresa
                 </a>
             </div>
         </div>
-
-
-
 
         <!-- AQUI DEBERIAN DE IR LOS FILTROS -->
 
@@ -275,7 +442,7 @@
                             <th>Nombre de empresa</th>
                             <th>País</th>
                             <th>Forma Pago</th>
-                            <th>Condicion financiera de sericios</th>
+                            <th>Condicion financiera de servicios</th>
                             <th>telefono</th>
                             <th class="text-end">Acciones</th>
                         </tr>
@@ -295,17 +462,43 @@
                                         <div class="d-inline-flex gap-2">
                                             <a class="btn d-flex align-items-center justify-content-center p-1 px-2"
                                                title="Editar"
-                                               asp-action="Editar" asp-route-id="@item.IdEmpresa"
+                                               asp-controller="Empresa"
+                                               asp-action="Editar"
+                                               asp-route-id="@item.IdEmpresa"
+                                               asp-route-page="@(page)"
+                                               asp-route-pageSize="@(pageSize)"
+                                               asp-route-estatus="@(estatusVal)"
+                                               asp-route-q="@(q)"
+                                               asp-route-todos="@(todos)"
                                                style="background-color:#00A5B8;border:none;border-radius:6px;height:28px;min-width:40px;">
                                                 <img src="~/img/editar_icono.svg" alt="Editar" style="width:16px;height:16px;">
                                             </a>
+
+
+
+
                                             <button type="button" class="btn d-flex align-items-center justify-content-center p-1 px-2"
                                                     title="Borrar"
                                                     data-bs-toggle="modal" data-bs-target="#empresaDeleteModal"
                                                     data-id="@item.IdEmpresa"
+                                                    data-nombre="@item.Nombre"
                                                     style="background-color:#666;border:none;border-radius:6px;height:28px;min-width:40px;">
                                                 <img src="~/img/eliminar_icono.svg" alt="Eliminar" style="width:16px;height:16px;">
                                             </button>
+
+
+                                            <button type="button"
+                                                    class="btn d-flex align-items-center justify-content-center p-1 px-2 btn-historial"
+                                                    title="Historial"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#historialModal"
+                                                    data-id="@item.IdEmpresa"
+                                                    data-nombre="@item.Nombre"
+                                                    style="background-color:#00A5B8;border:none;border-radius:6px;height:28px;min-width:40px;">
+                                                <img src="~/img/historial_icono.svg" alt="Historial" style="width:16px;height:16px;">
+                                            </button>
+
+
                                         </div>
                                     </td>
                                 </tr>
@@ -321,36 +514,24 @@
 
                 </table>
             </div>
+            <style>
+                .btn:hover[style*="#00A5B8"] {
+                    filter: brightness(1.08);
+                }
+            </style>
 
-
-            @{
-                var page = Model?.CurrentPage ?? 1;
-                var pageSize = Model?.PageSize ?? 5;
-                var total = Model?.TotalItems ?? 0;
-                var totalPages = Math.Max(1, (int)Math.Ceiling((double)total / Math.Max(1, pageSize)));
-                var q = Model?.Query ?? "";
-
-                // Si tienes más filtros en el querystring, captúralos aquí para preservarlos:
-                var todos = Context?.Request?.Query["todos"].ToString() ?? "";
-
-                var from = total == 0 ? 0 : ((page - 1) * pageSize + 1);
-                var to = total == 0 ? 0 : Math.Min(page * pageSize, total);
-            }
-
-            <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mt-2 gap-2">
-           
-
+            <div class="d-flex justify-content-end mt-2 gap-2">
                 <nav aria-label="Paginación">
                     <ul class="pagination flex-wrap mb-0">
 
                         <!-- Primero / Anterior -->
                         <li class="page-item @(page <= 1 ? "disabled" : "")">
                             <a class="page-link"
-                               href="@Url.Action("Empresas", new { page = 1, pageSize, q, todos })">««</a>
+                               href="@Url.Action("Empresas", new { page = 1, pageSize = pageSizeCurrent, q = qVal, todos = todosVal, estatus = estatusVal })">««</a>
                         </li>
                         <li class="page-item @(page <= 1 ? "disabled" : "")">
                             <a class="page-link"
-                               href="@Url.Action("Empresas", new { page = Math.Max(1, page - 1), pageSize, q, todos })">«</a>
+                               href="@Url.Action("Empresas", new { page = Math.Max(1, page - 1), pageSize = pageSizeCurrent, q = qVal, todos = todosVal, estatus = estatusVal })">«</a>
                         </li>
 
                         <!-- Números (bordes + ventana alrededor de la actual) -->
@@ -359,8 +540,8 @@
                             if (totalPages == 1 || i == 1 || i == totalPages || (i >= page - 2 && i <= page + 2))
                             {
                                 <li class="page-item @(i == page ? "active" : "")">
-                                    <a class="page-link"
-                                       href="@Url.Action("Empresas", new { page = i, pageSize, q, todos })">@i</a>
+                                    <a class="page-link" href="@Url.Action("Empresas", new { page = i, pageSize = pageSizeCurrent, q = qVal, todos = todosVal, estatus = estatusVal })">@i</a>
+
                                 </li>
                             }
                             else if (i == page - 3 || i == page + 3)
@@ -372,11 +553,11 @@
                         <!-- Siguiente / Último -->
                         <li class="page-item @(page >= totalPages ? "disabled" : "")">
                             <a class="page-link"
-                               href="@Url.Action("Empresas", new { page = Math.Min(totalPages, page + 1), pageSize, q, todos })">»</a>
+                               href="@Url.Action("Empresas", new { page = Math.Min(totalPages, page + 1), pageSize = pageSizeCurrent, q = qVal, todos = todosVal, estatus = estatusVal })">»</a>
                         </li>
                         <li class="page-item @(page >= totalPages ? "disabled" : "")">
                             <a class="page-link"
-                               href="@Url.Action("Empresas", new { page = totalPages, pageSize, q, todos })">»»</a>
+                               href="@Url.Action("Empresas", new { page = totalPages, pageSize = pageSizeCurrent, q = qVal, todos = todosVal, estatus = estatusVal })">»»</a>
                         </li>
 
                     </ul>
@@ -387,7 +568,212 @@
     </form>
 </div>
 
-<!-- Modal de alerta (arriba) -->
+<!-- Modal Historial -->
+<div class="modal fade" id="historialModal" tabindex="-1" aria-labelledby="historialModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable modal-fullscreen-sm-down">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="historialModalLabel">
+                    Historial de Empresa
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+
+            <div class="modal-body">
+                <!-- Estado de carga -->
+                <div id="historialLoading" class="d-flex align-items-center gap-2">
+                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                    <span>Cargando...</span>
+                </div>
+
+                <!-- Contenedor para la tabla -->
+                <div id="historialTableWrap" class="d-none"></div>
+
+                <!-- Mensaje vacío -->
+                <div id="historialEmpty" class="alert alert-info d-none mb-0">
+                    No hay registros de Control de Tráfico para esta empresa.
+                </div>
+
+                <!-- Error -->
+                <div id="historialError" class="alert alert-danger d-none mb-0"></div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+    (function () {
+      const modalEl   = document.getElementById('historialModal');
+      const lbl       = document.getElementById('historialModalLabel');
+      const wrap      = document.getElementById('historialTableWrap');
+      const loading   = document.getElementById('historialLoading');
+      const emptyBox  = document.getElementById('historialEmpty');
+      const errorBox  = document.getElementById('historialError');
+
+      // Opcional: cambia a 'es-CR' si prefieres
+      const fmtDateTime = (iso) => {
+        if (!iso) return '';
+        const d = new Date(iso.endsWith('Z') ? iso : iso + 'Z'); // por si viene sin Z
+        return d.toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' });
+      };
+
+      // Render simple de tabla
+      function renderTable(rows) {
+        const th = `
+          <thead class="table-light">
+            <tr>
+              <th>Ticket</th>
+              <th>Creación (UTC)</th>
+              <th>Próximo Servicio</th>
+              <th>Hora</th>
+              <th>Teléfono</th>
+              <th>Email</th>
+              <th>Canales</th>
+              <th>GD</th>
+              <th>SC</th>
+              <th>S-ID</th>
+            </tr>
+          </thead>`;
+
+        const body = rows.map(r => {
+          const canales = [
+            r.canalEmail ? 'Email' : '',
+            r.canalWeb ? 'Web' : '',
+            r.canalPresencial ? 'Presencial' : '',
+            r.canalTelefono ? 'Teléfono' : '',
+            r.canalChatbot ? 'Chatbot' : ''
+          ].filter(Boolean).join(', ');
+
+          return `<tr>
+            <td>${r.ticket ?? ''}</td>
+            <td>${fmtDateTime(r.fechaCreacionUtc)}</td>
+            <td>${r.fechaProximoServicio ? fmtDateTime(r.fechaProximoServicio) : ''}</td>
+            <td>${r.horaServicio ?? ''}</td>
+            <td>${r.telefonoServicio ?? ''}</td>
+            <td>${r.emailServicio ?? ''}</td>
+            <td>${canales}</td>
+            <td>${r.gd ? 'Sí' : 'No'}</td>
+            <td>${r.sc ? 'Sí' : 'No'}</td>
+            <td>${r.sid ? 'Sí' : 'No'}</td>
+          </tr>`;
+        }).join('');
+
+        wrap.innerHTML = `
+          <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+              ${th}
+              <tbody>${body}</tbody>
+            </table>
+          </div>`;
+      }
+
+      // Cuando se clickea el botón del historial
+      document.querySelectorAll('.btn-historial').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const id = btn.dataset.id;
+          const nombre = btn.dataset.nombre || 'Empresa';
+
+          // UI: reset
+          lbl.textContent = `Historial de ${nombre}`;
+          wrap.classList.add('d-none');
+          emptyBox.classList.add('d-none');
+          errorBox.classList.add('d-none');
+          loading.classList.remove('d-none');
+
+          try {
+            // Llama al endpoint que te doy abajo
+            const url = '@Url.Action("Historial", "Empresa")' + '?id=' + encodeURIComponent(id);
+            const res = await fetch(url, { headers: { 'Accept': 'application/json' }});
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            const data = await res.json();
+
+            loading.classList.add('d-none');
+
+            if (!data || data.ok === false) {
+              errorBox.textContent = data?.error || 'No se pudo cargar el historial.';
+              errorBox.classList.remove('d-none');
+              return;
+            }
+
+            if (!data.rows || data.rows.length === 0) {
+              emptyBox.classList.remove('d-none');
+              return;
+            }
+
+            renderTable(data.rows);
+            wrap.classList.remove('d-none');
+
+          } catch (err) {
+            loading.classList.add('d-none');
+            errorBox.textContent = 'Error al cargar historial: ' + (err.message || err);
+            errorBox.classList.remove('d-none');
+          }
+        });
+      });
+    })();
+</script>
+
+
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const est = document.getElementById('estatusInput');
+      if (est) {
+        est.addEventListener('change', () => est.form?.submit());
+      }
+      const reset = document.getElementById('btnResetFiltros');
+      if (reset) {
+        reset.addEventListener('click', () => {
+          est.value = '';
+        });
+      }
+    });
+</script>
+
+
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const selPageSize = document.getElementById('pageSize');
+      if (selPageSize) {
+        selPageSize.addEventListener('change', function () {
+          const form = selPageSize.form;
+          if (!form) return;
+          let pageHidden = form.querySelector('#pageHidden');
+          if (!pageHidden) {
+            pageHidden = document.createElement('input');
+            pageHidden.type = 'hidden'; pageHidden.name = 'page'; pageHidden.id = 'pageHidden';
+            form.appendChild(pageHidden);
+          }
+          pageHidden.value = 1; // reset al cambiar pageSize
+          form.submit();
+        });
+      }
+
+      // Auto-submit al cambiar Estatus (opcional)
+      const selEstatus = document.getElementById('estatus');
+      if (selEstatus) {
+        selEstatus.addEventListener('change', function () {
+          const form = selEstatus.form;
+          if (!form) return;
+          let pageHidden = form.querySelector('#pageHidden');
+          if (!pageHidden) {
+            pageHidden = document.createElement('input');
+            pageHidden.type = 'hidden'; pageHidden.name = 'page'; pageHidden.id = 'pageHidden';
+            form.appendChild(pageHidden);
+          }
+          pageHidden.value = 1;
+          form.submit();
+        });
+      }
+    });
+</script>
+
 <!-- Modal de alerta (compacto y arriba) -->
 <div class="modal fade" id="alertModal" tabindex="-1" aria-labelledby="alertModalLabel" aria-hidden="true">
     <div class="modal-dialog mt-3">
@@ -409,14 +795,22 @@
 
 
 
+@* Lee y elimina de una vez el TempData *@
+@{
+    var alertMsg = TempData["Alert"] as string;
+    var alertTitle = (TempData["AlertTitle"] as string) ?? "Aviso";
 
-@* Si viene TempData, mostrar modal al cargar *@
-@if (TempData["Alert"] != null)
+    // Asegura que NO vuelva a aparecer en el próximo request (paginación, etc.)
+    TempData.Remove("Alert");
+    TempData.Remove("AlertTitle");
+}
+
+@if (!string.IsNullOrWhiteSpace(alertMsg))
 {
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-          const msg   = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(TempData["Alert"]));
-          const title = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(TempData["AlertTitle"] ?? "Aviso"));
+          const msg   = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(alertMsg));
+          const title = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(alertTitle));
 
           const bodyEl  = document.getElementById('alertModalBody');
           const titleEl = document.getElementById('alertModalLabel');
@@ -429,6 +823,123 @@
     </script>
 }
 
+
+<!-- Modal eliminar empresa -->
+<div class="modal fade" id="empresaDeleteModal" tabindex="-1" aria-labelledby="empresaDeleteLabel" aria-hidden="true">
+    <div class="modal-dialog modal-sm mt-3">
+        <div class="modal-content">
+            <div class="modal-header py-2 px-3">
+                <h6 class="modal-title mb-0" id="empresaDeleteLabel">Confirmar eliminación</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body py-2 px-3">
+                ¿Eliminar <span id="empresaDeleteNombre" class="fw-semibold"></span>?
+            </div>
+            <div class="modal-footer py-2 px-3">
+                <form asp-controller="Empresa" asp-action="EliminarEmpresa" method="post" class="m-0">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" id="deleteEmpresaId" />
+
+                    <!-- Preservar filtros/página -->
+                    <input type="hidden" name="page" value="@(ViewContext?.HttpContext?.Request?.Query["page"])" />
+                    <input type="hidden" name="pageSize" value="@(ViewContext?.HttpContext?.Request?.Query["pageSize"])" />
+                    <input type="hidden" name="q" value="@(ViewContext?.HttpContext?.Request?.Query["q"])" />
+                    <input type="hidden" name="todos" value="@(ViewContext?.HttpContext?.Request?.Query["todos"])" />
+
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit"
+                            class="btn btn-sm text-white"
+                            style="background-color:#FF5100;border-color:#FF5100;">
+                        Eliminar
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@{
+    var rq = ViewContext?.HttpContext?.Request;
+    var dupIdStr = rq?.Query["dupId"].ToString();
+    var dupName = rq?.Query["dupName"].ToString();
+    var dupToken = rq?.Query["dupToken"].ToString();
+
+    Guid dupIdGuid = Guid.Empty; // <- inicializada
+    bool dupParamsOk =
+        !string.IsNullOrWhiteSpace(dupName) &&
+        !string.IsNullOrWhiteSpace(dupToken) &&
+        Guid.TryParse(dupIdStr, out dupIdGuid);
+}
+
+@if (dupParamsOk)
+{
+    <div class="modal fade" id="empresaDupModal" tabindex="-1" aria-labelledby="empresaDupLabel" aria-hidden="true">
+        <div class="modal-dialog mt-3">
+            <div class="modal-content">
+                <div class="modal-header py-2 px-3">
+                    <h6 class="modal-title mb-0" id="empresaDupLabel">Posible duplicado</h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body py-2 px-3">
+                    La empresa "<strong>@dupName</strong>" ya existe. ¿Desea actualizar sus datos con la información ingresada?
+                </div>
+                <div class="modal-footer py-2 px-3">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cerrar</button>
+
+                    <form asp-controller="Empresa" asp-action="ConfirmarActualizacionDuplicado" method="post" class="m-0">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@dupIdGuid" />
+                        <input type="hidden" name="token" value="@dupToken" />
+
+                        <!-- Preservar filtros/página -->
+                        <input type="hidden" name="page" value="@(ViewContext?.HttpContext?.Request?.Query["page"])" />
+                        <input type="hidden" name="pageSize" value="@(ViewContext?.HttpContext?.Request?.Query["pageSize"])" />
+                        <input type="hidden" name="q" value="@(ViewContext?.HttpContext?.Request?.Query["q"])" />
+                        <input type="hidden" name="todos" value="@(ViewContext?.HttpContext?.Request?.Query["todos"])" />
+
+                        <button type="submit" class="btn btn-sm text-white"
+                                style="background-color:#FF5100;border-color:#FF5100;">
+                            Actualizar
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+          const el = document.getElementById('empresaDupModal');
+          if (el) {
+            new bootstrap.Modal(el).show();
+
+            // limpiar parámetros para que no reaparezca en refresh
+            const url = new URL(window.location.href);
+            url.searchParams.delete('dupId');
+            url.searchParams.delete('dupName');
+            url.searchParams.delete('dupToken');
+            history.replaceState(null, '', url.toString());
+          }
+        });
+    </script>
+}
+
+
+
+
+<script>
+    // Al abrir el modal, poblar id (y opcionalmente nombre)
+    const deleteModal = document.getElementById('empresaDeleteModal');
+    deleteModal.addEventListener('show.bs.modal', function (event) {
+      const btn = event.relatedTarget;
+      const id = btn?.getAttribute('data-id');
+      const nombre = btn?.getAttribute('data-nombre') || '';
+
+      document.getElementById('deleteEmpresaId').value = id || '';
+      const nameSpan = document.getElementById('empresaDeleteNombre');
+      if (nameSpan) nameSpan.textContent = nombre;
+    });
+</script>
 
 
 <style>
@@ -445,7 +956,7 @@
       const selCiudad = document.getElementById('Ciudad');
 
       // Valores iniciales para modo edición (o "" si insert)
-    const paisInicial   = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model?.FormData?.Pais ?? ""));
+       const paisInicial   = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model?.FormData?.Pais ?? ""));
     const estadoInicial = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model?.FormData?.Estado ?? ""));
     const ciudadInicial = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model?.FormData?.Ciudad ?? ""));
 
@@ -553,3 +1064,71 @@
       await loadPaises();
     });
 </script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const form = document.getElementById('filtrosForm');
+      const pageSize = document.getElementById('pageSize');
+      const btnClear = document.getElementById('btnClear');
+
+      if (pageSize) {
+        pageSize.addEventListener('change', () => {
+          // al cambiar pageSize, ir a página 1
+          if (!form) return;
+          // añadimos/forzamos cmd para que el controlador resetee a page=1
+          const tmp = document.createElement('input');
+          tmp.type = 'hidden'; tmp.name = 'cmd'; tmp.value = 'filtrar';
+          form.appendChild(tmp);
+          form.submit();
+        });
+      }
+
+      if (btnClear) {
+        btnClear.addEventListener('click', () => {
+          // Navega sin querystring → limpia filtros y vuelve a page 1 con pageSize por defecto del servidor
+          window.location.href = '@Url.Action("Empresas", "Empresa")';
+        });
+      }
+    });
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const form = document.querySelector('form[asp-action="GuardarEmpresa"]');
+      const idInput = document.getElementById('Identificacion');
+
+      // 1) Mientras escribe/pega: solo números
+      if (idInput) {
+        idInput.addEventListener('input', function (e) {
+          const cleaned = e.target.value.replace(/\D+/g, '');
+          if (e.target.value !== cleaned) e.target.value = cleaned;
+        });
+      }
+
+      // 2) Al enviar: requerido + mínimo 7 dígitos
+      if (form) {
+        form.addEventListener('submit', function (ev) {
+          const val = (idInput?.value || '').trim();
+          const ok = /^\d{7,}$/.test(val); // solo dígitos y mínimo 7
+
+          if (!ok) {
+            ev.preventDefault(); // bloquear submit
+
+            const titleEl = document.getElementById('alertModalLabel');
+            const bodyEl  = document.getElementById('alertModalBody');
+            if (titleEl) titleEl.textContent = 'Validación';
+            if (bodyEl)  bodyEl.textContent  =
+              'La Identificación es obligatoria y debe contener solo números (sin guiones, puntos ni caracteres especiales) y mínimo 7 dígitos.';
+
+            const m = new bootstrap.Modal(document.getElementById('alertModal'));
+            m.show();
+
+            idInput?.focus();
+          }
+        });
+      }
+    });
+
+
+</script>
+
+

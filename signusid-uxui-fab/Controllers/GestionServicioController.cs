@@ -6,6 +6,7 @@ using AspnetCoreMvcFull.Models.GestionServicios;
 using AspnetCoreMvcFull.Models.Mensajes;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -479,14 +480,31 @@ OFFSET @Skip ROWS FETCH NEXT @Take ROWS ONLY;";
       return RedirectToAction("ControlTrafico");
     }
 
+
+
+
+
     private readonly SmtpSettings _smtp;
     private readonly string _cs;
+    private readonly IOptionsMonitor<SmtpSettings> _smtpOptions;
 
-    public GestionServicioController(IConfiguration cfg)
+    public GestionServicioController(IConfiguration cfg, IOptionsMonitor<SmtpSettings> smtpOptions)
     {
       _cs = System.Configuration.ConfigurationManager.ConnectionStrings["ServerDiverscan"].ConnectionString
               ?? cfg.GetConnectionString("ServerDiverscan");
       _smtp = cfg.GetSection("Smtp").Get<SmtpSettings>() ?? new SmtpSettings();
+
+      _smtpOptions = smtpOptions;
+    }
+
+    private SmtpSettings PickSmtp(bool gd, bool sc, bool sid, out string marca)
+    {
+      // Regla: si vienen varias verdaderas, priorizamos GD > SC > SID y dejamos aviso.
+      if (gd) { marca = "Diverscan"; return _smtpOptions.Get("Diverscan"); }
+      if (sc) { marca = "Smartcosta"; return _smtpOptions.Get("Smartcosta"); }
+      // default (o cuando SID == true)
+      marca = "Signus";
+      return _smtpOptions.Get("Signus");
     }
 
     [HttpPost]
@@ -576,9 +594,9 @@ WHERE Ticket = @Ticket;";
       cmd.Parameters.Add("@CanalPresencial", SqlDbType.Bit).Value = dto.CanalPresencial;
       cmd.Parameters.Add("@CanalTelefono", SqlDbType.Bit).Value = dto.CanalTelefono;
       cmd.Parameters.Add("@CanalChatbot", SqlDbType.Bit).Value = dto.CanalChatbot;
-      cmd.Parameters.Add("@GD", SqlDbType.Bit).Value = dto.GD;
-      cmd.Parameters.Add("@SC", SqlDbType.Bit).Value = dto.SC;
-      cmd.Parameters.Add("@SID", SqlDbType.Bit).Value = dto.SID;
+      cmd.Parameters.Add("@GD", SqlDbType.Bit).Value = dto.GD ?? false; ;
+      cmd.Parameters.Add("@SC", SqlDbType.Bit).Value = dto.SC ?? false; ;
+      cmd.Parameters.Add("@SID", SqlDbType.Bit).Value = dto.SID ?? false;
 
 
       cmd.Parameters.Add("@SolicitanteId", SqlDbType.UniqueIdentifier).Value = solicitanteId;
@@ -653,22 +671,23 @@ WHERE Ticket = @Ticket;";
         // === 3C) Resumen de cambios ===
         var (plainChanges, htmlChanges) = BuildChangesSummary(new[]
         {
-            ("Agente asignado",  beforeAssigned.Item2,  afterAssigned.Item2),
-            ("Empresa",          beforeEmpresaNombre,   afterEmpresaNombre),
-            ("Contrato",         beforeContratoNum,     afterContratoNum),
-            ("Email de contacto",before.EmailServicio,  after_emailServ),
-            ("Teléfono",         before.TelefonoServicio, after_tel),
-            ("Fecha agendada",   beforeFechaTxt,        afterFechaTxt),
-            ("Hora agendada",    beforeHoraTxt,         afterHoraTxt),
-            ("Descripción",      before.DescripcionIncidente, after_brief),
-        });
+      ("Agente asignado",  beforeAssigned.Item2,  afterAssigned.Item2),
+      ("Empresa",          beforeEmpresaNombre,   afterEmpresaNombre),
+      ("Contrato",         beforeContratoNum,     afterContratoNum),
+      ("Email de contacto",before.EmailServicio,  after_emailServ),
+      ("Teléfono",         before.TelefonoServicio, after_tel),
+      ("Fecha agendada",   beforeFechaTxt,        afterFechaTxt),
+      ("Hora agendada",    beforeHoraTxt,         afterHoraTxt),
+      ("Descripción",      before.DescripcionIncidente, after_brief),
+  });
 
         // === 3D) Correos en UNA conexión ===
-        var jobs = new List<AspnetCoreMvcFull.Mailer.MailJob>();
-
         // 1) Solicitante
         var soli = GetSolicitanteById(_cs, before.SolicitanteId);
-        if (!string.IsNullOrWhiteSpace(soli.Email))
+        var jobs = new List<AspnetCoreMvcFull.Mailer.MailJob>();
+        var toUserEmailEdit = !string.IsNullOrWhiteSpace(after_emailServ) ? after_emailServ : soli.Email;
+
+        if (!string.IsNullOrWhiteSpace(toUserEmailEdit))
         {
           var (subUser, txtUser, htmlUser) = BuildMailToUserEdit(
               nombreSolicitante: NullOrND(soli.Nombre),
@@ -679,9 +698,10 @@ WHERE Ticket = @Ticket;";
               changesPlain: plainChanges,
               changesHtml: htmlChanges
           );
+
           jobs.Add(new AspnetCoreMvcFull.Mailer.MailJob
           {
-            To = soli.Email!,
+            To = toUserEmailEdit,
             Subject = subUser,
             PlainText = txtUser,
             Html = htmlUser
@@ -689,7 +709,7 @@ WHERE Ticket = @Ticket;";
           });
         }
 
-        // 2) Asignado (después del update)  **CORREGIDO: enviar a afterAssigned.Item1**
+        // 2) Asignado (después del update)
         if (after_asignadoId.HasValue && !string.IsNullOrWhiteSpace(afterAssigned.Item1))
         {
           var (subAss, txtAss, htmlAss) = BuildMailToAssignedEdit(
@@ -708,41 +728,29 @@ WHERE Ticket = @Ticket;";
             //, Bcc = _smtp.User
           });
         }
+
+        // === SMTP por marca ===
+        //var smtp = PickSmtp(dto.GD, dto.SC, dto.SID, out var marca);
+        var smtp = PickSmtp(dto.GD == true, dto.SC == true, dto.SID == true, out var marca);
+
         try
         {
-          var (logPath, results) = await AspnetCoreMvcFull.Mailer.Mailer.SendBatchAsync(_smtp, jobs);
+          var (logPath, results) = await AspnetCoreMvcFull.Mailer.Mailer.SendBatchAsync(smtp, jobs);
 
           var fallidos = results.Where(r => !r.AcceptedBySmtp).ToList();
           if (fallidos.Count > 0)
           {
-            // Hubo correos que el servidor NO aceptó (no 250 OK). Muestra a quiénes
-            TempData["MailError"] = $"SMTP rechazó {fallidos.Count} correo(s). Log: {logPath}. " +
+            TempData["MailError"] = $"[{marca}] SMTP rechazó {fallidos.Count} correo(s). Log: {logPath}. " +
               string.Join(" | ", fallidos.Select(f => $"{f.Job.To}: {f.Error}"));
           }
           else
           {
-            // El servidor aceptó todos (si alguno no llega, el problema es post-SMTP, ya dentro del MTA)
-            TempData["MailInfo"] = $"Servidor SMTP aceptó todos los correos. Log: {logPath}";
+            TempData["MailInfo"] = $"[{marca}] Servidor SMTP aceptó todos los correos. Log: {logPath}";
           }
         }
         catch (Exception ex)
         {
-          // Fallo global de conexión/auth/etc. (ni siquiera se pudo completar el lote)
-          TempData["MailError"] = $"Fallo global de SMTP: {ex.Message}";
-        }
-
-
-        if (jobs.Count > 0)
-        {
-          try { await AspnetCoreMvcFull.Mailer.Mailer.SendBatchAsync(_smtp, jobs); }
-          catch (Exception ex)
-          {
-            TempData["AlertCorreoEdit"] = System.Text.Json.JsonSerializer.Serialize(new AlertMessage
-            {
-              Tipo = "warning",
-              Mensaje = "No se pudieron enviar algunas notificaciones: " + ex.Message
-            });
-          }
+          TempData["MailError"] = $"[{marca}] Fallo global de SMTP: {ex.Message}";
         }
 
         return RedirectToAction("ControlTrafico");
@@ -776,7 +784,7 @@ WHERE Ticket = @Ticket;";
         string showBrief = NullOrND(brief);
 
         // 4.2) Solicitante
-        if (!string.IsNullOrWhiteSpace(soli.Email))
+        if (!string.IsNullOrWhiteSpace(soli.Email) || !string.IsNullOrWhiteSpace(emailSrv))
         {
           var assigned = asignadoId.HasValue ? GetUserById(_cs, asignadoId.Value) : (Email: "", UserName: "Sin asignar");
           var (subUser, txtUser, htmlUser) = BuildMailToUser(
@@ -786,9 +794,10 @@ WHERE Ticket = @Ticket;";
               fechaProx: fechaProx,
               horaServ: horaServ
           );
+          var toUserEmailInsert = !string.IsNullOrWhiteSpace(emailSrv) ? emailSrv : soli.Email;
           jobs.Add(new AspnetCoreMvcFull.Mailer.MailJob
           {
-            To = soli.Email!,
+            To = toUserEmailInsert!,
             Subject = subUser,
             PlainText = txtUser,
             Html = htmlUser
@@ -823,21 +832,43 @@ WHERE Ticket = @Ticket;";
           }
         }
 
+        // === SMTP por marca ===
+        // var smtp = PickSmtp(dto.GD, dto.SC, dto.SID, out var marca);
+        var smtp = PickSmtp(dto.GD == true, dto.SC == true, dto.SID == true, out var marca);
+
         if (jobs.Count > 0)
         {
-          try { await AspnetCoreMvcFull.Mailer.Mailer.SendBatchAsync(_smtp, jobs); }
+          try
+          {
+            var (logPath, results) = await AspnetCoreMvcFull.Mailer.Mailer.SendBatchAsync(smtp, jobs);
+
+            var fallidos = results.Where(r => !r.AcceptedBySmtp).ToList();
+            if (fallidos.Count > 0)
+            {
+              TempData["AlertCorreoInsert"] = System.Text.Json.JsonSerializer.Serialize(new AlertMessage
+              {
+                Tipo = "warning",
+                Mensaje = $"[{marca}] SMTP rechazó {fallidos.Count} correo(s). Log: {logPath}."
+              });
+            }
+            else
+            {
+              TempData["MailInfo"] = $"[{marca}] Servidor SMTP aceptó todos los correos. Log: {logPath}";
+            }
+          }
           catch (Exception ex)
           {
             TempData["AlertCorreoInsert"] = System.Text.Json.JsonSerializer.Serialize(new AlertMessage
             {
               Tipo = "warning",
-              Mensaje = "No se pudieron enviar algunas notificaciones: " + ex.Message
+              Mensaje = $"[{marca}] No se pudieron enviar algunas notificaciones: {ex.Message}"
             });
           }
         }
 
         return RedirectToAction("ControlTrafico");
       }
+
     }
 
 

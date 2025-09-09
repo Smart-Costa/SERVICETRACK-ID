@@ -1,7 +1,8 @@
+using AspnetCoreMvcFull.Data;
+using AspnetCoreMvcFull.Mailer;
+using AspnetCoreMvcFull.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using AspnetCoreMvcFull.Data;
-using AspnetCoreMvcFull.Models;
 
 
 
@@ -14,6 +15,10 @@ builder.Services.AddDbContext<AspnetCoreMvcFullContext>(options =>
 
 builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 
+builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("SmtpSignus"));
+builder.Services.Configure<SmtpSettings>("Signus", builder.Configuration.GetSection("SmtpSignus"));
+builder.Services.Configure<SmtpSettings>("Diverscan", builder.Configuration.GetSection("SmtpDiverscan"));
+builder.Services.Configure<SmtpSettings>("Smartcosta", builder.Configuration.GetSection("SmtpSmartcosta"));
 
 
 // Add services to the container.
@@ -23,6 +28,8 @@ builder.Services.AddControllersWithViews(options =>
 });
 
 var app = builder.Build();
+
+builder.Services.AddMemoryCache();
 
 // Create a service scope to get an AspnetCoreMvcFullContext instance using DI and seed the database.
 using (var scope = app.Services.CreateScope())

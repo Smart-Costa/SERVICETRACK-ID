@@ -1,5 +1,7 @@
 using AspnetCoreMvcFull.Models.Edificios;
 using AspnetCoreMvcFull.Models.Empresa;
+using AspnetCoreMvcFull.Models.Empresa;
+using AspnetCoreMvcFull.Models.Contactos;
 using AspnetCoreMvcFull.Models.Gerencias;
 using AspnetCoreMvcFull.Models.Mensajes;
 using AspnetCoreMvcFull.Models.Oficinas;
@@ -10,6 +12,8 @@ using Diverscan.Activos.DL.LogicaA;
 using Diverscan.Activos.EL;
 using Diverscan.Activos.UIL.Admin;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.Extensions.Caching.Memory;
 using OfficeOpenXml;
 using OfficeOpenXml.Packaging.Ionic.Zlib;
 using System.Configuration;
@@ -20,41 +24,50 @@ using System.Data.SqlClient;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization;
 using static AspnetCoreMvcFull.Controllers.AccessController;
-using AspnetCoreMvcFull.Models.Empresa;
 
 namespace AspnetCoreMvcFull.Controllers
 {
   public class EmpresaController : Controller
   {
+    private readonly IMemoryCache _cache;
+    public EmpresaController(IMemoryCache cache)
+    {
+      _cache = cache;
+    }
     public IActionResult Index()
     {
       return View();
     }
 
-
-
+    #region CONTACTOS
     [HttpGet]
-    public async Task<IActionResult> Empresas(string? q, int page = 1, int pageSize = 5)
+    public async Task<IActionResult> Contactos(string? q, int page = 1, int pageSize = 5, bool registrado = false)
     {
-      var (items, total) = await SearchEmpresasAsync(q, page, pageSize);
+      var (items, total) = await SearchContactosAsync(q, page, pageSize);
 
-      var vm = new EmpresaIndexVm
+      var vm = new ContactosIndexVm
       {
         Items = items,
         CurrentPage = page,
         PageSize = pageSize,
         TotalItems = total,
         Query = q,
-        FormData = new Empresa()
+        FormData = new Contactos()
       };
-
+      if (registrado)
+      {
+        ViewBag.AlertTitle = "Éxito";
+        ViewBag.Alert = "Contacto registrado correctamente";
+      }
       return View(vm);
     }
 
-    public static async Task<(List<Empresa> items, int total)> SearchEmpresasAsync(
+
+    public static async Task<(List<Contactos> items, int total)> SearchContactosAsync(
        string? q, int page, int pageSize)
     {
       string connectionString =
@@ -68,19 +81,19 @@ namespace AspnetCoreMvcFull.Controllers
       var where = "";
       var hasQ = !string.IsNullOrWhiteSpace(q);
       if (hasQ)
-        where = "WHERE (NOMBRE LIKE @q OR PAIS LIKE @q OR FORMA_PAGO LIKE @q OR CONDICION_FINANCIERA LIKE @q)";
+        where = "WHERE (Nombre LIKE @q OR Apellidos LIKE @q OR IdentificacionContacto LIKE @q OR Empresa LIKE @q)";
 
       var sqlCount = $@"SELECT COUNT(*) FROM dbo.EMPRESA WITH (NOLOCK) {where};";
 
       var sqlPage = $@"
 SELECT
-    ID_EMPRESA, NOMBRE, PAIS, FORMA_PAGO, CONDICION_FINANCIERA, TELEFONO
-FROM dbo.EMPRESA WITH (NOLOCK)
+    Id_Contacto, Nombre, Telefono, Telefono_Movil, Email
+FROM dbo.Contactos WITH (NOLOCK)
 {where}
-ORDER BY NOMBRE
+ORDER BY Nombre
 OFFSET @skip ROWS FETCH NEXT @take ROWS ONLY;";
 
-      var items = new List<Empresa>();
+      var items = new List<Contactos>();
       int total = 0;
 
       using var cn = new SqlConnection(connectionString);
@@ -103,14 +116,13 @@ OFFSET @skip ROWS FETCH NEXT @take ROWS ONLY;";
         using var rd = await cmd.ExecuteReaderAsync();
         while (await rd.ReadAsync())
         {
-          items.Add(new Empresa
+          items.Add(new Contactos
           {
-            IdEmpresa = rd.GetGuid(rd.GetOrdinal("ID_EMPRESA")),
-            Nombre = rd["NOMBRE"] as string,
-            Pais = rd["PAIS"] as string,
-            FormaPago = rd["FORMA_PAGO"] as string,
-            CondicionFinanciera = rd["CONDICION_FINANCIERA"] as string,
-            Telefono = rd["TELEFONO"] as string
+            IdContacto = rd.GetGuid(rd.GetOrdinal("Id_Contacto")),
+            Nombre = rd["Nombre"] as string,
+            Telefono = rd["Telefono"] as string,
+            TelefonoMovil = rd["Telefono_Movil"] as string,
+            Email = rd["Email"] as string
           });
         }
       }
@@ -120,17 +132,16 @@ OFFSET @skip ROWS FETCH NEXT @take ROWS ONLY;";
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> GuardarEmpresa(AspnetCoreMvcFull.Models.Empresa.Empresa model)
+    public async Task<IActionResult> GuardarContactos(AspnetCoreMvcFull.Models.Contactos.Contactos model)
     {
-      var idCreado = await InsertEmpresaAsync(model);
+      var idCreado = await InsertContactoAsync(model);
 
-      TempData["AlertTitle"] = "Exito";
-      TempData["Alert"] = $"Empresa registrada correctamente";
-      return RedirectToAction("Empresas");
+      // Redirigimos con un flag en la query (PRG pattern) — NO usar TempData aquí
+      return RedirectToAction("Contactos", new { registrado = true });
     }
 
-    // Inserta y devuelve el Guid generado
-    public static async Task<Guid> InsertEmpresaAsync(Empresa model)
+
+    public static async Task<Guid> InsertContactoAsync(Contactos model)
     {
       // tu cadena de conexión
       string connectionString =
@@ -141,8 +152,133 @@ OFFSET @skip ROWS FETCH NEXT @take ROWS ONLY;";
       Guid id = Guid.NewGuid();
 
       const string SQL = @"
-INSERT INTO dbo.EMPRESA
+INSERT INTO dbo.Contactos
 (
+    Id_Contacto,
+    Nombre,
+    Apellidos,
+    Direccion,
+    IdentificacionContacto,
+    Empresa,
+    Direccion_Opcional,
+    Email,
+    Telefono,
+    Ciudad,
+    Estado,
+    Puesto,
+    Telefono_Movil,
+    Codigo_Postal,
+    Pais,
+    Estatus,
+    Identificacion
+)
+VALUES
+(
+    @Id_Contacto,
+    @Nombre,
+    @Apellidos,
+    @Direccion,
+    @IdentificacionContacto,
+    @Empresa,
+    @Direccion_Opcional,
+    @Email,
+    @Telefono,
+    @Ciudad,
+    @Estado,
+    @Puesto,
+    @Telefono_Movil,
+    @Codigo_Postal,
+    @Pais,
+    @Estatus,
+    @Identificacion
+);";
+
+      using (var cn = new SqlConnection(connectionString))
+      using (var cmd = new SqlCommand(SQL, cn))
+      {
+        cmd.Parameters.Add("@Id_Contacto", SqlDbType.UniqueIdentifier).Value = id;
+
+        // Usa los tamaños reales de tus columnas (todo es varchar en la BD)
+        cmd.Parameters.Add("@Nombre", SqlDbType.VarChar, 100).Value = Db(model.Nombre);
+        cmd.Parameters.Add("@Apellidos", SqlDbType.VarChar, 200).Value = Db(model.Apellidos);
+        cmd.Parameters.Add("@Direccion", SqlDbType.VarChar, 200).Value = Db(model.Direccion);
+        cmd.Parameters.Add("@IdentificacionContacto", SqlDbType.VarChar, 200).Value = Db(model.IdentificacionContacto);
+        cmd.Parameters.Add("@Empresa", SqlDbType.VarChar, 200).Value = Db(model.Empresa);
+        cmd.Parameters.Add("@Direccion_Opcional", SqlDbType.VarChar, 200).Value = Db(model.DireccionOpcional);
+        cmd.Parameters.Add("@Email", SqlDbType.VarChar, 30).Value = Db(model.Email);
+        cmd.Parameters.Add("@Telefono", SqlDbType.VarChar, 30).Value = Db(model.Telefono);
+        cmd.Parameters.Add("@Ciudad", SqlDbType.VarChar, 100).Value = Db(model.Ciudad);
+        cmd.Parameters.Add("@Estado", SqlDbType.VarChar, 100).Value = Db(model.Estado);
+        cmd.Parameters.Add("@Puesto", SqlDbType.VarChar, 100).Value = Db(model.Puesto);
+        cmd.Parameters.Add("@Telefono_Movil", SqlDbType.VarChar, 30).Value = Db(model.TelefonoMovil);
+        cmd.Parameters.Add("@Codigo_Postal", SqlDbType.VarChar, 100).Value = Db(model.CodigoPostal);
+        cmd.Parameters.Add("@Pais", SqlDbType.VarChar, 200).Value = Db(model.Pais);
+        cmd.Parameters.Add("@Estatus", SqlDbType.VarChar, 200).Value = Db(model.Estatus);
+        cmd.Parameters.Add("@Identificacion", SqlDbType.VarChar, 200).Value = Db(model.Identificacion);
+
+        await cn.OpenAsync();
+        await cmd.ExecuteNonQueryAsync();
+      }
+
+      return id;
+
+      // Convierte null/"" en DBNull.Value (la tabla permite NULL)
+      static object Db(string? s) => string.IsNullOrWhiteSpace(s) ? DBNull.Value : s.Trim();
+    }
+
+    #endregion FIN CONTACTOS
+
+    [HttpGet]
+    public async Task<IActionResult> Empresas(string? q, string? todos, string? estatus, string? cmd, int page = 1, int pageSize = 5)
+    {
+      if (!string.IsNullOrWhiteSpace(cmd))
+        page = 1;
+
+      if (page <= 0) page = 1;
+      if (pageSize <= 0) pageSize = 5;
+
+      var (items, total) = await SearchEmpresasAsync(q, todos, estatus, page, pageSize);
+
+      var vm = new EmpresaIndexVm
+      {
+        Items = items,
+        CurrentPage = page,
+        PageSize = pageSize,
+        TotalItems = total,
+        Query = q,
+        Todos = todos,
+        EstatusFilter = estatus,
+        FormData = new Empresa()
+      };
+      vm.EmpresasOptions = await GetEmpresasOptionsAsync(vm.FormData?.IdEmpresa);
+
+      return View(vm);
+    }
+
+
+    [HttpGet]
+    public async Task<IActionResult> Info(Guid id)
+    {
+      var cs = System.Configuration.ConfigurationManager
+                  .ConnectionStrings["ServerDiverscan"].ConnectionString;
+
+      const string SQL = @"SELECT IDENTIFICACION FROM dbo.EMPRESA WITH (NOLOCK) WHERE ID_EMPRESA = @ID;";
+      using var cn = new SqlConnection(cs);
+      using var cmd = new SqlCommand(SQL, cn);
+      cmd.Parameters.Add("@ID", SqlDbType.UniqueIdentifier).Value = id;
+      await cn.OpenAsync();
+      var obj = await cmd.ExecuteScalarAsync();
+      var identificacion = obj == null || obj == DBNull.Value ? null : (string)obj;
+      return Json(new { id, identificacion });
+    }
+
+    public static async Task<Empresa?> GetEmpresaByIdAsync(Guid id)
+    {
+      string cs = System.Configuration.ConfigurationManager
+          .ConnectionStrings["ServerDiverscan"].ConnectionString;
+
+      const string SQL = @"
+SELECT
     ID_EMPRESA,
     NOMBRE,
     DESCRIPCION,
@@ -159,35 +295,578 @@ INSERT INTO dbo.EMPRESA
     CODIGO_POSTAL,
     PAIS,
     ESTATUS,
-    IDENTIFICACION
-)
-VALUES
-(
-    @ID_EMPRESA,
-    @NOMBRE,
-    @DESCRIPCION,
-    @DIRECCION_EMPRESA,
-    @IDENTIFICACION_E_RELACIONADA,
-    @EMPRESA_RELACIONADA,
-    @DIRECCION_E_RELACIONADA,
-    @EMAIL,
-    @TELEFONO,
-    @CIUDAD,
-    @ESTADO,
-    @FORMA_PAGO,
-    @CONDICION_FINANCIERA,
-    @CODIGO_POSTAL,
-    @PAIS,
-    @ESTATUS,
-    @IDENTIFICACION
-);";
+    IDENTIFICACION,
+    ID_EMPRESA_RELACIONADA       
+FROM dbo.EMPRESA WITH (NOLOCK)
+WHERE ID_EMPRESA = @ID;";
+
+      using var cn = new SqlConnection(cs);
+      using var cmd = new SqlCommand(SQL, cn);
+      cmd.Parameters.Add("@ID", SqlDbType.UniqueIdentifier).Value = id;
+
+      await cn.OpenAsync();
+      using var rd = await cmd.ExecuteReaderAsync();
+      if (!await rd.ReadAsync()) return null;
+
+      var emp = new Empresa
+      {
+        IdEmpresa = rd.GetGuid(rd.GetOrdinal("ID_EMPRESA")),
+        Nombre = rd["NOMBRE"] as string,
+        Descripcion = rd["DESCRIPCION"] as string,
+        DireccionEmpresa = rd["DIRECCION_EMPRESA"] as string,
+        IdentificacionERelacionada = rd["IDENTIFICACION_E_RELACIONADA"] as string,
+        EmpresaRelacionada = rd["EMPRESA_RELACIONADA"] as string,
+        DireccionERelacionada = rd["DIRECCION_E_RELACIONADA"] as string,
+        Email = rd["EMAIL"] as string,
+        Telefono = rd["TELEFONO"] as string,
+        Ciudad = rd["CIUDAD"] as string,
+        Estado = rd["ESTADO"] as string,
+        FormaPago = rd["FORMA_PAGO"] as string,
+        CondicionFinanciera = rd["CONDICION_FINANCIERA"] as string,
+        CodigoPostal = rd["CODIGO_POSTAL"] as string,
+        Pais = rd["PAIS"] as string,
+        Estatus = rd["ESTATUS"] as string,
+        Identificacion = rd["IDENTIFICACION"] as string,
+        // 👇 mapear la relación
+        EmpresaRelacionadaId = rd.IsDBNull(rd.GetOrdinal("ID_EMPRESA_RELACIONADA"))
+                                 ? (Guid?)null
+                                 : rd.GetGuid(rd.GetOrdinal("ID_EMPRESA_RELACIONADA"))
+      };
+
+      return emp;
+    }
+
+
+    [HttpGet]
+    public async Task<IActionResult> Editar(
+        Guid id,
+        string? q = null,
+        string? todos = null,
+        string? estatus = null,   // ← agregar
+        int page = 1,
+        int pageSize = 5)
+    {
+      var empresa = await GetEmpresaByIdAsync(id);
+      if (empresa == null)
+      {
+        TempData["AlertTitle"] = "Aviso";
+        TempData["Alert"] = "No se encontró la empresa seleccionada.";
+        return RedirectToAction("Empresas", new { q, todos, estatus, page, pageSize });
+      }
+
+      // Llamada correcta con 'estatus'
+      var (items, total) = await SearchEmpresasAsync(q, todos, estatus, page, pageSize);
+
+      var vm = new AspnetCoreMvcFull.Models.Empresa.EmpresaIndexVm
+      {
+        FormData = empresa,
+        Items = items,
+        CurrentPage = page,
+        PageSize = pageSize,
+        TotalItems = total,
+        Query = q,
+        Todos = todos,
+        EstatusFilter = estatus   // ← para que el select quede seleccionado
+      };
+
+      vm.EmpresasOptions = await GetEmpresasOptionsAsync(empresa.IdEmpresa);
+      return View("Empresas", vm);
+    }
+
+
+
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> EliminarEmpresa(Guid id, int page = 1, int pageSize = 5, string? q = null, string? todos = null)
+    {
+      // 1) Validar referencias
+      var (contratos, traficos) = await CountReferenciasEmpresaAsync(id);
+      if (contratos > 0 || traficos > 0)
+      {
+        TempData["AlertTitle"] = "No se puede eliminar";
+        TempData["Alert"] = $"La empresa tiene {contratos} contrato(s) y {traficos} registro(s) en Control de Tráfico relacionados.";
+        return RedirectToAction("Empresas", new { page, pageSize, q, todos });
+      }
+
+      // 2) Eliminar
+      var rows = await DeleteEmpresaAsync(id);
+      if (rows > 0)
+      {
+        TempData["AlertTitle"] = "Éxito";
+        TempData["Alert"] = "Empresa eliminada correctamente";
+      }
+      else
+      {
+        TempData["AlertTitle"] = "Aviso";
+        TempData["Alert"] = "No se pudo eliminar la empresa (puede que no exista o esté referenciada).";
+      }
+
+      // 3) Volver a la misma página con filtros
+      return RedirectToAction("Empresas", new { page, pageSize, q, todos });
+    }
+
+
+    [HttpGet]
+    public async Task<IActionResult> Historial(Guid id, int top = 200)
+    {
+      var rows = new List<HistorialRow>();
+      try
+      {
+        // Cadena en appsettings.json → ConnectionStrings:ServiceTrackID
+        var cs = System.Configuration.ConfigurationManager
+                      .ConnectionStrings["ServerDiverscan"].ConnectionString;
+        await using var cn = new SqlConnection(cs);
+        await cn.OpenAsync();
+
+        // Join explícito (por si luego quieres mostrar campos de EMPRESA)
+        var sql = @"
+SELECT TOP (@top)
+  ct.Ticket,
+  ct.FechaCreacionUtc,
+  ct.FechaProximoServicio,
+  CONVERT(varchar(8), ct.HoraServicio, 108) AS HoraServicio,
+  ct.TelefonoServicio,
+  ct.EmailServicio,
+  ct.CanalEmail,
+  ct.CanalWeb,
+  ct.CanalPresencial,
+  ct.CanalTelefono,
+  ct.CanalChatbot,
+  ct.GD,
+  ct.SC,
+  ct.SID
+FROM dbo.CONTROL_TRAFICO ct
+INNER JOIN dbo.EMPRESA e ON e.ID_EMPRESA = ct.EmpresaId
+WHERE e.ID_EMPRESA = @id
+ORDER BY ct.Ticket DESC;";
+
+        await using var cmd = new SqlCommand(sql, cn);
+        cmd.Parameters.Add(new SqlParameter("@id", SqlDbType.UniqueIdentifier) { Value = id });
+        cmd.Parameters.Add(new SqlParameter("@top", SqlDbType.Int) { Value = top });
+
+        await using var rd = await cmd.ExecuteReaderAsync();
+        while (await rd.ReadAsync())
+        {
+          rows.Add(new HistorialRow
+          {
+            ticket = rd["Ticket"] as int? ?? default,
+            fechaCreacionUtc = rd["FechaCreacionUtc"] as DateTime?,
+            fechaProximoServicio = rd["FechaProximoServicio"] as DateTime?,
+            horaServicio = rd["HoraServicio"] as string ?? string.Empty,
+            telefonoServicio = rd["TelefonoServicio"] as string ?? string.Empty,
+            emailServicio = rd["EmailServicio"] as string ?? string.Empty,
+            canalEmail = rd["CanalEmail"] as bool? ?? false,
+            canalWeb = rd["CanalWeb"] as bool? ?? false,
+            canalPresencial = rd["CanalPresencial"] as bool? ?? false,
+            canalTelefono = rd["CanalTelefono"] as bool? ?? false,
+            canalChatbot = rd["CanalChatbot"] as bool? ?? false,
+            gd = rd["GD"] as bool? ?? false,
+            sc = rd["SC"] as bool? ?? false,
+            sid = rd["SID"] as bool? ?? false,
+          });
+        }
+        return Json(new { ok = true, rows });
+      }
+      catch (Exception ex)
+      {
+        return Json(new { ok = false, error = ex.Message });
+      }
+    }
+
+    public class HistorialRow
+    {
+      public int ticket { get; set; }
+      public DateTime? fechaCreacionUtc { get; set; }
+      public DateTime? fechaProximoServicio { get; set; }
+      public string horaServicio { get; set; } = "";
+      public string telefonoServicio { get; set; } = "";
+      public string emailServicio { get; set; } = "";
+      public bool canalEmail { get; set; }
+      public bool canalWeb { get; set; }
+      public bool canalPresencial { get; set; }
+      public bool canalTelefono { get; set; }
+      public bool canalChatbot { get; set; }
+      public bool gd { get; set; }
+      public bool sc { get; set; }
+      public bool sid { get; set; }
+    }
+
+    public static async Task<(List<Empresa> items, int total)> SearchEmpresasAsync(
+    string? q, string? todos, string? estatus, int page, int pageSize)
+    {
+      string cs = System.Configuration.ConfigurationManager
+                      .ConnectionStrings["ServerDiverscan"].ConnectionString;
+
+      if (page <= 0) page = 1;
+      if (pageSize <= 0) pageSize = 5;
+
+      var whereParts = new List<string>();
+
+      // CAMBIO: ampliar 'q' para buscar también por IDENTIFICACION_E_RELACIONADA e IDENTIFICACION
+      if (!string.IsNullOrWhiteSpace(q))
+        whereParts.Add(@"(
+      [NOMBRE] LIKE @q
+      OR [PAIS] LIKE @q
+      OR [FORMA_PAGO] LIKE @q
+      OR [CONDICION_FINANCIERA] LIKE @q
+      OR [IDENTIFICACION_E_RELACIONADA] LIKE @q
+      OR [IDENTIFICACION] LIKE @q
+    )");
+
+      // 'todos' se mantiene como estaba; si quisieras incluir también IDENTIFICACION* avísame y lo agrego
+      if (!string.IsNullOrWhiteSpace(todos))
+        whereParts.Add(@"(
+      [NOMBRE] LIKE @todos
+      OR [PAIS] LIKE @todos
+      OR [FORMA_PAGO] LIKE @todos
+      OR [CONDICION_FINANCIERA] LIKE @todos
+    )");
+
+      if (!string.IsNullOrWhiteSpace(estatus))
+        whereParts.Add("[ESTATUS] = @estatus"); // igualdad exacta
+
+      var where = whereParts.Count > 0 ? "WHERE " + string.Join(" AND ", whereParts) : "";
+
+      var sqlCount = $@"SELECT COUNT(*) FROM [dbo].[EMPRESA] WITH (NOLOCK) {where};";
+
+      var sqlPage = $@"
+SELECT [ID_EMPRESA], [NOMBRE], [PAIS], [FORMA_PAGO], [CONDICION_FINANCIERA], [TELEFONO]
+FROM [dbo].[EMPRESA] WITH (NOLOCK)
+{where}
+ORDER BY [NOMBRE]
+OFFSET @skip ROWS FETCH NEXT @take ROWS ONLY;";
+
+      var items = new List<Empresa>();
+      int total = 0;
+
+      using var cn = new SqlConnection(cs);
+      await cn.OpenAsync();
+
+      // COUNT
+      using (var cmd = new SqlCommand(sqlCount, cn))
+      {
+        if (!string.IsNullOrWhiteSpace(q)) cmd.Parameters.Add("@q", SqlDbType.VarChar, 200).Value = $"%{q!.Trim()}%";
+        if (!string.IsNullOrWhiteSpace(todos)) cmd.Parameters.Add("@todos", SqlDbType.VarChar, 200).Value = $"%{todos!.Trim()}%";
+        if (!string.IsNullOrWhiteSpace(estatus)) cmd.Parameters.Add("@estatus", SqlDbType.VarChar, 200).Value = estatus!.Trim();
+        total = Convert.ToInt32(await cmd.ExecuteScalarAsync());
+      }
+
+      // PAGE
+      using (var cmd = new SqlCommand(sqlPage, cn))
+      {
+        if (!string.IsNullOrWhiteSpace(q)) cmd.Parameters.Add("@q", SqlDbType.VarChar, 200).Value = $"%{q!.Trim()}%";
+        if (!string.IsNullOrWhiteSpace(todos)) cmd.Parameters.Add("@todos", SqlDbType.VarChar, 200).Value = $"%{todos!.Trim()}%";
+        if (!string.IsNullOrWhiteSpace(estatus)) cmd.Parameters.Add("@estatus", SqlDbType.VarChar, 200).Value = estatus!.Trim();
+
+        cmd.Parameters.Add("@skip", SqlDbType.Int).Value = (page - 1) * pageSize;
+        cmd.Parameters.Add("@take", SqlDbType.Int).Value = pageSize;
+
+        using var rd = await cmd.ExecuteReaderAsync();
+        while (await rd.ReadAsync())
+        {
+          items.Add(new Empresa
+          {
+            IdEmpresa = rd.GetGuid(rd.GetOrdinal("ID_EMPRESA")),
+            Nombre = rd["NOMBRE"] as string,
+            Pais = rd["PAIS"] as string,
+            FormaPago = rd["FORMA_PAGO"] as string,
+            CondicionFinanciera = rd["CONDICION_FINANCIERA"] as string,
+            Telefono = rd["TELEFONO"] as string
+          });
+        }
+      }
+
+      return (items, total);
+    }
+
+
+
+    private async Task<IEnumerable<SelectListItem>> GetEmpresasOptionsAsync(Guid? excluirId = null)
+    {
+      var cs = System.Configuration.ConfigurationManager
+                  .ConnectionStrings["ServerDiverscan"].ConnectionString;
+
+      const string SQL = @"
+SELECT ID_EMPRESA, NOMBRE
+FROM dbo.EMPRESA WITH (NOLOCK)
+ORDER BY NOMBRE;";
+
+      var list = new List<SelectListItem>();
+
+      using var cn = new SqlConnection(cs);
+      using var cmd = new SqlCommand(SQL, cn);
+      await cn.OpenAsync();
+      using var rd = await cmd.ExecuteReaderAsync();
+      while (await rd.ReadAsync())
+      {
+        var id = rd.GetGuid(0);
+        if (excluirId.HasValue && id == excluirId.Value) continue; // evita autorelación en el selector
+
+        var nombre = rd.IsDBNull(1) ? "" : rd.GetString(1);
+        list.Add(new SelectListItem { Value = id.ToString(), Text = nombre });
+      }
+      return list;
+    }
+
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ConfirmarActualizacionDuplicado(
+       Guid id, string token, int page = 1, int pageSize = 5, string? q = null, string? todos = null)
+    {
+      if (string.IsNullOrWhiteSpace(token) || !_cache.TryGetValue("dup:" + token, out string payload))
+      {
+        TempData["AlertTitle"] = "Aviso";
+        TempData["Alert"] = "No se encontró la información a actualizar (puede haber expirado).";
+        return RedirectToAction("Empresas", new { page, pageSize, q, todos });
+      }
+
+      _cache.Remove("dup:" + token);
+
+      var incoming = System.Text.Json.JsonSerializer.Deserialize<AspnetCoreMvcFull.Models.Empresa.Empresa>(payload ?? "");
+      if (incoming == null)
+      {
+        TempData["AlertTitle"] = "Aviso";
+        TempData["Alert"] = "No se pudo procesar la información.";
+        return RedirectToAction("Empresas", new { page, pageSize, q, todos });
+      }
+
+      incoming.IdEmpresa = id;
+      var rows = await UpdateEmpresaAsync(incoming);
+
+      TempData["AlertTitle"] = rows > 0 ? "Éxito" : "Aviso";
+      TempData["Alert"] = rows > 0 ? "Empresa actualizada correctamente" : "No se pudo actualizar la empresa.";
+
+      return RedirectToAction("Empresas", new { page, pageSize, q, todos });
+    }
+
+
+
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> GuardarEmpresa(AspnetCoreMvcFull.Models.Empresa.Empresa model)
+    {
+      var estado = (Request.Form["estadoFomrulario"].ToString() ?? "").Trim();
+
+      int page = int.TryParse(Request.Form["page"], out var p) ? p : 1;
+      int pageSize = int.TryParse(Request.Form["pageSize"], out var ps) ? ps : 5;
+      string q = Request.Form["q"].ToString() ?? "";
+      string todos = Request.Form["todos"].ToString() ?? "";
+
+      // Inserción -> chequear duplicado por nombre
+      if (!string.Equals(estado, "Editar", StringComparison.OrdinalIgnoreCase))
+      {
+        var nombre = (model.Nombre ?? "").Trim();
+        if (!string.IsNullOrEmpty(nombre))
+        {
+          var existenteId = await GetEmpresaIdByNombreAsync(nombre);
+          if (existenteId.HasValue)
+          {
+            // 1) Cachear el JSON 5 min
+            var token = Guid.NewGuid().ToString("N");
+            _cache.Set("dup:" + token,
+                       System.Text.Json.JsonSerializer.Serialize(model),
+                       new MemoryCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5) });
+
+            // 2) Redirigir con parámetros chiquitos
+            return RedirectToAction("Empresas", new
+            {
+              page,
+              pageSize,
+              q,
+              todos,
+              dupId = existenteId.Value,   // Guid existente
+              dupName = nombre,            // nombre existente
+              dupToken = token             // token para recuperar del cache
+            });
+          }
+        }
+
+        // No hay duplicado → insertar normal
+        var idCreado = await InsertEmpresaAsync(model);
+ 
+
+        TempData["AlertTitle"] = "Éxito";
+        TempData["Alert"] = "Empresa registrada correctamente";
+        return RedirectToAction("Empresas", new { page, pageSize, q, todos });
+      }
+
+
+      // Editar
+      if (model.IdEmpresa != Guid.Empty)
+      {
+        var rows = await UpdateEmpresaAsync(model);
+        TempData["AlertTitle"] = rows > 0 ? "Éxito" : "Aviso";
+        TempData["Alert"] = rows > 0 ? "Empresa actualizada correctamente" : "No se encontró la empresa a actualizar.";
+      }
+      else
+      {
+        TempData["AlertTitle"] = "Aviso";
+        TempData["Alert"] = "No se proporcionó un ID válido para editar.";
+      }
+
+      return RedirectToAction("Empresas", new { page, pageSize, q, todos });
+    }
+
+    private static async Task EnsureRelacionBidireccionalAsync(Guid aId, Guid bId)
+    {
+      if (aId == Guid.Empty || bId == Guid.Empty || aId == bId) return;
+
+      string cs = System.Configuration.ConfigurationManager
+                    .ConnectionStrings["ServerDiverscan"].ConnectionString;
+
+      // Establece B -> A. (Simple. Si B ya apuntaba a otra, lo sobreescribe.)
+      const string SQL = @"UPDATE dbo.EMPRESA SET ID_EMPRESA_RELACIONADA = @A WHERE ID_EMPRESA = @B;";
+
+      using var cn = new SqlConnection(cs);
+      using var cmd = new SqlCommand(SQL, cn);
+      cmd.Parameters.Add("@A", SqlDbType.UniqueIdentifier).Value = aId;
+      cmd.Parameters.Add("@B", SqlDbType.UniqueIdentifier).Value = bId;
+      await cn.OpenAsync();
+      await cmd.ExecuteNonQueryAsync();
+    }
+
+
+    public static async Task<(int contratos, int traficos)> CountReferenciasEmpresaAsync(Guid id)
+    {
+      string cs = System.Configuration.ConfigurationManager
+          .ConnectionStrings["ServerDiverscan"].ConnectionString;
+
+      const string SQL = @"
+SELECT
+    (SELECT COUNT(*) FROM dbo.CONTRATOS WITH (NOLOCK) WHERE ID_EMPRESA = @ID) AS contratos,
+    (SELECT COUNT(*) FROM dbo.CONTROL_TRAFICO WITH (NOLOCK) WHERE EmpresaId = @ID) AS traficos;";
+
+      using var cn = new SqlConnection(cs);
+      using var cmd = new SqlCommand(SQL, cn);
+      cmd.Parameters.Add("@ID", SqlDbType.UniqueIdentifier).Value = id;
+
+      await cn.OpenAsync();
+      using var rd = await cmd.ExecuteReaderAsync();
+      if (await rd.ReadAsync())
+      {
+        int c = Convert.ToInt32(rd["contratos"]);
+        int t = Convert.ToInt32(rd["traficos"]);
+        return (c, t);
+      }
+      return (0, 0);
+    }
+
+   public static async Task<int> DeleteEmpresaAsync(Guid id)
+{
+    string cs = System.Configuration.ConfigurationManager
+        .ConnectionStrings["ServerDiverscan"].ConnectionString;
+
+    using var cn = new SqlConnection(cs);
+    await cn.OpenAsync();
+    using var tx = cn.BeginTransaction();
+
+    try
+    {
+        // 0) Verifica que exista
+        const string SQL_EXISTS = "SELECT 1 FROM dbo.EMPRESA WITH (NOLOCK) WHERE ID_EMPRESA = @ID;";
+        using (var cmdExists = new SqlCommand(SQL_EXISTS, cn, tx))
+        {
+            cmdExists.Parameters.Add("@ID", SqlDbType.UniqueIdentifier).Value = id;
+            var exists = await cmdExists.ExecuteScalarAsync();
+            if (exists == null)
+            {
+                tx.Rollback();
+                return 0; // no encontrada
+            }
+        }
+
+        // 1) Bloquear si está usada en otras tablas (regla de negocio)
+        const string SQL_CHECKS = @"
+SELECT 
+  (SELECT COUNT(*) FROM dbo.CONTRATOS       WITH (NOLOCK) WHERE ID_EMPRESA = @ID) AS C_Contratos,
+  (SELECT COUNT(*) FROM dbo.CONTROL_TRAFICO WITH (NOLOCK) WHERE EmpresaId  = @ID) AS C_Trafico;";
+        using (var cmdCheck = new SqlCommand(SQL_CHECKS, cn, tx))
+        {
+            cmdCheck.Parameters.Add("@ID", SqlDbType.UniqueIdentifier).Value = id;
+            using var rd = await cmdCheck.ExecuteReaderAsync();
+            int cContratos = 0, cTrafico = 0;
+            if (await rd.ReadAsync())
+            {
+                cContratos = Convert.ToInt32(rd["C_Contratos"]);
+                cTrafico   = Convert.ToInt32(rd["C_Trafico"]);
+            }
+            rd.Close();
+
+            if (cContratos > 0 || cTrafico > 0)
+            {
+                tx.Rollback();
+                return -2; // referenciada en otras tablas
+            }
+        }
+
+        // 2) Romper autorrelación: poner en NULL a los que apunten a esta empresa
+        const string SQL_NULL_SELF = @"
+UPDATE dbo.EMPRESA
+SET ID_EMPRESA_RELACIONADA = NULL
+WHERE ID_EMPRESA_RELACIONADA = @ID;";
+        using (var cmdNull = new SqlCommand(SQL_NULL_SELF, cn, tx))
+        {
+            cmdNull.Parameters.Add("@ID", SqlDbType.UniqueIdentifier).Value = id;
+            await cmdNull.ExecuteNonQueryAsync();
+        }
+
+        // 3) Borrar la empresa
+        const string SQL_DELETE = "DELETE FROM dbo.EMPRESA WHERE ID_EMPRESA = @ID;";
+        int rows;
+        using (var cmdDel = new SqlCommand(SQL_DELETE, cn, tx))
+        {
+            cmdDel.Parameters.Add("@ID", SqlDbType.UniqueIdentifier).Value = id;
+            rows = await cmdDel.ExecuteNonQueryAsync(); // 1 si eliminó
+        }
+
+        tx.Commit();
+        return rows;
+    }
+    catch
+    {
+        try { tx.Rollback(); } catch { /* noop */ }
+        throw;
+    }
+}
+
+
+
+    public static async Task<int> UpdateEmpresaAsync(Empresa model)
+    {
+      string connectionString = System.Configuration.ConfigurationManager
+          .ConnectionStrings["ServerDiverscan"].ConnectionString;
+
+      const string SQL = @"
+UPDATE dbo.EMPRESA
+SET
+    NOMBRE                     = @NOMBRE,
+    DESCRIPCION                = @DESCRIPCION,
+    DIRECCION_EMPRESA          = @DIRECCION_EMPRESA,
+    IDENTIFICACION_E_RELACIONADA = @IDENTIFICACION_E_RELACIONADA,
+    EMPRESA_RELACIONADA        = @EMPRESA_RELACIONADA,
+    DIRECCION_E_RELACIONADA    = @DIRECCION_E_RELACIONADA,
+    EMAIL                      = @EMAIL,
+    TELEFONO                   = @TELEFONO,
+    CIUDAD                     = @CIUDAD,
+    ESTADO                     = @ESTADO,
+    FORMA_PAGO                 = @FORMA_PAGO,
+    CONDICION_FINANCIERA       = @CONDICION_FINANCIERA,
+    CODIGO_POSTAL              = @CODIGO_POSTAL,
+    PAIS                       = @PAIS,
+    ESTATUS                    = @ESTATUS,
+    IDENTIFICACION             = @IDENTIFICACION,
+    ID_EMPRESA_RELACIONADA = @ID_EMPRESA_RELACIONADA
+
+WHERE ID_EMPRESA = @ID_EMPRESA;";
 
       using (var cn = new SqlConnection(connectionString))
       using (var cmd = new SqlCommand(SQL, cn))
       {
-        cmd.Parameters.Add("@ID_EMPRESA", SqlDbType.UniqueIdentifier).Value = id;
+        cmd.Parameters.Add("@ID_EMPRESA", SqlDbType.UniqueIdentifier).Value = model.IdEmpresa;
 
-        // Usa los tamaños reales de tus columnas (todo es varchar en la BD)
         cmd.Parameters.Add("@NOMBRE", SqlDbType.VarChar, 100).Value = Db(model.Nombre);
         cmd.Parameters.Add("@DESCRIPCION", SqlDbType.VarChar, 100).Value = Db(model.Descripcion);
         cmd.Parameters.Add("@DIRECCION_EMPRESA", SqlDbType.VarChar, 200).Value = Db(model.DireccionEmpresa);
@@ -204,16 +883,106 @@ VALUES
         cmd.Parameters.Add("@PAIS", SqlDbType.VarChar, 200).Value = Db(model.Pais);
         cmd.Parameters.Add("@ESTATUS", SqlDbType.VarChar, 200).Value = Db(model.Estatus);
         cmd.Parameters.Add("@IDENTIFICACION", SqlDbType.VarChar, 200).Value = Db(model.Identificacion);
+        cmd.Parameters.Add("@ID_EMPRESA_RELACIONADA", SqlDbType.UniqueIdentifier)
+   .Value = model.EmpresaRelacionadaId.HasValue ? model.EmpresaRelacionadaId.Value : (object)DBNull.Value;
+
+
+        await cn.OpenAsync();
+        var rows = await cmd.ExecuteNonQueryAsync();
+        return rows; // >0 si actualizó
+      }
+      if (model.EmpresaRelacionadaId.HasValue)
+      {
+        await EnsureRelacionBidireccionalAsync(model.IdEmpresa, model.EmpresaRelacionadaId.Value);
+      }
+
+
+      static object Db(string? s) => string.IsNullOrWhiteSpace(s) ? DBNull.Value : s.Trim();
+    }
+
+    public static async Task<Guid> InsertEmpresaAsync(Empresa model)
+    {
+      string connectionString = System.Configuration.ConfigurationManager
+          .ConnectionStrings["ServerDiverscan"].ConnectionString;
+
+      Guid id = Guid.NewGuid();
+
+      const string SQL = @"
+INSERT INTO dbo.EMPRESA
+(
+  ID_EMPRESA, NOMBRE, DESCRIPCION, DIRECCION_EMPRESA,
+  IDENTIFICACION_E_RELACIONADA, EMPRESA_RELACIONADA, DIRECCION_E_RELACIONADA,
+  EMAIL, TELEFONO, CIUDAD, ESTADO, FORMA_PAGO, CONDICION_FINANCIERA,
+  CODIGO_POSTAL, PAIS, ESTATUS, IDENTIFICACION,
+  ID_EMPRESA_RELACIONADA
+)
+VALUES
+(
+  @ID_EMPRESA, @NOMBRE, @DESCRIPCION, @DIRECCION_EMPRESA,
+  @IDENTIFICACION_E_RELACIONADA, @EMPRESA_RELACIONADA, @DIRECCION_E_RELACIONADA,
+  @EMAIL, @TELEFONO, @CIUDAD, @ESTADO, @FORMA_PAGO, @CONDICION_FINANCIERA,
+  @CODIGO_POSTAL, @PAIS, @ESTATUS, @IDENTIFICACION,
+  @ID_EMPRESA_RELACIONADA
+);";
+
+      using (var cn = new SqlConnection(connectionString))
+      using (var cmd = new SqlCommand(SQL, cn))
+      {
+        cmd.Parameters.Add("@ID_EMPRESA", SqlDbType.UniqueIdentifier).Value = id;
+
+        cmd.Parameters.Add("@NOMBRE", SqlDbType.VarChar, 100).Value = Db(model.Nombre);
+        cmd.Parameters.Add("@DESCRIPCION", SqlDbType.VarChar, 100).Value = Db(model.Descripcion);
+        cmd.Parameters.Add("@DIRECCION_EMPRESA", SqlDbType.VarChar, 200).Value = Db(model.DireccionEmpresa);
+        cmd.Parameters.Add("@IDENTIFICACION_E_RELACIONADA", SqlDbType.VarChar, 200).Value = Db(model.IdentificacionERelacionada);
+        cmd.Parameters.Add("@EMPRESA_RELACIONADA", SqlDbType.VarChar, 200).Value = Db(model.EmpresaRelacionada);
+        cmd.Parameters.Add("@DIRECCION_E_RELACIONADA", SqlDbType.VarChar, 200).Value = Db(model.DireccionERelacionada);
+        cmd.Parameters.Add("@EMAIL", SqlDbType.VarChar, 30).Value = Db(model.Email);
+        cmd.Parameters.Add("@TELEFONO", SqlDbType.VarChar, 30).Value = Db(model.Telefono);
+        cmd.Parameters.Add("@CIUDAD", SqlDbType.VarChar, 100).Value = Db(model.Ciudad);
+        cmd.Parameters.Add("@ESTADO", SqlDbType.VarChar, 100).Value = Db(model.Estado);
+        cmd.Parameters.Add("@FORMA_PAGO", SqlDbType.VarChar, 100).Value = Db(model.FormaPago);
+        cmd.Parameters.Add("@CONDICION_FINANCIERA", SqlDbType.VarChar, 200).Value = Db(model.CondicionFinanciera);
+        cmd.Parameters.Add("@CODIGO_POSTAL", SqlDbType.VarChar, 100).Value = Db(model.CodigoPostal);
+        cmd.Parameters.Add("@PAIS", SqlDbType.VarChar, 200).Value = Db(model.Pais);
+        cmd.Parameters.Add("@ESTATUS", SqlDbType.VarChar, 200).Value = Db(model.Estatus);
+        cmd.Parameters.Add("@IDENTIFICACION", SqlDbType.VarChar, 200).Value = Db(model.Identificacion);
+        cmd.Parameters.Add("@ID_EMPRESA_RELACIONADA", SqlDbType.UniqueIdentifier)
+   .Value = model.EmpresaRelacionadaId.HasValue ? model.EmpresaRelacionadaId.Value : (object)DBNull.Value;
 
         await cn.OpenAsync();
         await cmd.ExecuteNonQueryAsync();
       }
 
+      if (model.EmpresaRelacionadaId.HasValue)
+      {
+        await EnsureRelacionBidireccionalAsync(id, model.EmpresaRelacionadaId.Value);
+      }
+
       return id;
 
-      // Convierte null/"" en DBNull.Value (la tabla permite NULL)
       static object Db(string? s) => string.IsNullOrWhiteSpace(s) ? DBNull.Value : s.Trim();
     }
+
+    public static async Task<Guid?> GetEmpresaIdByNombreAsync(string nombre)
+    {
+      string cs = System.Configuration.ConfigurationManager
+          .ConnectionStrings["ServerDiverscan"].ConnectionString;
+
+      const string SQL = @"
+SELECT TOP (1) ID_EMPRESA
+FROM dbo.EMPRESA WITH (NOLOCK)
+WHERE UPPER(LTRIM(RTRIM(NOMBRE))) = UPPER(LTRIM(RTRIM(@NOMBRE)));";
+
+      using var cn = new SqlConnection(cs);
+      using var cmd = new SqlCommand(SQL, cn);
+      cmd.Parameters.Add("@NOMBRE", SqlDbType.VarChar, 100).Value = (nombre ?? "").Trim();
+
+      await cn.OpenAsync();
+      var obj = await cmd.ExecuteScalarAsync();
+      if (obj == null || obj == DBNull.Value) return null;
+      return (Guid)obj;
+    }
+
 
     private static readonly HttpClient _http = new HttpClient();
 
