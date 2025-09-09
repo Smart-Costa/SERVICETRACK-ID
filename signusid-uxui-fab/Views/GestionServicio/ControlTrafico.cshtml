@@ -258,9 +258,12 @@
                                 <div id="horaError" class="field-error"></div>
                             </div>
 
+        
+                            <!-- Checkboxes (GD / SC / S-ID) -->
                             <!-- Checkboxes (GD / SC / S-ID) -->
                             <div class="col-12 col-sm-6 col-lg-5">
-                                <div class="hour-flags d-flex w-100 align-items-center gap-3 h52 px-3 rounded-3">
+                                <div class="hour-flags d-flex w-100 align-items-center gap-2 gap-sm-3 h52 px-3 rounded-3
+            flex-wrap flex-sm-nowrap justify-content-start ms-md-2 ms-lg-3">
                                     <label class="mb-0 d-flex align-items-center gap-2">
                                         <input type="checkbox" name="GD" value="true" style="accent-color:#ff5100;" id="flagGD">
                                         <input type="hidden" name="GD" value="false" />GD
@@ -271,29 +274,18 @@
                                         <input type="hidden" name="SC" value="false" />SC
                                     </label>
 
-                                    <!-- S-ID a la derecha -->
+                                    <!-- OJO: sin ms-md-auto -->
                                     <label class="mb-0 d-flex align-items-center gap-2">
                                         <input type="checkbox" name="SID" value="true" style="accent-color:#ff5100;" id="flagSID">
                                         <input type="hidden" name="SID" value="false" />S-ID
                                     </label>
                                 </div>
-                                <!-- error de proveedor (GD/SC/S-ID) -->
+
                                 <div id="proveedorError" class="field-error mt-1"></div>
                             </div>
-                        </div>
+                
 
-                        <style>
-                            .hour-flags {
-                                display: flex;
-                                width: 100%;
-                                align-items: center;
-                                gap: 12px;
-                            }
-                                /* Empuja el último label (S-ID) al extremo derecho */
-                                .hour-flags label:last-child {
-                                    margin-left: auto;
-                                }
-                        </style>
+                        </div>
                     </div>
 
                 </div>

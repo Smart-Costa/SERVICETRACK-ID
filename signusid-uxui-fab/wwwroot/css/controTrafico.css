@@ -829,3 +829,176 @@ body {
   margin-top: .75rem;
 }
 /* ya tengo mt-3 en HTML; esto es opcional */
+.hour-flags {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 12px;
+}
+  /* Empuja el último label (S-ID) al extremo derecho */
+  .hour-flags label:last-child {
+    margin-left: auto;
+  }
+
+/* En sm, permite 2 líneas si no cabe todo sin “apretar” */
+@media (max-width: 767.98px) {
+  .hour-flags {
+    row-gap: .25rem;
+  }
+}
+/* Forzar que en md+ queden juntos, sin separar S-ID */
+@media (min-width: 768px) {
+  .hour-flags {
+    justify-content: flex-start !important;
+  }
+
+    .hour-flags .ms-md-auto {
+      margin-left: 0 !important;
+    }
+}
+
+.hour-flags label:last-child {
+  margin-left: 0 !important;
+}
+
+/* Responsive real en móviles sin cambiar el look */
+@media (max-width: 575.98px) {
+  .hour-flags {
+    flex-wrap: wrap;
+    height: auto;
+    padding-top: .4rem;
+    padding-bottom: .4rem;
+    row-gap: .25rem;
+  }
+
+    .hour-flags label {
+      white-space: nowrap;
+      flex: 0 0 auto;
+    }
+}
+
+@media (min-width:576px) and (max-width:767.98px) {
+  .hour-flags {
+    flex-wrap: wrap;
+    height: auto;
+    row-gap: .25rem;
+  }
+}
+
+
+@media (max-width: 575.98px) {
+  .hour-flags {
+    flex-wrap: wrap;
+    height: auto;
+    padding-top: .4rem;
+    padding-bottom: .4rem;
+    row-gap: .25rem;
+  }
+
+    .hour-flags label {
+      white-space: nowrap;
+      flex: 0 0 auto;
+    }
+}
+
+@media (min-width:576px) and (max-width:767.98px) {
+  .hour-flags {
+    flex-wrap: wrap;
+    height: auto;
+    row-gap: .25rem;
+  }
+}
+
+
+/* ==== Parche anti-recorte para el bloque de flags ==== */
+.hour-flags.h52 {
+  height: auto !important; /* deja crecer si hace falta */
+  min-height: 52px; /* conserva el look original */
+  overflow: visible !important; /* evita que se oculte el contenido */
+}
+
+/* Desktop: una sola línea, igual que antes */
+@media (min-width: 768px) {
+  .hour-flags {
+    flex-wrap: nowrap;
+    align-items: center;
+  }
+}
+
+/* Móvil: permite wrap sin cortar nada */
+@media (max-width: 575.98px) {
+  .hour-flags {
+    flex-wrap: wrap;
+    row-gap: .25rem;
+    padding-top: .4rem;
+    padding-bottom: .4rem;
+  }
+
+    .hour-flags label {
+      white-space: nowrap;
+      flex: 0 0 auto;
+    }
+}
+
+/* Si quieres que los 3 queden juntos (y NO empujar S-ID):
+   quita esta regla que los separa o anúlala así: */
+.hour-flags label:last-child {
+  margin-left: 0 !important;
+}
+
+/* Y anula esto si lo tienes en el HTML/clases utilitarias */
+.hour-flags .ms-md-auto {
+  margin-left: 0 !important;
+}
+
+.hour-flags {
+  justify-content: flex-start !important;
+}
+/* en caso de tener justify-content-*-between */
+
+  /* NO empujar el último label */
+  .hour-flags label:last-child {
+    margin-left: 0 !important;
+  }
+
+/* Anti-recorte: conserva look de 52px pero permite crecer */
+.h52 {
+  height: auto !important;
+  min-height: 52px;
+  overflow: visible !important;
+}
+
+/* Responsivo: en xs/sm permite wrap sin cortar */
+@media (max-width: 575.98px) {
+  .hour-flags {
+    flex-wrap: wrap;
+    row-gap: .25rem;
+    padding-top: .4rem;
+    padding-bottom: .4rem;
+  }
+
+    .hour-flags label {
+      white-space: nowrap;
+      flex: 0 0 auto;
+    }
+}
+
+@media (min-width:576px) and (max-width:767.98px) {
+  .hour-flags {
+    flex-wrap: wrap;
+    row-gap: .25rem;
+  }
+}
+
+/* aire a la izquierda del bloque de flags en desktop */
+@media (min-width: 768px) { /* md+ */
+  .hour-flags {
+    margin-left: .5rem;
+  }
+}
+
+@media (min-width: 1200px) { /* xl+ si quieres un pelín más en pantallas grandes */
+  .hour-flags {
+    margin-left: .75rem;
+  }
+}
