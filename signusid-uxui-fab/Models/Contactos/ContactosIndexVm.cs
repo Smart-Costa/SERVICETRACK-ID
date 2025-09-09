@@ -10,5 +10,7 @@ namespace AspnetCoreMvcFull.Models.Empresa
     public int PageSize { get; set; }
     public int TotalItems { get; set; }
     public string? Query { get; set; }
+    public string? Todos { get; set; }
+    public string? EstatusFilter { get; set; }
   }
 }

@@ -1,8 +1,22 @@
-@* Empresas.cshtml *@
+@* Contactos.cshtml *@
 @{
     ViewData["Title"] = "Contactos";
 }
 
+@{
+    var http = ViewContext?.HttpContext;
+    var query = http?.Request?.Query;
+
+    var page = Model?.CurrentPage ?? (query != null && int.TryParse(query["page"], out var p) ? p : 1);
+    var pageSize = Model?.PageSize ?? (query != null && int.TryParse(query["pageSize"], out var ps) ? ps : 5);
+    var total = Model?.TotalItems ?? 0;
+    var totalPages = Math.Max(1, (int)Math.Ceiling((double)total / Math.Max(1, pageSize)));
+    var q = Model?.Query ?? (query?["q"].ToString() ?? "");
+    var todos = query?["todos"].ToString() ?? "";
+
+    var from = total == 0 ? 0 : ((page - 1) * pageSize + 1);
+    var to = total == 0 ? 0 : Math.Min(page * pageSize, total);
+}
 
 @model AspnetCoreMvcFull.Models.Empresa.ContactosIndexVm
 
@@ -132,6 +146,13 @@
     </div>
 
 
+    @{
+        var qVal = Model?.Query ?? Context?.Request?.Query["q"].ToString();
+        var todosVal = Model?.Todos ?? Context?.Request?.Query["todos"].ToString();
+        var estatusVal = Model?.EstatusFilter ?? Context?.Request?.Query["estatus"].ToString();
+        var pageSizeCurrent = Model?.PageSize ?? 5;
+    }
+
     <form asp-controller="GestionServicio" asp-action="ControlTrafico" method="get">
 
         <!-- AQUI DEBERIAN DE IR LOS FILTROS -->
@@ -155,8 +176,13 @@
                     </div>
 
                     <!-- ---Todos--- (se expande igual que Empresa) -->
+                    <!-- ---Todos--- como select sin flecha -->
                     <div class="col">
-                        <input type="text" name="todos" class="form-control" placeholder="---Todos---" />
+                        <select id="estatus" name="estatus" class="form-select no-caret">
+                            <option value="" selected="@(string.IsNullOrEmpty(estatusVal) ? "selected" : null)">---Todos---</option>
+                            <option value="Activo" selected="@(estatusVal == "Activo" ? "selected" : null)">Activo</option>
+                            <option value="Inactivo" selected="@(estatusVal == "Inactivo" ? "selected" : null)">Inactivo</option>
+                        </select>
                     </div>
                 </div>
             </div>
@@ -283,6 +309,8 @@
                                         <div class="d-inline-flex gap-2">
                                             <a class="btn d-flex align-items-center justify-content-center p-1 px-2"
                                                title="Editar"
+                                               asp-controller="Empresa"
+                                               asp-action="Editar"
                                                asp-action="Editar" asp-route-id="@item.IdContacto"
                                                style="background-color:#00A5B8;border:none;border-radius:6px;height:28px;min-width:40px;">
                                                 <img src="~/img/editar_icono.svg" alt="Editar" style="width:16px;height:16px;">
@@ -334,11 +362,11 @@
                         <!-- Primero / Anterior -->
                         <li class="page-item @(page <= 1 ? "disabled" : "")">
                             <a class="page-link"
-                               href="@Url.Action("Empresas", new { page = 1, pageSize, q, todos })">««</a>
+                               href="@Url.Action("Contactos", new { page = 1, pageSize, q, todos })">««</a>
                         </li>
                         <li class="page-item @(page <= 1 ? "disabled" : "")">
                             <a class="page-link"
-                               href="@Url.Action("Empresas", new { page = Math.Max(1, page - 1), pageSize, q, todos })">«</a>
+                               href="@Url.Action("Contactos", new { page = Math.Max(1, page - 1), pageSize, q, todos })">«</a>
                         </li>
 
                         <!-- Números (bordes + ventana alrededor de la actual) -->
@@ -348,7 +376,7 @@
                             {
                                 <li class="page-item @(i == page ? "active" : "")">
                                     <a class="page-link"
-                                       href="@Url.Action("Empresas", new { page = i, pageSize, q, todos })">@i</a>
+                                       href="@Url.Action("Contactos", new { page = i, pageSize, q, todos })">@i</a>
                                 </li>
                             }
                             else if (i == page - 3 || i == page + 3)
@@ -360,11 +388,11 @@
                         <!-- Siguiente / Último -->
                         <li class="page-item @(page >= totalPages ? "disabled" : "")">
                             <a class="page-link"
-                               href="@Url.Action("Empresas", new { page = Math.Min(totalPages, page + 1), pageSize, q, todos })">»</a>
+                               href="@Url.Action("Contactos", new { page = Math.Min(totalPages, page + 1), pageSize, q, todos })">»</a>
                         </li>
                         <li class="page-item @(page >= totalPages ? "disabled" : "")">
                             <a class="page-link"
-                               href="@Url.Action("Empresas", new { page = totalPages, pageSize, q, todos })">»»</a>
+                               href="@Url.Action("Contactos", new { page = totalPages, pageSize, q, todos })">»»</a>
                         </li>
 
                     </ul>
@@ -427,8 +455,80 @@
 }
 
 
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const btnReset = document.getElementById('btnResetFiltros');
+      if (!btnReset) return;
+
+      btnReset.addEventListener('click', () => {
+        const form = btnReset.closest('form');
+        if (!form) return;
+
+        const q       = form.querySelector('#qInput');
+        const estatus = form.querySelector('#estatus');
+        const pageHid = form.querySelector('input[name="page"]');
+
+        if (q) q.value = '';
+        if (estatus) estatus.value = '';     // deja "---Todos---"
+        if (pageHid) pageHid.value = 1;      // vuelve a página 1
+
+        form.submit();
+      });
+    });
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const est = document.getElementById('estatusInput');
+      if (est) {
+        est.addEventListener('change', () => est.form?.submit());
+      }
+      const reset = document.getElementById('btnResetFiltros');
+      if (reset) {
+        reset.addEventListener('click', () => {
+          est.value = '';
+        });
+      }
+    });
+</script>
 
 
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const selPageSize = document.getElementById('pageSize');
+      if (selPageSize) {
+        selPageSize.addEventListener('change', function () {
+          const form = selPageSize.form;
+          if (!form) return;
+          let pageHidden = form.querySelector('#pageHidden');
+          if (!pageHidden) {
+            pageHidden = document.createElement('input');
+            pageHidden.type = 'hidden'; pageHidden.name = 'page'; pageHidden.id = 'pageHidden';
+            form.appendChild(pageHidden);
+          }
+          pageHidden.value = 1; // reset al cambiar pageSize
+          form.submit();
+        });
+      }
+
+      // Auto-submit al cambiar Estatus (opcional)
+      const selEstatus = document.getElementById('estatus');
+      if (selEstatus) {
+        selEstatus.addEventListener('change', function () {
+          const form = selEstatus.form;
+          if (!form) return;
+          let pageHidden = form.querySelector('#pageHidden');
+          if (!pageHidden) {
+            pageHidden = document.createElement('input');
+            pageHidden.type = 'hidden'; pageHidden.name = 'page'; pageHidden.id = 'pageHidden';
+            form.appendChild(pageHidden);
+          }
+          pageHidden.value = 1;
+          form.submit();
+        });
+      }
+    });
+</script>
 
 <style>
 
