@@ -173,6 +173,14 @@
                 </li>
                
             </ul>
+            <ul class="menu-sub" style="@(inEmpresa ? "display:block" : "")">
+                <li class="menu-item@(inEmpresas ? " active" : "")">
+                    <a asp-controller="Empresa" asp-action="Contactos" class="menu-link">
+                        <div data-i18n="">Contactos</div>
+                    </a>
+                </li>
+
+            </ul>
         </li>
         <li class="menu-item@(inConfig ? " active open" : "")" data-menu-id="configuracion">
             <a href="javascript:void(0);" class="menu-link menu-toggle">
