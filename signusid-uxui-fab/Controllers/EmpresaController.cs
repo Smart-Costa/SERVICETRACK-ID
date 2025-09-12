@@ -28,6 +28,10 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization;
 using static AspnetCoreMvcFull.Controllers.AccessController;
+using System.Data;
+using System.Data.SqlClient;
+using AspnetCoreMvcFull.Models.Contactos;
+using Microsoft.AspNetCore.Mvc;
 
 namespace AspnetCoreMvcFull.Controllers
 {
@@ -45,9 +49,14 @@ namespace AspnetCoreMvcFull.Controllers
 
     #region CONTACTOS
     [HttpGet]
-    public async Task<IActionResult> Contactos(string? q, int page = 1, int pageSize = 5, bool registrado = false)
+    public async Task<IActionResult> Contactos(
+     string? q,
+     string? estatus,   // 👈 aquí
+     int page = 1,
+     int pageSize = 5,
+     bool registrado = false)
     {
-      var (items, total) = await SearchContactosAsync(q, page, pageSize);
+      var (items, total) = await SearchContactosAsync(q, estatus, page, pageSize);
 
       var vm = new ContactosIndexVm
       {
@@ -56,42 +65,106 @@ namespace AspnetCoreMvcFull.Controllers
         PageSize = pageSize,
         TotalItems = total,
         Query = q,
+        EstatusFilter = estatus, // 👈 para mantener seleccionado
         FormData = new Contactos()
       };
+
       if (registrado)
       {
         ViewBag.AlertTitle = "Éxito";
         ViewBag.Alert = "Contacto registrado correctamente";
       }
+
+      vm.EmpresasOptions = await GetEmpresasOptionsAsync2();
       return View(vm);
     }
 
+    private async Task<IEnumerable<SelectListItem>> GetEmpresasOptionsAsync2()
+    {
+      var cs = System.Configuration.ConfigurationManager
+                  .ConnectionStrings["ServerDiverscan"].ConnectionString;
+
+      const string SQL = @"
+SELECT ID_EMPRESA, NOMBRE
+FROM dbo.EMPRESA WITH (NOLOCK)
+ORDER BY NOMBRE;";
+
+      var list = new List<SelectListItem>();
+
+      using var cn = new SqlConnection(cs);
+      using var cmd = new SqlCommand(SQL, cn);
+      await cn.OpenAsync();
+      using var rd = await cmd.ExecuteReaderAsync();
+      while (await rd.ReadAsync())
+      {
+        var id = rd.GetGuid(0);
+        var nombre = rd.IsDBNull(1) ? "" : rd.GetString(1);
+
+        list.Add(new SelectListItem
+        {
+          Value = id.ToString(),
+          Text = nombre
+        });
+      }
+
+      return list;
+    }
+
+
 
     public static async Task<(List<Contactos> items, int total)> SearchContactosAsync(
-       string? q, int page, int pageSize)
+     string? q, string? estatus, int page, int pageSize)
     {
-      string connectionString =
-          System.Configuration.ConfigurationManager
-              .ConnectionStrings["ServerDiverscan"].ConnectionString;
+      string connectionString = System.Configuration.ConfigurationManager
+          .ConnectionStrings["ServerDiverscan"].ConnectionString;
 
-      // Sanitiza
       if (page <= 0) page = 1;
       if (pageSize <= 0) pageSize = 5;
 
-      var where = "";
-      var hasQ = !string.IsNullOrWhiteSpace(q);
-      if (hasQ)
-        where = "WHERE (Nombre LIKE @q OR Apellidos LIKE @q OR IdentificacionContacto LIKE @q OR Empresa LIKE @q)";
+      var whereParts = new List<string>();
 
-      var sqlCount = $@"SELECT COUNT(*) FROM dbo.EMPRESA WITH (NOLOCK) {where};";
+      if (!string.IsNullOrWhiteSpace(q))
+      {
+        whereParts.Add(@"(
+      c.Nombre LIKE @q
+   OR c.Apellidos LIKE @q
+   OR c.Identificacion LIKE @q
+   OR c.IdentificacionContacto LIKE @q
+   OR c.Empresa LIKE @q           -- texto suelto en Contactos
+   OR e.NOMBRE LIKE @q            -- nombre “oficial” en EMPRESA
+  )");
+      }
+
+      if (!string.IsNullOrWhiteSpace(estatus))
+        whereParts.Add("c.Estatus = @estatus");
+
+      var where = whereParts.Count > 0 ? "WHERE " + string.Join(" AND ", whereParts) : "";
+
+      var sqlCount = $@"
+SELECT COUNT(*)
+FROM dbo.Contactos c WITH (NOLOCK)
+LEFT JOIN dbo.EMPRESA e WITH (NOLOCK) ON e.ID_EMPRESA = c.Id_Empresa
+{where};";
+
 
       var sqlPage = $@"
 SELECT
-    Id_Contacto, Nombre, Telefono, Telefono_Movil, Email
-FROM dbo.Contactos WITH (NOLOCK)
+  c.Id_Contacto,
+  c.Nombre,
+  c.Apellidos,
+  c.Telefono,
+  c.Telefono_Movil,
+  c.Email,
+  c.Estatus,
+  c.Empresa            AS EmpresaTexto,
+  c.Id_Empresa,
+  e.NOMBRE             AS EmpresaOficial
+FROM dbo.Contactos c WITH (NOLOCK)
+LEFT JOIN dbo.EMPRESA e WITH (NOLOCK) ON e.ID_EMPRESA = c.Id_Empresa
 {where}
-ORDER BY Nombre
+ORDER BY c.Nombre
 OFFSET @skip ROWS FETCH NEXT @take ROWS ONLY;";
+
 
       var items = new List<Contactos>();
       int total = 0;
@@ -102,53 +175,190 @@ OFFSET @skip ROWS FETCH NEXT @take ROWS ONLY;";
       // COUNT
       using (var cmd = new SqlCommand(sqlCount, cn))
       {
-        if (hasQ) cmd.Parameters.Add("@q", SqlDbType.VarChar, 200).Value = $"%{q!.Trim()}%";
+        if (!string.IsNullOrWhiteSpace(q)) cmd.Parameters.Add("@q", SqlDbType.VarChar, 200).Value = $"%{q.Trim()}%";
+        if (!string.IsNullOrWhiteSpace(estatus)) cmd.Parameters.Add("@estatus", SqlDbType.VarChar, 200).Value = estatus;
         total = Convert.ToInt32(await cmd.ExecuteScalarAsync());
       }
 
       // PAGE
       using (var cmd = new SqlCommand(sqlPage, cn))
       {
-        if (hasQ) cmd.Parameters.Add("@q", SqlDbType.VarChar, 200).Value = $"%{q!.Trim()}%";
+        if (!string.IsNullOrWhiteSpace(q)) cmd.Parameters.Add("@q", SqlDbType.VarChar, 200).Value = $"%{q.Trim()}%";
+        if (!string.IsNullOrWhiteSpace(estatus)) cmd.Parameters.Add("@estatus", SqlDbType.VarChar, 200).Value = estatus;
         cmd.Parameters.Add("@skip", SqlDbType.Int).Value = (page - 1) * pageSize;
         cmd.Parameters.Add("@take", SqlDbType.Int).Value = pageSize;
 
         using var rd = await cmd.ExecuteReaderAsync();
         while (await rd.ReadAsync())
         {
+          var empresaOficial = rd["EmpresaOficial"] as string;
+          var empresaTexto = rd["EmpresaTexto"] as string;
+
           items.Add(new Contactos
           {
             IdContacto = rd.GetGuid(rd.GetOrdinal("Id_Contacto")),
             Nombre = rd["Nombre"] as string,
+            Apellidos = rd["Apellidos"] as string,
             Telefono = rd["Telefono"] as string,
             TelefonoMovil = rd["Telefono_Movil"] as string,
-            Email = rd["Email"] as string
+            Email = rd["Email"] as string,
+            Estatus = rd["Estatus"] as string,
+            // Usa el nombre oficial si existe; si no, el texto guardado en Contactos
+            Empresa = !string.IsNullOrWhiteSpace(empresaOficial) ? empresaOficial : empresaTexto,
+            EmpresaRelacionadaId = rd["Id_Empresa"] as Guid? // si tu clase lo admite como nullable
           });
         }
+
       }
 
       return (items, total);
     }
 
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> EliminarContacto(Guid id, int page = 1, int pageSize = 5, string? q = null, string? todos = null, string? estatus = null)
+    {
+      var rows = await DeleteContactoAsync(id);
+
+      if (rows > 0)
+      {
+        TempData["AlertTitle"] = "Éxito";
+        TempData["Alert"] = "Contacto eliminado correctamente";
+      }
+      else
+      {
+        TempData["AlertTitle"] = "Aviso";
+        TempData["Alert"] = "No se pudo eliminar el contacto (puede que no exista o esté referenciado).";
+      }
+
+      return RedirectToAction("Contactos", new { page, pageSize, q, todos, estatus });
+    }
+
+    public static async Task<int> DeleteContactoAsync(Guid id)
+    {
+      string cs = System.Configuration.ConfigurationManager
+                    .ConnectionStrings["ServerDiverscan"].ConnectionString;
+
+      const string SQL = @"DELETE FROM dbo.Contactos WHERE Id_Contacto = @ID;";
+
+      using var cn = new SqlConnection(cs);
+      using var cmd = new SqlCommand(SQL, cn);
+      cmd.Parameters.Add("@ID", SqlDbType.UniqueIdentifier).Value = id;
+
+      await cn.OpenAsync();
+      try
+      {
+        return await cmd.ExecuteNonQueryAsync(); // 1 si eliminó
+      }
+      catch (SqlException ex) when (ex.Number == 547) // violación FK
+      {
+        return 0;
+      }
+    }
+
+
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> GuardarContactos(AspnetCoreMvcFull.Models.Contactos.Contactos model)
     {
-      var idCreado = await InsertContactoAsync(model);
+      var estado = (Request.Form["estadoFomrulario"].ToString() ?? "").Trim();
 
-      // Redirigimos con un flag en la query (PRG pattern) — NO usar TempData aquí
-      return RedirectToAction("Contactos", new { registrado = true });
+      // (opcional) conservar filtros/paginación
+      int page = int.TryParse(Request.Form["page"], out var p) ? p : 1;
+      int pageSize = int.TryParse(Request.Form["pageSize"], out var ps) ? ps : 5;
+      string q = Request.Form["q"].ToString() ?? "";
+      string todos = Request.Form["todos"].ToString() ?? "";
+      // string estatus = Request.Form["estatus"].ToString() ?? "";   👈 ya no lo usamos
+
+      if (string.Equals(estado, "Editar", StringComparison.OrdinalIgnoreCase) &&
+          model.IdContacto != Guid.Empty)
+      {
+        var rows = await UpdateContactoAsync(model);
+        TempData["AlertTitle"] = rows > 0 ? "Éxito" : "Aviso";
+        TempData["Alert"] = rows > 0
+            ? "Contacto actualizado correctamente"
+            : "No se encontró el contacto a actualizar.";
+      }
+      else
+      {
+        var idCreado = await InsertContactoAsync(model);
+        TempData["AlertTitle"] = "Éxito";
+        TempData["Alert"] = "Contacto registrado correctamente";
+      }
+
+      // 👇 siempre vuelve con estatus vacío = "---Todos---"
+      return RedirectToAction("Contactos", new { page, pageSize, q, todos, estatus = "" });
+    }
+
+
+
+    public static async Task<int> UpdateContactoAsync(Contactos model)
+    {
+      string cs = System.Configuration.ConfigurationManager
+                      .ConnectionStrings["ServerDiverscan"].ConnectionString;
+
+      const string SQL = @"
+UPDATE dbo.Contactos
+SET
+    Nombre                 = @Nombre,
+    Apellidos              = @Apellidos,
+    Direccion              = @Direccion,
+    IdentificacionContacto = @IdentificacionContacto,
+    Empresa                = @Empresa,
+    Direccion_Opcional     = @Direccion_Opcional,
+    Email                  = @Email,
+    Telefono               = @Telefono,
+    Ciudad                 = @Ciudad,
+    Estado                 = @Estado,
+    Puesto                 = @Puesto,
+    Telefono_Movil         = @Telefono_Movil,
+    Codigo_Postal          = @Codigo_Postal,
+    Pais                   = @Pais,
+    Estatus                = @Estatus,
+    Identificacion         = @Identificacion,
+    Id_Empresa             = @Id_Empresa 
+WHERE Id_Contacto = @Id_Contacto;";
+
+      using var cn = new SqlConnection(cs);
+      using var cmd = new SqlCommand(SQL, cn);
+
+      cmd.Parameters.Add("@Id_Contacto", SqlDbType.UniqueIdentifier).Value = model.IdContacto;
+
+      cmd.Parameters.Add("@Nombre", SqlDbType.VarChar, 100).Value = Db(model.Nombre);
+      cmd.Parameters.Add("@Apellidos", SqlDbType.VarChar, 200).Value = Db(model.Apellidos);
+      cmd.Parameters.Add("@Direccion", SqlDbType.VarChar, 200).Value = Db(model.Direccion);
+      cmd.Parameters.Add("@IdentificacionContacto", SqlDbType.VarChar, 200).Value = Db(model.IdentificacionContacto);
+      cmd.Parameters.Add("@Empresa", SqlDbType.VarChar, 200).Value = Db(model.Empresa);
+      cmd.Parameters.Add("@Direccion_Opcional", SqlDbType.VarChar, 200).Value = Db(model.DireccionOpcional);
+      cmd.Parameters.Add("@Email", SqlDbType.VarChar, 30).Value = Db(model.Email);
+      cmd.Parameters.Add("@Telefono", SqlDbType.VarChar, 30).Value = Db(model.Telefono);
+      cmd.Parameters.Add("@Ciudad", SqlDbType.VarChar, 100).Value = Db(model.Ciudad);
+      cmd.Parameters.Add("@Estado", SqlDbType.VarChar, 100).Value = Db(model.Estado);
+      cmd.Parameters.Add("@Puesto", SqlDbType.VarChar, 100).Value = Db(model.Puesto);
+      cmd.Parameters.Add("@Telefono_Movil", SqlDbType.VarChar, 30).Value = Db(model.TelefonoMovil);
+      cmd.Parameters.Add("@Codigo_Postal", SqlDbType.VarChar, 100).Value = Db(model.CodigoPostal);
+      cmd.Parameters.Add("@Pais", SqlDbType.VarChar, 200).Value = Db(model.Pais);
+      cmd.Parameters.Add("@Estatus", SqlDbType.VarChar, 200).Value = Db(model.Estatus);
+      cmd.Parameters.Add("@Identificacion", SqlDbType.VarChar, 200).Value = Db(model.Identificacion);
+      cmd.Parameters.Add("@Id_Empresa", SqlDbType.UniqueIdentifier).Value = DbGuid(model.EmpresaRelacionadaId);
+
+      await cn.OpenAsync();
+      return await cmd.ExecuteNonQueryAsync();
+
+      // helper para Guid? -> DBNull cuando venga null o Guid.Empty
+      static object DbGuid(Guid? g) => g.HasValue && g.Value != Guid.Empty ? g.Value : (object)DBNull.Value;
+
+      static object Db(string? s) => string.IsNullOrWhiteSpace(s) ? DBNull.Value : s.Trim();
     }
 
 
     public static async Task<Guid> InsertContactoAsync(Contactos model)
     {
-      // tu cadena de conexión
       string connectionString =
           System.Configuration.ConfigurationManager
               .ConnectionStrings["ServerDiverscan"].ConnectionString;
 
-      // Generamos el ID (tu tabla no muestra DEFAULT NEWID())
       Guid id = Guid.NewGuid();
 
       const string SQL = @"
@@ -170,7 +380,8 @@ INSERT INTO dbo.Contactos
     Codigo_Postal,
     Pais,
     Estatus,
-    Identificacion
+    Identificacion,
+    Id_Empresa
 )
 VALUES
 (
@@ -190,7 +401,8 @@ VALUES
     @Codigo_Postal,
     @Pais,
     @Estatus,
-    @Identificacion
+    @Identificacion,
+    @Id_Empresa
 );";
 
       using (var cn = new SqlConnection(connectionString))
@@ -198,7 +410,6 @@ VALUES
       {
         cmd.Parameters.Add("@Id_Contacto", SqlDbType.UniqueIdentifier).Value = id;
 
-        // Usa los tamaños reales de tus columnas (todo es varchar en la BD)
         cmd.Parameters.Add("@Nombre", SqlDbType.VarChar, 100).Value = Db(model.Nombre);
         cmd.Parameters.Add("@Apellidos", SqlDbType.VarChar, 200).Value = Db(model.Apellidos);
         cmd.Parameters.Add("@Direccion", SqlDbType.VarChar, 200).Value = Db(model.Direccion);
@@ -215,6 +426,7 @@ VALUES
         cmd.Parameters.Add("@Pais", SqlDbType.VarChar, 200).Value = Db(model.Pais);
         cmd.Parameters.Add("@Estatus", SqlDbType.VarChar, 200).Value = Db(model.Estatus);
         cmd.Parameters.Add("@Identificacion", SqlDbType.VarChar, 200).Value = Db(model.Identificacion);
+        cmd.Parameters.Add("@Id_Empresa", SqlDbType.UniqueIdentifier).Value = DbGuid(model.EmpresaRelacionadaId);
 
         await cn.OpenAsync();
         await cmd.ExecuteNonQueryAsync();
@@ -222,8 +434,166 @@ VALUES
 
       return id;
 
-      // Convierte null/"" en DBNull.Value (la tabla permite NULL)
+      static object DbGuid(Guid? g) => g.HasValue && g.Value != Guid.Empty ? g.Value : (object)DBNull.Value;
+
       static object Db(string? s) => string.IsNullOrWhiteSpace(s) ? DBNull.Value : s.Trim();
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> EditarContacto(
+     Guid id,
+     string? q = null,
+     string? todos = null,
+     string? estatus = null,
+     int page = 1,
+     int pageSize = 5)
+    {
+      var contacto = await GetContactoByIdAsync(id);
+      if (contacto == null)
+      {
+        TempData["AlertTitle"] = "Aviso";
+        TempData["Alert"] = "No se encontró el contacto seleccionado.";
+        return RedirectToAction("Contactos", new { q, todos, estatus, page, pageSize });
+      }
+
+      var (items, total) = await SearchContactosAsync(q, todos, estatus, page, pageSize);
+
+      var vm = new ContactosIndexVm
+      {
+        FormData = contacto,
+        Items = items,
+        CurrentPage = page,
+        PageSize = pageSize,
+        TotalItems = total,
+        Query = q,
+        Todos = todos,
+        EstatusFilter = estatus,
+        // 👇 Se cargan todas las empresas
+        EmpresasOptions = await GetEmpresasOptionsAsync2()
+      };
+
+      return View("Contactos", vm);
+    }
+
+
+    private static string Cs =>
+        System.Configuration.ConfigurationManager
+            .ConnectionStrings["ServerDiverscan"].ConnectionString;
+
+    // === ADO.NET: traer contacto por ID ===
+    public static async Task<Contactos?> GetContactoByIdAsync(Guid id)
+    {
+      const string SQL = @"
+SELECT
+    Id_Contacto, Nombre, Apellidos, Direccion, IdentificacionContacto,
+    Empresa, Direccion_Opcional, Email, Telefono, Ciudad, Estado, Puesto,
+    Telefono_Movil, Codigo_Postal, Pais, Estatus, Identificacion,
+    Id_Empresa
+FROM dbo.Contactos WITH (NOLOCK)
+WHERE Id_Contacto = @ID;";
+
+      using var cn = new SqlConnection(Cs);
+      using var cmd = new SqlCommand(SQL, cn);
+      cmd.Parameters.Add("@ID", SqlDbType.UniqueIdentifier).Value = id;
+
+      await cn.OpenAsync();
+      using var rd = await cmd.ExecuteReaderAsync();
+      if (!await rd.ReadAsync()) return null;
+
+      var c = new Contactos
+      {
+        IdContacto = rd.GetGuid(rd.GetOrdinal("Id_Contacto")),
+        Nombre = rd["Nombre"] as string,
+        Apellidos = rd["Apellidos"] as string,
+        Direccion = rd["Direccion"] as string,
+        IdentificacionContacto = rd["IdentificacionContacto"] as string,
+        Empresa = rd["Empresa"] as string,
+        DireccionOpcional = rd["Direccion_Opcional"] as string,
+        Email = rd["Email"] as string,
+        Telefono = rd["Telefono"] as string,
+        Ciudad = rd["Ciudad"] as string,
+        Estado = rd["Estado"] as string,
+        Puesto = rd["Puesto"] as string,
+        TelefonoMovil = rd["Telefono_Movil"] as string,
+        CodigoPostal = rd["Codigo_Postal"] as string,
+        Pais = rd["Pais"] as string,
+        Estatus = rd["Estatus"] as string,
+        Identificacion = rd["Identificacion"] as string,
+
+        // 👇 Mapeo del FK
+        EmpresaRelacionadaId = rd.IsDBNull(rd.GetOrdinal("Id_Empresa"))
+              ? null
+              : rd.GetGuid(rd.GetOrdinal("Id_Empresa"))
+      };
+      return c;
+    }
+
+
+    // === Búsqueda paginada (simple; ajusta a lo que tengas) ===
+    public static async Task<(List<Contactos> items, int total)> SearchContactosAsync(
+        string? q, string? todos, string? estatus, int page, int pageSize)
+    {
+      if (page <= 0) page = 1;
+      if (pageSize <= 0) pageSize = 5;
+
+      var filters = new List<string>();
+      if (!string.IsNullOrWhiteSpace(q))
+        filters.Add("(Nombre LIKE @q OR Apellidos LIKE @q OR Empresa LIKE @q OR Email LIKE @q)");
+      if (!string.IsNullOrWhiteSpace(todos))
+        filters.Add("(Nombre LIKE @todos OR Apellidos LIKE @todos OR Empresa LIKE @todos OR Email LIKE @todos)");
+      if (!string.IsNullOrWhiteSpace(estatus))
+        filters.Add("Estatus = @estatus");
+
+      var where = filters.Count > 0 ? "WHERE " + string.Join(" AND ", filters) : "";
+
+      var sqlCount = $"SELECT COUNT(*) FROM dbo.Contactos WITH (NOLOCK) {where};";
+      var sqlPage = $@"
+SELECT
+    Id_Contacto, Nombre, Apellidos, Empresa, Email, Telefono, Estatus
+FROM dbo.Contactos WITH (NOLOCK)
+{where}
+ORDER BY Nombre
+OFFSET @skip ROWS FETCH NEXT @take ROWS ONLY;";
+
+      var items = new List<Contactos>();
+      int total = 0;
+
+      using var cn = new SqlConnection(Cs);
+      await cn.OpenAsync();
+
+      using (var cmd = new SqlCommand(sqlCount, cn))
+      {
+        if (!string.IsNullOrWhiteSpace(q)) cmd.Parameters.Add("@q", SqlDbType.VarChar, 200).Value = $"%{q!.Trim()}%";
+        if (!string.IsNullOrWhiteSpace(todos)) cmd.Parameters.Add("@todos", SqlDbType.VarChar, 200).Value = $"%{todos!.Trim()}%";
+        if (!string.IsNullOrWhiteSpace(estatus)) cmd.Parameters.Add("@estatus", SqlDbType.VarChar, 50).Value = estatus;
+        total = Convert.ToInt32(await cmd.ExecuteScalarAsync());
+      }
+
+      using (var cmd = new SqlCommand(sqlPage, cn))
+      {
+        if (!string.IsNullOrWhiteSpace(q)) cmd.Parameters.Add("@q", SqlDbType.VarChar, 200).Value = $"%{q!.Trim()}%";
+        if (!string.IsNullOrWhiteSpace(todos)) cmd.Parameters.Add("@todos", SqlDbType.VarChar, 200).Value = $"%{todos!.Trim()}%";
+        if (!string.IsNullOrWhiteSpace(estatus)) cmd.Parameters.Add("@estatus", SqlDbType.VarChar, 50).Value = estatus;
+        cmd.Parameters.Add("@skip", SqlDbType.Int).Value = (page - 1) * pageSize;
+        cmd.Parameters.Add("@take", SqlDbType.Int).Value = pageSize;
+
+        using var rd = await cmd.ExecuteReaderAsync();
+        while (await rd.ReadAsync())
+        {
+          items.Add(new Contactos
+          {
+            IdContacto = rd.GetGuid(rd.GetOrdinal("Id_Contacto")),
+            Nombre = rd["Nombre"] as string,
+            Apellidos = rd["Apellidos"] as string,
+            Empresa = rd["Empresa"] as string,
+            Email = rd["Email"] as string,
+            Telefono = rd["Telefono"] as string,
+            Estatus = rd["Estatus"] as string
+          });
+        }
+      }
+
+      return (items, total);
     }
 
     #endregion FIN CONTACTOS

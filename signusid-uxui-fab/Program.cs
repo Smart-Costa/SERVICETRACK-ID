@@ -15,6 +15,8 @@ builder.Services.AddDbContext<AspnetCoreMvcFullContext>(options =>
 
 builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 
+var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
+
 builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("SmtpSignus"));
 builder.Services.Configure<SmtpSettings>("Signus", builder.Configuration.GetSection("SmtpSignus"));
 builder.Services.Configure<SmtpSettings>("Diverscan", builder.Configuration.GetSection("SmtpDiverscan"));

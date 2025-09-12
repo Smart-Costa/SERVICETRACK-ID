@@ -76,5 +76,8 @@ namespace AspnetCoreMvcFull.Models.Contactos
     [Column("Identificacion")]
     [StringLength(200)]
     public string? Identificacion { get; set; }
+
+    [Column("Id_Empresa")]
+    public Guid? EmpresaRelacionadaId { get; set; }
   }
 }

@@ -43,6 +43,190 @@ namespace AspnetCoreMvcFull.Controllers
     {
       return View();
     }
+
+    string Cs => System.Configuration.ConfigurationManager
+               .ConnectionStrings["ServerDiverscan"].ConnectionString;
+
+    // 1) EMPRESAS
+    [HttpGet]
+    public IActionResult EmpresasOptions()
+    {
+      var list = new List<object>();
+      using var cn = new SqlConnection(Cs);
+      using var cmd = new SqlCommand(@"
+      SELECT ID_EMPRESA, ISNULL(NOMBRE,'') AS NOMBRE, ISNULL(DESCRIPCION,'') AS DESCRIPCION
+      FROM dbo.EMPRESA
+      ORDER BY NOMBRE", cn);
+      cn.Open();
+      using var rd = cmd.ExecuteReader();
+      while (rd.Read())
+      {
+        var id = rd.GetGuid(0);
+        var nombre = rd.GetString(1);
+        var desc = rd.GetString(2);
+        list.Add(new { id, text = string.IsNullOrWhiteSpace(desc) ? nombre : $"{nombre} - {desc}" });
+      }
+      return Ok(list);
+    }
+
+    // 2) CONTRATOS por EMPRESA (si no mandan empresaId => vacío)
+    [HttpGet]
+    public IActionResult ContratosOptions(Guid? empresaId)
+    {
+      var list = new List<object>();
+      if (empresaId == null || empresaId == Guid.Empty) return Ok(list);
+
+      using var cn = new SqlConnection(Cs);
+      using var cmd = new SqlCommand(@"
+      SELECT ID_CONTRATO, ISNULL(NUMERO,'') AS NUMERO, ISNULL(NOMBRE,'') AS NOMBRE
+      FROM dbo.CONTRATOS
+      WHERE ID_EMPRESA = @emp
+      ORDER BY NUMERO, NOMBRE", cn);
+      cmd.Parameters.Add("@emp", SqlDbType.UniqueIdentifier).Value = empresaId;
+      cn.Open();
+      using var rd = cmd.ExecuteReader();
+      while (rd.Read())
+      {
+        var id = rd.GetGuid(0);
+        var numero = rd.GetString(1);
+        var nombre = rd.GetString(2);
+        var label = string.IsNullOrWhiteSpace(nombre) ? numero : $"{numero} - {nombre}";
+        list.Add(new { id, text = string.IsNullOrWhiteSpace(label) ? "(Sin número)" : label });
+      }
+      return Ok(list);
+    }
+
+    // 3) SOLICITANTES (opcionalmente filtrados por empresa)
+    [HttpGet]
+    public IActionResult SolicitantesOptions(Guid? empresaId)
+    {
+      var list = new List<object>();
+      using var cn = new SqlConnection(Cs);
+      var sql = @"
+      SELECT Id_Contacto, ISNULL(Nombre,'') AS Nombre, ISNULL(Apellidos,'') AS Apellidos, ISNULL(Email,'') AS Email
+      FROM dbo.Contactos
+      /**/ WHERE ( @emp IS NULL OR @emp = '00000000-0000-0000-0000-000000000000' OR Id_Empresa = @emp )
+      ORDER BY Nombre, Apellidos";
+      using var cmd = new SqlCommand(sql, cn);
+      cmd.Parameters.Add("@emp", SqlDbType.UniqueIdentifier).Value = (object?)empresaId ?? DBNull.Value;
+      cn.Open();
+      using var rd = cmd.ExecuteReader();
+      while (rd.Read())
+      {
+        var id = rd.GetGuid(0);
+        var nombre = rd.GetString(1);
+        var ap = rd.GetString(2);
+        var mail = rd.GetString(3);
+        var full = (nombre + " " + ap).Trim();
+        var text = string.IsNullOrWhiteSpace(mail) ? full : $"{full} ({mail})";
+        list.Add(new { id, text = string.IsNullOrWhiteSpace(full) ? "(Sin nombre)" : text });
+      }
+      return Ok(list);
+    }
+
+    // 4) ESTADOS (EstadoActivo)
+    [HttpGet]
+    public IActionResult EstadosOptions()
+    {
+      var list = new List<object>();
+      using var cn = new SqlConnection(Cs);
+      using var cmd = new SqlCommand(@"
+      SELECT id_estadoActivo, ISNULL(nombre,'') AS nombre
+      FROM dbo.EstadoActivo
+      ORDER BY nombre", cn);
+      cn.Open();
+      using var rd = cmd.ExecuteReader();
+      while (rd.Read())
+        list.Add(new { id = rd.GetGuid(0), text = rd.GetString(1) });
+      return Ok(list);
+    }
+
+    // 5) USUARIOS asignables
+    [HttpGet]
+    public IActionResult UsuariosOptions()
+    {
+      var list = new List<object>();
+      using var cn = new SqlConnection(Cs);
+      using var cmd = new SqlCommand(@"
+      SELECT userSysId, username
+      FROM dbo.users
+      WHERE ISNULL(isApproved,1)=1
+      ORDER BY username", cn);
+      cn.Open();
+      using var rd = cmd.ExecuteReader();
+      while (rd.Read())
+        list.Add(new { id = rd.GetGuid(0), text = rd.GetString(1) });
+      return Ok(list);
+    }
+
+    // 6) RAZONES DE SERVICIO
+    [HttpGet]
+    public IActionResult RazonesOptions()
+    {
+      var list = new List<object>();
+      using var cn = new SqlConnection(Cs);
+      using var cmd = new SqlCommand(@"
+      SELECT id_razonServicios, ISNULL(nombre,'') AS nombre
+      FROM dbo.RazonServicios
+      ORDER BY nombre", cn);
+      cn.Open();
+      using var rd = cmd.ExecuteReader();
+      while (rd.Read())
+        list.Add(new { id = rd.GetGuid(0), text = rd.GetString(1) });
+      return Ok(list);
+    }
+
+    [HttpGet]
+    public IActionResult SolicitantesPorEmpresa(Guid? empresaId)
+    {
+      string cs = System.Configuration.ConfigurationManager
+          .ConnectionStrings["ServerDiverscan"].ConnectionString;
+
+      var list = new List<object>();
+
+      const string sql = @"
+SELECT
+    Id_Contacto,
+    LTRIM(RTRIM(ISNULL(Nombre, ''))) AS Nombre,
+    LTRIM(RTRIM(ISNULL(Email,  ''))) AS Email
+FROM dbo.Contactos
+WHERE (@EmpresaId IS NULL OR Id_Empresa = @EmpresaId)
+ORDER BY
+    CASE
+       WHEN LTRIM(RTRIM(ISNULL(Nombre,''))) = '' THEN LTRIM(RTRIM(ISNULL(Email,'')))
+       ELSE LTRIM(RTRIM(ISNULL(Nombre,'')))
+    END;";
+
+      using var cn = new SqlConnection(cs);
+      using var cmd = new SqlCommand(sql, cn);
+      cmd.Parameters.Add("@EmpresaId", SqlDbType.UniqueIdentifier).Value =
+          (object?)empresaId ?? DBNull.Value;
+
+      cn.Open();
+      using var rd = cmd.ExecuteReader();
+      while (rd.Read())
+      {
+        var id = rd.GetGuid(0);
+        var nombre = rd.IsDBNull(1) ? "" : rd.GetString(1).Trim();
+        var email = rd.IsDBNull(2) ? "" : rd.GetString(2).Trim();
+
+        string texto;
+        if (!string.IsNullOrWhiteSpace(nombre) && !string.IsNullOrWhiteSpace(email))
+          texto = $"{nombre} ({email})";
+        else if (!string.IsNullOrWhiteSpace(nombre))
+          texto = nombre;
+        else if (!string.IsNullOrWhiteSpace(email))
+          texto = email;
+        else
+          texto = id.ToString();
+
+        list.Add(new { value = id.ToString(), text = texto });
+      }
+
+      return Json(list);
+    }
+
+
     [HttpGet]
 
     public IActionResult ControlTrafico(int page = 1, int pageSize = 10, string? q = null)
@@ -506,6 +690,88 @@ OFFSET @Skip ROWS FETCH NEXT @Take ROWS ONLY;";
       marca = "Signus";
       return _smtpOptions.Get("Signus");
     }
+    private static bool EsSinAsignar(string? userName)
+  => (userName ?? "").Trim()
+       .Equals("Sin Asignar", StringComparison.OrdinalIgnoreCase);
+
+    // ✉️ Al solicitante cuando AÚN NO hay asignado (username == "Sin Asignar")
+    private static (string subject, string txt, string html) BuildMailToUserPending(
+        string nombreSolicitante, string email, string phone, string company,
+        string contractNumber, string brief, int ticket)
+    {
+      string subject = $"Ticket #{ticket} recibido";
+
+      string plain =
+    $@"Estimado: {nombreSolicitante}
+
+Hemos recibido su incidente, al cual se le ha asignado el No. {ticket}, en adelante para su trazabilidad.
+
+Su caso estará siendo asignado muy pronto a un agente de servicio Nivel 1, para su evaluación.
+
+Nuestro personal de servicio al cliente se estará poniendo en contacto con usted para solicitarle más información. Por favor, verifique que la información proporcionada por usted es correcta.
+
+Correo: {email}
+Teléfono: {phone}
+Empresa: {company}
+Numero de Contacto: {contractNumber}
+
+Descripción del incidente: {brief}
+
+Estamos para servirle.
+
+Saludos,
+Servicio al Cliente.";
+
+      string html = $@"
+<div style='font-family:Arial,sans-serif;font-size:14px;color:#333'>
+  <p>Estimado: <strong>{WebUtility.HtmlEncode(nombreSolicitante)}</strong></p>
+  <p>Hemos recibido su incidente, al cual se le ha asignado el <strong>No. {ticket}</strong>, en adelante para su trazabilidad.</p>
+  <p>Su caso estará siendo asignado muy pronto a un agente de servicio Nivel 1, para su evaluación.</p>
+  <p>Nuestro personal de servicio al cliente se estará poniendo en contacto con usted para solicitarle más información. Por favor, verifique que la información proporcionada por usted es correcta.</p>
+
+  <table style='width:100%;border-collapse:collapse;margin-top:10px'>
+    <tr><td style='padding:4px 0'><strong>Correo:</strong></td><td style='padding:4px 0'>{WebUtility.HtmlEncode(email)}</td></tr>
+    <tr><td style='padding:4px 0'><strong>Teléfono:</strong></td><td style='padding:4px 0'>{WebUtility.HtmlEncode(phone)}</td></tr>
+    <tr><td style='padding:4px 0'><strong>Empresa:</strong></td><td style='padding:4px 0'>{WebUtility.HtmlEncode(company)}</td></tr>
+    <tr><td style='padding:4px 0'><strong>Número de Contrato:</strong></td><td style='padding:4px 0'>{WebUtility.HtmlEncode(contractNumber)}</td></tr>
+    <tr><td style='padding:4px 0'><strong>Descripción del Incidente:</strong></td><td style='padding:4px 0'>{WebUtility.HtmlEncode(brief)}</td></tr>
+  </table>
+
+  <p style='margin-top:16px'>Estamos para servirle.</p>
+  <p>Saludos.<br/>Servicio al Cliente.</p>
+</div>";
+
+      return (subject, plain, html);
+    }
+
+    private static (string subject, string txt, string html) BuildMailToUserEditFull(
+  string nombreSolicitante,
+  string nombreAsignado,
+  int ticket,
+  DateTime? fechaProx,
+  TimeSpan? horaServ,
+  string email,
+  string phone,
+  string company,
+  string contractNumber,
+  string brief,
+  string changesPlain,
+  string changesHtml)
+    {
+      // Reutiliza el cuerpo del correo de "asignado" y solo cambia el asunto.
+      var (_, txt, html) = BuildMailToUser(
+          nombreSolicitante,
+          nombreAsignado,
+          ticket,
+          fechaProx,
+          horaServ
+      );
+
+      return ($"Ticket #{ticket} actualizado", txt, html);
+    }
+
+
+
 
     [HttpPost]
     public async Task<IActionResult> InsertarControTrafico([FromForm] ControlTraficoPostDto dto)
@@ -615,7 +881,6 @@ WHERE Ticket = @Ticket;";
       cmd.Parameters.Add("@DescripcionIncidente", SqlDbType.NVarChar, 1000).Value = (object?)brief ?? DBNull.Value;
 
       cn.Open();
-
       if (esEditar)
       {
         // === 3A) Snapshot ANTES del UPDATE ===
@@ -671,33 +936,66 @@ WHERE Ticket = @Ticket;";
         // === 3C) Resumen de cambios ===
         var (plainChanges, htmlChanges) = BuildChangesSummary(new[]
         {
-      ("Agente asignado",  beforeAssigned.Item2,  afterAssigned.Item2),
-      ("Empresa",          beforeEmpresaNombre,   afterEmpresaNombre),
-      ("Contrato",         beforeContratoNum,     afterContratoNum),
-      ("Email de contacto",before.EmailServicio,  after_emailServ),
-      ("Teléfono",         before.TelefonoServicio, after_tel),
-      ("Fecha agendada",   beforeFechaTxt,        afterFechaTxt),
-      ("Hora agendada",    beforeHoraTxt,         afterHoraTxt),
-      ("Descripción",      before.DescripcionIncidente, after_brief),
+    ("Agente asignado",   beforeAssigned.Item2,          afterAssigned.Item2),
+    ("Empresa",           beforeEmpresaNombre,           afterEmpresaNombre),
+    ("Contrato",          beforeContratoNum,             afterContratoNum),
+    ("Email de contacto", before.EmailServicio,          after_emailServ),
+    ("Teléfono",          before.TelefonoServicio,       after_tel),
+    ("Fecha agendada",    beforeFechaTxt,                afterFechaTxt),
+    ("Hora agendada",     beforeHoraTxt,                 afterHoraTxt),
+    ("Descripción",       before.DescripcionIncidente,   after_brief),
   });
 
         // === 3D) Correos en UNA conexión ===
+        var jobs = new List<AspnetCoreMvcFull.Mailer.MailJob>();
+
         // 1) Solicitante
         var soli = GetSolicitanteById(_cs, before.SolicitanteId);
-        var jobs = new List<AspnetCoreMvcFull.Mailer.MailJob>();
         var toUserEmailEdit = !string.IsNullOrWhiteSpace(after_emailServ) ? after_emailServ : soli.Email;
 
         if (!string.IsNullOrWhiteSpace(toUserEmailEdit))
         {
-          var (subUser, txtUser, htmlUser) = BuildMailToUserEdit(
+          // ¿Quedó "Sin Asignar" tras la edición? (o sin asignado)
+          bool esSinAsignar = !after_asignadoId.HasValue
+            || string.Equals((afterAssigned.Item2 ?? "").Trim(), "Sin Asignar", StringComparison.OrdinalIgnoreCase);
+
+          string subUser, txtUser, htmlUser;
+
+          if (esSinAsignar)
+          {
+            // → Usar "Pending" pero con asunto forzado a "actualizado"
+            var pending = BuildMailToUserPending(
+              nombreSolicitante: NullOrND(soli.Nombre),
+              email: NullOrND(after_emailServ),
+              phone: NullOrND(after_tel),
+              company: NullOrND(afterEmpresaNombre),
+              contractNumber: NullOrND(afterContratoNum),
+              brief: NullOrND(after_brief),
+              ticket: dto.ticket
+            );
+
+            subUser = $"Ticket #{dto.ticket} actualizado";  // forzar asunto
+            txtUser = pending.txt;
+            htmlUser = pending.html;
+          }
+          else
+          {
+            // → Usar el cuerpo de "asignado" (tu EditFull ya lo devuelve con asunto "actualizado")
+            (subUser, txtUser, htmlUser) = BuildMailToUserEditFull(
               nombreSolicitante: NullOrND(soli.Nombre),
               nombreAsignado: NullOrND(afterAssigned.Item2),
               ticket: dto.ticket,
               fechaProx: after_fechaProx,
               horaServ: after_horaServ,
+              email: NullOrND(after_emailServ),
+              phone: NullOrND(after_tel),
+              company: NullOrND(afterEmpresaNombre),
+              contractNumber: NullOrND(afterContratoNum),
+              brief: NullOrND(after_brief),
               changesPlain: plainChanges,
               changesHtml: htmlChanges
-          );
+            );
+          }
 
           jobs.Add(new AspnetCoreMvcFull.Mailer.MailJob
           {
@@ -713,12 +1011,19 @@ WHERE Ticket = @Ticket;";
         if (after_asignadoId.HasValue && !string.IsNullOrWhiteSpace(afterAssigned.Item1))
         {
           var (subAss, txtAss, htmlAss) = BuildMailToAssignedEdit(
-              assignedUserName: NullOrND(afterAssigned.Item2),
-              ticket: dto.ticket,
-              changesPlain: plainChanges,
-              changesHtml: htmlChanges,
-              esReasignacion: reasignado
-          );
+           assignedUserName: NullOrND(afterAssigned.Item2),
+           ticket: dto.ticket,
+           changesPlain: plainChanges,
+           changesHtml: htmlChanges,
+           esReasignacion: reasignado,
+           nombreSolicitante: NullOrND(soli.Nombre),
+           email: NullOrND(after_emailServ),
+           phone: NullOrND(after_tel),
+           company: NullOrND(afterEmpresaNombre),
+           contractNumber: NullOrND(afterContratoNum),
+           brief: NullOrND(after_brief)
+         );
+
           jobs.Add(new AspnetCoreMvcFull.Mailer.MailJob
           {
             To = afterAssigned.Item1!,
@@ -730,7 +1035,6 @@ WHERE Ticket = @Ticket;";
         }
 
         // === SMTP por marca ===
-        //var smtp = PickSmtp(dto.GD, dto.SC, dto.SID, out var marca);
         var smtp = PickSmtp(dto.GD == true, dto.SC == true, dto.SID == true, out var marca);
 
         try
@@ -786,15 +1090,47 @@ WHERE Ticket = @Ticket;";
         // 4.2) Solicitante
         if (!string.IsNullOrWhiteSpace(soli.Email) || !string.IsNullOrWhiteSpace(emailSrv))
         {
-          var assigned = asignadoId.HasValue ? GetUserById(_cs, asignadoId.Value) : (Email: "", UserName: "Sin asignar");
-          var (subUser, txtUser, htmlUser) = BuildMailToUser(
+          // Si hay asignado, lo obtenemos; si no, lo marcamos como "Sin Asignar"
+          var assigned = asignadoId.HasValue
+            ? GetUserById(_cs, asignadoId.Value)                 // (Email, UserName)
+            : (Email: "", UserName: "Sin Asignar");
+
+          var toUserEmailInsert = !string.IsNullOrWhiteSpace(emailSrv) ? emailSrv : soli.Email;
+
+          // Elegimos plantilla según username
+          bool esSinAsignar = string.Equals(
+            (assigned.UserName ?? "").Trim(),
+            "Sin Asignar",
+            StringComparison.OrdinalIgnoreCase
+          );
+
+          string subUser, txtUser, htmlUser;
+
+          if (esSinAsignar)
+          {
+            // 🟠 Aún no asignado → correo de recibido/pendiente
+            (subUser, txtUser, htmlUser) = BuildMailToUserPending(
+              nombreSolicitante: NullOrND(soli.Nombre),
+              email: showEmail,
+              phone: showPhone,
+              company: showCompany,
+              contractNumber: showContract,
+              brief: showBrief,
+              ticket: ticket
+            );
+          }
+          else
+          {
+            // 🟢 Ya asignado → plantilla existente "asignado"
+            (subUser, txtUser, htmlUser) = BuildMailToUser(
               nombreSolicitante: NullOrND(soli.Nombre),
               nombreAsignado: NullOrND(assigned.UserName),
               ticket: ticket,
               fechaProx: fechaProx,
               horaServ: horaServ
-          );
-          var toUserEmailInsert = !string.IsNullOrWhiteSpace(emailSrv) ? emailSrv : soli.Email;
+            );
+          }
+
           jobs.Add(new AspnetCoreMvcFull.Mailer.MailJob
           {
             To = toUserEmailInsert!,
@@ -868,7 +1204,6 @@ WHERE Ticket = @Ticket;";
 
         return RedirectToAction("ControlTrafico");
       }
-
     }
 
 
@@ -1009,8 +1344,8 @@ WHERE Ticket = @Ticket;";
       foreach (var c in changes)
       {
         if ((c.oldVal ?? "") == (c.newVal ?? "")) continue;
-        var oldV = string.IsNullOrWhiteSpace(c.oldVal) ? "N/D" : c.oldVal;
-        var newV = string.IsNullOrWhiteSpace(c.newVal) ? "N/D" : c.newVal;
+        var oldV = string.IsNullOrWhiteSpace(c.oldVal) ? "Sin datos" : c.oldVal;
+        var newV = string.IsNullOrWhiteSpace(c.newVal) ? "Sin datos" : c.newVal;
 
         sbPlain.AppendLine($"• {c.label}: {oldV}  →  {newV}");
         sbHtml.Append("<li><strong>")
@@ -1078,36 +1413,76 @@ Servicio al Cliente.";
     }
 
     private static (string subject, string txt, string html) BuildMailToAssignedEdit(
-      string assignedUserName,
-      int ticket,
-      string changesPlain,
-      string changesHtml,
-      bool esReasignacion)
+  string assignedUserName,
+  int ticket,
+  string changesPlain,
+  string changesHtml,
+  bool esReasignacion,
+  string? nombreSolicitante = null,
+  string? email = null,
+  string? phone = null,
+  string? company = null,
+  string? contractNumber = null,
+  string? brief = null)
     {
+      // Asunto igual al original (respeta reasignación vs. actualización)
       string subject = esReasignacion
         ? $"[Ticket #{ticket}] Te ha sido asignado"
         : $"[Ticket #{ticket}] Actualizado";
 
+      // Normaliza para texto plano
+      string s(string? v) => string.IsNullOrWhiteSpace(v) ? "N/D" : v!;
+
+      // ===== Texto plano =====
       string plain =
     $@"{(esReasignacion ? "Este ticket te ha sido asignado." : "Este ticket ha sido actualizado.")}
 
 Ticket: {ticket}
+Asignado a: {assignedUserName}
+
+RESUMEN DEL TICKET
+------------------
+Solicitante: {s(nombreSolicitante)}
+Correo: {s(email)}
+Teléfono: {s(phone)}
+Empresa: {s(company)}
+Número de Contrato: {s(contractNumber)}
+
+Descripción del Incidente:
+{s(brief)}
 
 Cambios:
 {(string.IsNullOrWhiteSpace(changesPlain) ? "• (Sin cambios relevantes mostrables)" : changesPlain)}
 
 Por favor, gestiona este caso en ServiceTrackID.";
 
+      // ===== HTML =====
       string html = $@"
 <div style='font-family:Arial,sans-serif;font-size:14px;color:#333;line-height:1.5'>
   <h3 style='margin:0 0 8px'>{(esReasignacion ? "Ticket asignado" : "Ticket actualizado")}</h3>
   <p><strong>Ticket:</strong> #{ticket}</p>
+  <p><strong>Asignado a:</strong> {WebUtility.HtmlEncode(assignedUserName)}</p>
+
+  <h4 style='margin:14px 0 8px'>Resumen del ticket</h4>
+  <table style='width:100%;border-collapse:collapse'>
+    <tr><td style='padding:4px 0'><strong>Solicitante:</strong></td><td style='padding:4px 0'>{WebUtility.HtmlEncode(s(nombreSolicitante))}</td></tr>
+    <tr><td style='padding:4px 0'><strong>Correo:</strong></td><td style='padding:4px 0'>{WebUtility.HtmlEncode(s(email))}</td></tr>
+    <tr><td style='padding:4px 0'><strong>Teléfono:</strong></td><td style='padding:4px 0'>{WebUtility.HtmlEncode(s(phone))}</td></tr>
+    <tr><td style='padding:4px 0'><strong>Empresa:</strong></td><td style='padding:4px 0'>{WebUtility.HtmlEncode(s(company))}</td></tr>
+    <tr><td style='padding:4px 0'><strong>Número de Contrato:</strong></td><td style='padding:4px 0'>{WebUtility.HtmlEncode(s(contractNumber))}</td></tr>
+    <tr><td style='padding:4px 0;vertical-align:top'><strong>Descripción del Incidente:</strong></td>
+        <td style='padding:4px 0;white-space:pre-wrap'>{WebUtility.HtmlEncode(s(brief))}</td></tr>
+  </table>
+
   <p style='margin:10px 0 6px'><strong>Cambios:</strong></p>
   {(string.IsNullOrWhiteSpace(changesHtml) ? "<p>(Sin cambios relevantes mostrables)</p>" : changesHtml)}
+
   <p style='margin-top:14px'>Por favor, gestiona este caso en ServiceTrackID.</p>
 </div>";
+
       return (subject, plain, html);
     }
+
 
 
 
@@ -1116,16 +1491,31 @@ Por favor, gestiona este caso en ServiceTrackID.";
     {
       using var cn = new SqlConnection(cs);
       cn.Open();
-      using var cmd = new SqlCommand(
-        "SELECT TOP 1 NombreCompleto, Email, Telefono FROM dbo.SolicitanteServiceTrackID WHERE SolicitanteId=@id", cn);
-      cmd.Parameters.AddWithValue("@id", solicitanteId);
+
+      const string sql = @"
+        SELECT TOP 1
+            LTRIM(RTRIM(
+                COALESCE(Nombre, '') + 
+                CASE WHEN ISNULL(Apellidos, '') <> '' THEN ' ' + Apellidos ELSE '' END
+            )) AS NombreCompleto,
+            Email,
+            COALESCE(Telefono_Movil, Telefono) AS Telefono
+        FROM dbo.Contactos
+        WHERE Id_Contacto = @id;";
+
+      using var cmd = new SqlCommand(sql, cn);
+      cmd.Parameters.Add("@id", SqlDbType.UniqueIdentifier).Value = solicitanteId;
+
       using var r = cmd.ExecuteReader();
-      if (r.Read())
-      {
-        return (r["NombreCompleto"] as string, r["Email"] as string, r["Telefono"] as string);
-      }
-      return (null, null, null);
+      if (!r.Read()) return (null, null, null);
+
+      string? nombre = r.IsDBNull(r.GetOrdinal("NombreCompleto")) ? null : r.GetString(r.GetOrdinal("NombreCompleto"));
+      string? email = r.IsDBNull(r.GetOrdinal("Email")) ? null : r.GetString(r.GetOrdinal("Email"));
+      string? telefono = r.IsDBNull(r.GetOrdinal("Telefono")) ? null : r.GetString(r.GetOrdinal("Telefono"));
+
+      return (nombre, email, telefono);
     }
+
 
     private static string? GetEmpresaNombre(string cs, Guid empresaId)
     {
@@ -1161,7 +1551,7 @@ Por favor, gestiona este caso en ServiceTrackID.";
       return (null, null);
     }
 
-    private static string NullOrND(string? s) => string.IsNullOrWhiteSpace(s) ? "N/D" : s.Trim();
+    private static string NullOrND(string? s) => string.IsNullOrWhiteSpace(s) ? "Sin Datos" : s.Trim();
 
     private static (string subject, string txt, string html) BuildMailToUser(
         string nombreSolicitante,
@@ -1254,12 +1644,12 @@ Ticket: {ticket}
 Asignado a: {assignedUserName}
 Solicitante: {nombreSolicitante}
 
-Email: {email}
-Phone: {phone}
-Company: {company}
-Contract Number: {contractNumber}
+Correo: {email}
+Teléfono: {phone}
+Empresa: {company}
+Numero de Contrato: {contractNumber}
 
-Brief Description:
+Descripción de incidente:
 {brief}
 
 Por favor, gestione este caso en ServiceTrackID.";
@@ -1271,11 +1661,11 @@ Por favor, gestione este caso en ServiceTrackID.";
     <tr><td style='padding:4px 0'><strong>Ticket:</strong></td><td style='padding:4px 0'>#{ticket}</td></tr>
     <tr><td style='padding:4px 0'><strong>Asignado a:</strong></td><td style='padding:4px 0'>{WebUtility.HtmlEncode(assignedUserName)}</td></tr>
     <tr><td style='padding:4px 0'><strong>Solicitante:</strong></td><td style='padding:4px 0'>{WebUtility.HtmlEncode(nombreSolicitante)}</td></tr>
-    <tr><td style='padding:4px 0'><strong>Email:</strong></td><td style='padding:4px 0'>{WebUtility.HtmlEncode(email)}</td></tr>
-    <tr><td style='padding:4px 0'><strong>Phone:</strong></td><td style='padding:4px 0'>{WebUtility.HtmlEncode(phone)}</td></tr>
-    <tr><td style='padding:4px 0'><strong>Company:</strong></td><td style='padding:4px 0'>{WebUtility.HtmlEncode(company)}</td></tr>
-    <tr><td style='padding:4px 0'><strong>Contract Number:</strong></td><td style='padding:4px 0'>{WebUtility.HtmlEncode(contractNumber)}</td></tr>
-    <tr><td style='padding:4px 0;vertical-align:top'><strong>Brief Description:</strong></td>
+    <tr><td style='padding:4px 0'><strong>Correo:</strong></td><td style='padding:4px 0'>{WebUtility.HtmlEncode(email)}</td></tr>
+    <tr><td style='padding:4px 0'><strong>Teléfono:</strong></td><td style='padding:4px 0'>{WebUtility.HtmlEncode(phone)}</td></tr>
+    <tr><td style='padding:4px 0'><strong>Empresa:</strong></td><td style='padding:4px 0'>{WebUtility.HtmlEncode(company)}</td></tr>
+    <tr><td style='padding:4px 0'><strong>Número de Contrato:</strong></td><td style='padding:4px 0'>{WebUtility.HtmlEncode(contractNumber)}</td></tr>
+    <tr><td style='padding:4px 0;vertical-align:top'><strong>Descripción de incidente:</strong></td>
         <td style='padding:4px 0;white-space:pre-wrap'>{WebUtility.HtmlEncode(brief)}</td></tr>
   </table>
   <p style='margin-top:14px'>Por favor, gestione este caso en ServiceTrackID.</p>
@@ -1377,24 +1767,31 @@ Por favor, gestione este caso en ServiceTrackID.";
     public static List<SelectListItem> ListarParaSelectUsers(bool soloAprobados = true)
     {
       string cs = System.Configuration.ConfigurationManager
-                 .ConnectionStrings["ServerDiverscan"].ConnectionString;
+                  .ConnectionStrings["ServerDiverscan"].ConnectionString;
+
       var items = new List<SelectListItem>();
 
       using var cn = new SqlConnection(cs);
       using var cmd = new SqlCommand(@"
-            SELECT 
-                userSysId,
-                LTRIM(RTRIM(ISNULL(username,''))) AS Username,
-                LTRIM(RTRIM(ISNULL(email,'')))    AS Email
-            FROM dbo.[users]
-            WHERE (@solo = 0 OR ISNULL(isApproved,0) = 1)
-            ORDER BY Username
-        ", cn);
+        SELECT 
+            userSysId,
+            LTRIM(RTRIM(ISNULL(username,''))) AS Username,
+            LTRIM(RTRIM(ISNULL(email,'')))    AS Email
+        FROM dbo.[users]
+        WHERE
+            -- incluye aprobados si se pide, PERO siempre incluye 'Sin Asignar'
+            (@solo = 0 OR ISNULL(isApproved,0) = 1 OR LTRIM(RTRIM(ISNULL(username,''))) = 'Sin Asignar')
+        ORDER BY
+            CASE WHEN LTRIM(RTRIM(ISNULL(username,''))) = 'Sin Asignar' THEN 0 ELSE 1 END,
+            Username;
+    ", cn);
 
       cmd.Parameters.AddWithValue("@solo", soloAprobados ? 1 : 0);
 
       cn.Open();
       using var rd = cmd.ExecuteReader();
+
+      bool defaultSet = false;
       while (rd.Read())
       {
         var id = rd.GetGuid(0);
@@ -1404,48 +1801,72 @@ Por favor, gestione este caso en ServiceTrackID.";
         var text = string.IsNullOrWhiteSpace(mail) ? user : $"{user} ({mail})";
         if (string.IsNullOrWhiteSpace(text)) text = id.ToString();
 
-        items.Add(new SelectListItem { Value = id.ToString(), Text = text });
+        bool isSinAsignar = string.Equals(user?.Trim(), "Sin Asignar", StringComparison.OrdinalIgnoreCase);
+
+        items.Add(new SelectListItem
+        {
+          Value = id.ToString(),
+          Text = text,
+          Selected = isSinAsignar && !defaultSet
+        });
+
+        if (isSinAsignar && !defaultSet) defaultSet = true;
       }
 
       return items;
     }
 
+
     public static List<SelectListItem> ListarParaSelectSolicitante()
     {
       string cs = System.Configuration.ConfigurationManager
-                 .ConnectionStrings["ServerDiverscan"].ConnectionString;
+          .ConnectionStrings["ServerDiverscan"].ConnectionString;
+
       var items = new List<SelectListItem>();
 
       using var cn = new SqlConnection(cs);
       using var cmd = new SqlCommand(@"
-            SELECT 
-                SolicitanteId,
-                LTRIM(RTRIM(ISNULL(NULLIF(NombreCompleto, ''), Email))) AS Nombre,
-                Email
-            FROM dbo.SolicitanteServiceTrackID
-            ORDER BY LTRIM(RTRIM(ISNULL(NULLIF(NombreCompleto, ''), Email)))
-        ", cn);
+        SELECT
+            Id_Contacto,
+            LTRIM(RTRIM(ISNULL(Nombre, ''))) AS Nombre,
+            LTRIM(RTRIM(ISNULL(Email,  ''))) AS Email
+        FROM dbo.Contactos
+        -- Si quieres, aquí puedes filtrar por Estatus, Id_Empresa, etc.
+        ORDER BY
+            CASE
+               WHEN LTRIM(RTRIM(ISNULL(Nombre,''))) = '' THEN LTRIM(RTRIM(ISNULL(Email,'')))
+               ELSE LTRIM(RTRIM(ISNULL(Nombre,'')))
+            END
+    ", cn);
 
       cn.Open();
       using var rd = cmd.ExecuteReader();
       while (rd.Read())
       {
         var id = rd.GetGuid(0);
-        var nom = rd.IsDBNull(1) ? "" : rd.GetString(1);
-        var mail = rd.IsDBNull(2) ? "" : rd.GetString(2);
+        var nombre = rd.IsDBNull(1) ? "" : rd.GetString(1).Trim();
+        var email = rd.IsDBNull(2) ? "" : rd.GetString(2).Trim();
 
-        // Texto a mostrar: "Nombre (email)" cuando haya ambos
-        var text = string.IsNullOrWhiteSpace(mail) ? nom : $"{nom} ({mail})";
+        string texto;
+        if (!string.IsNullOrWhiteSpace(nombre) && !string.IsNullOrWhiteSpace(email))
+          texto = $"{nombre} ({email})";
+        else if (!string.IsNullOrWhiteSpace(nombre))
+          texto = nombre;
+        else if (!string.IsNullOrWhiteSpace(email))
+          texto = email;
+        else
+          texto = id.ToString(); // fallback si ambos vinieran vacíos
 
         items.Add(new SelectListItem
         {
           Value = id.ToString(),
-          Text = string.IsNullOrWhiteSpace(text) ? id.ToString() : text
+          Text = texto
         });
       }
 
       return items;
     }
+
 
     public static List<SelectListItem> ListarParaSelectContrato()
     {
@@ -1522,65 +1943,294 @@ Por favor, gestione este caso en ServiceTrackID.";
       return View();
     }
 
-    public IActionResult GestionServicios(string search, int page = 1, int pageSize = 10, string sortColumn = "NumeroTicket", string sortDirection = "asc")
+    [HttpGet]
+    public IActionResult GestionServicios(
+      string? search,
+      int page = 1,
+      int pageSize = 10,
+      string sortColumn = "Ticket",
+      string sortDirection = "asc")
     {
-      var servicios = ObtenerServicios();
+      // === ViewBags para los SELECTS (Razor) ===
+      ViewBag.Empresas = ListarParaSelectEmpresa();                 // EMPRESA
+      ViewBag.Contratos = ListarParaSelectContrato(null, null);      // CONTRATOS (sin filtrar por empresa)
+      ViewBag.Solicitantes = ListarParaSelectSolicitante(null, null);   // Contactos (sin filtrar por empresa)
+      ViewBag.Estados = ListarParaSelectEstado(null);              // EstadoActivo
+      ViewBag.Asignados = ListarParaSelectUsers(true, null);         // users
+      ViewBag.RazonesServicio = ListarParaSelectRazon(null);               // RazonServicios
 
-      // Filtro por búsqueda
-      if (!string.IsNullOrEmpty(search))
+      // === Tu listado/tabla como ya lo tienes ===
+      var registros = ObtenerControlTrafico();
+
+      if (!string.IsNullOrWhiteSpace(search))
       {
-        search = search.ToLower();
-
-        servicios = servicios
-            .Where(s =>
-                (s.NombreActivo?.ToLower().Contains(search) ?? false) ||
-                (s.NumeroTicket.ToString().Contains(search)) ||
-                (s.NombreSolicitante?.ToLower().Contains(search) ?? false) ||
-                (s.NombreRazonServicio?.ToLower().Contains(search) ?? false) ||
-                (s.NombreEstadoActivo?.ToLower().Contains(search) ?? false) ||
-                (s.NombreAsignarIncidente?.ToLower().Contains(search) ?? false) ||
-                (s.Descripcion?.ToLower().Contains(search) ?? false)
-            )
-            .ToList();
+        var s = search.ToLowerInvariant();
+        registros = registros.Where(r =>
+            (r.ContratoNumero?.ToLower().Contains(s) ?? false) ||
+            (r.RazonServicioNombre?.ToLower().Contains(s) ?? false) ||
+            (r.AsignadoAUsername?.ToLower().Contains(s) ?? false) ||
+            (r.EstadoIncidenteNombre?.ToLower().Contains(s) ?? false) ||
+            r.Ticket.ToString().Contains(s)
+        ).ToList();
       }
-      // Ordenamiento
-      servicios = sortColumn switch
+
+      registros = sortColumn switch
       {
-        "Fecha" => sortDirection == "asc"
-            ? servicios.OrderBy(s => s.Fecha).ToList()
-            : servicios.OrderByDescending(s => s.Fecha).ToList(),
-        "FechaEstimadaCierre" => sortDirection == "asc"
-            ? servicios.OrderBy(s => s.FechaEstimadaCierre).ToList()
-            : servicios.OrderByDescending(s => s.FechaEstimadaCierre).ToList(),
-        "NumeroTicket" => sortDirection == "asc"
-            ? servicios.OrderBy(s => s.NumeroTicket).ToList()
-            : servicios.OrderByDescending(s => s.NumeroTicket).ToList(),
-        _ => servicios.OrderBy(s => s.NumeroTicket).ToList()
+        "Fecha" => (sortDirection == "asc"
+            ? registros.OrderBy(r => r.FechaCreacionUtc)
+            : registros.OrderByDescending(r => r.FechaCreacionUtc)).ToList(),
+        "FechaCierre" => (sortDirection == "asc"
+            ? registros.OrderBy(r => r.FechaCierre)
+            : registros.OrderByDescending(r => r.FechaCierre)).ToList(),
+        "ContratoNumero" => (sortDirection == "asc"
+            ? registros.OrderBy(r => r.ContratoNumero)
+            : registros.OrderByDescending(r => r.ContratoNumero)).ToList(),
+        "AsignadoA" => (sortDirection == "asc"
+            ? registros.OrderBy(r => r.AsignadoAUsername)
+            : registros.OrderByDescending(r => r.AsignadoAUsername)).ToList(),
+        "Estado" => (sortDirection == "asc"
+            ? registros.OrderBy(r => r.EstadoIncidenteNombre)
+            : registros.OrderByDescending(r => r.EstadoIncidenteNombre)).ToList(),
+        _ => (sortDirection == "asc"
+            ? registros.OrderBy(r => r.Ticket)
+            : registros.OrderByDescending(r => r.Ticket)).ToList()
       };
 
-      // Paginación
-      var totalItems = servicios.Count;
+      var totalItems = registros.Count;
       var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
-      var itemsOnPage = servicios.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+      var itemsOnPage = registros.Skip((page - 1) * pageSize).Take(pageSize).ToList();
 
-      // ViewModel
-      var model = new GestionServiciosTablaViewModel
+      var model = new ControlTraficoTablaViewModel
       {
         Registros = itemsOnPage,
         CurrentPage = page,
         TotalPages = totalPages,
-        Search = search
+        Search = search,
+        SortColumn = sortColumn,
+        SortDirection = sortDirection
       };
-      ViewBag.NombreUbicacion = GetUltimoNombreUbicacionC() ?? "Ubicación C";
-      ViewBag.NombreUbicacionA = GetUltimoNombreUbicacionA() ?? "Ubicación A";
-      ViewBag.NombreUbicacionB = GetUltimoNombreUbicacionB() ?? "Ubicación B";
 
-      ViewBag.SortColumn = sortColumn;
-      ViewBag.SortDirection = sortDirection;
-      ViewBag.SearchQuery = search;
-
-      return View("GestionServicios", model); // asegúrate de tener la vista
+      return View("GestionServicios", model);
     }
+
+
+    // EMPRESAS
+    public static List<SelectListItem> ListarParaSelectEmpresa(Guid? selected = null)
+    {
+      var items = new List<SelectListItem>();
+      using var cn = new SqlConnection(System.Configuration.ConfigurationManager.ConnectionStrings["ServerDiverscan"].ConnectionString);
+      using var cmd = new SqlCommand(@"
+    SELECT ID_EMPRESA,
+           LTRIM(RTRIM(ISNULL(NOMBRE,''))) AS NOMBRE,
+           LTRIM(RTRIM(ISNULL(DESCRIPCION,''))) AS DESCRIPCION
+    FROM dbo.EMPRESA
+    ORDER BY NOMBRE", cn);
+      cn.Open();
+      using var rd = cmd.ExecuteReader();
+      while (rd.Read())
+      {
+        var id = rd.GetGuid(0);
+        var nom = rd.IsDBNull(1) ? "" : rd.GetString(1).Trim();
+        var desc = rd.IsDBNull(2) ? "" : rd.GetString(2).Trim();
+        var text = string.IsNullOrWhiteSpace(desc) ? (nom != "" ? nom : id.ToString()) : $"{nom} - {desc}";
+        items.Add(new SelectListItem { Value = id.ToString(), Text = text, Selected = selected.HasValue && id == selected.Value });
+      }
+      return items;
+    }
+
+    // CONTRATOS (sin filtro de empresa aquí; si quieres filtrado, ver variante al final)
+    public static List<SelectListItem> ListarParaSelectContrato(Guid? empresaId, Guid? selected)
+    {
+      var items = new List<SelectListItem>();
+      using var cn = new SqlConnection(System.Configuration.ConfigurationManager.ConnectionStrings["ServerDiverscan"].ConnectionString);
+      var sql = @"
+    SELECT ID_CONTRATO,
+           LTRIM(RTRIM(ISNULL(NUMERO,''))) AS NUMERO,
+           LTRIM(RTRIM(ISNULL(NOMBRE,''))) AS NOMBRE
+    FROM dbo.CONTRATOS
+    WHERE (@emp IS NULL OR @emp = '00000000-0000-0000-0000-000000000000' OR ID_EMPRESA = @emp)
+    ORDER BY NUMERO, NOMBRE";
+      using var cmd = new SqlCommand(sql, cn);
+      cmd.Parameters.Add("@emp", SqlDbType.UniqueIdentifier).Value = (object?)empresaId ?? DBNull.Value;
+      cn.Open();
+      using var rd = cmd.ExecuteReader();
+      while (rd.Read())
+      {
+        var id = rd.GetGuid(0);
+        var num = rd.IsDBNull(1) ? "" : rd.GetString(1).Trim();
+        var nom = rd.IsDBNull(2) ? "" : rd.GetString(2).Trim();
+        var text = !string.IsNullOrWhiteSpace(num) && !string.IsNullOrWhiteSpace(nom) ? $"{num} - {nom}"
+                 : (!string.IsNullOrWhiteSpace(num) ? num : (!string.IsNullOrWhiteSpace(nom) ? nom : id.ToString()));
+        items.Add(new SelectListItem { Value = id.ToString(), Text = text, Selected = selected.HasValue && id == selected.Value });
+      }
+      return items;
+    }
+
+    // SOLICITANTES (sin filtro por empresa aquí; ver variante al final)
+    public static List<SelectListItem> ListarParaSelectSolicitante(Guid? empresaId = null, Guid? selected = null)
+    {
+      var items = new List<SelectListItem>();
+      using var cn = new SqlConnection(System.Configuration.ConfigurationManager.ConnectionStrings["ServerDiverscan"].ConnectionString);
+      var sql = @"
+    SELECT Id_Contacto,
+           LTRIM(RTRIM(ISNULL(Nombre,''))) AS Nombre,
+           LTRIM(RTRIM(ISNULL(Apellidos,''))) AS Apellidos,
+           LTRIM(RTRIM(ISNULL(Email,''))) AS Email
+    FROM dbo.Contactos
+    WHERE (@emp IS NULL OR @emp = '00000000-0000-0000-0000-000000000000' OR Id_Empresa = @emp)
+    ORDER BY Nombre, Apellidos";
+      using var cmd = new SqlCommand(sql, cn);
+      cmd.Parameters.Add("@emp", SqlDbType.UniqueIdentifier).Value = (object?)empresaId ?? DBNull.Value;
+      cn.Open();
+      using var rd = cmd.ExecuteReader();
+      while (rd.Read())
+      {
+        var id = rd.GetGuid(0);
+        var nom = rd.IsDBNull(1) ? "" : rd.GetString(1).Trim();
+        var ape = rd.IsDBNull(2) ? "" : rd.GetString(2).Trim();
+        var mail = rd.IsDBNull(3) ? "" : rd.GetString(3).Trim();
+
+        var full = (nom + " " + ape).Trim();
+        var text = !string.IsNullOrWhiteSpace(full) && !string.IsNullOrWhiteSpace(mail) ? $"{full} ({mail})"
+                 : (!string.IsNullOrWhiteSpace(full) ? full
+                 : (!string.IsNullOrWhiteSpace(mail) ? mail : id.ToString()));
+
+        items.Add(new SelectListItem { Value = id.ToString(), Text = text, Selected = selected.HasValue && id == selected.Value });
+      }
+      return items;
+    }
+
+    // ESTADOS (EstadoActivo)
+    public static List<SelectListItem> ListarParaSelectEstado(Guid? selected = null)
+    {
+      var items = new List<SelectListItem>();
+      using var cn = new SqlConnection(System.Configuration.ConfigurationManager.ConnectionStrings["ServerDiverscan"].ConnectionString);
+      using var cmd = new SqlCommand(@"
+    SELECT id_estadoActivo, LTRIM(RTRIM(ISNULL(nombre,''))) AS nombre
+    FROM dbo.EstadoActivo
+    ORDER BY nombre", cn);
+      cn.Open();
+      using var rd = cmd.ExecuteReader();
+      while (rd.Read())
+      {
+        var id = rd.GetGuid(0);
+        var nom = rd.IsDBNull(1) ? "" : rd.GetString(1).Trim();
+        items.Add(new SelectListItem { Value = id.ToString(), Text = string.IsNullOrWhiteSpace(nom) ? id.ToString() : nom, Selected = selected.HasValue && id == selected.Value });
+      }
+      return items;
+    }
+
+    // USERS (Asignables)
+    public static List<SelectListItem> ListarParaSelectUsers(bool soloAprobados = true, Guid? selected = null)
+    {
+      var items = new List<SelectListItem>();
+      using var cn = new SqlConnection(System.Configuration.ConfigurationManager.ConnectionStrings["ServerDiverscan"].ConnectionString);
+      var sql = @"
+    SELECT userSysId, LTRIM(RTRIM(username)) AS username, ISNULL(isApproved,1) AS isApproved
+    FROM dbo.users
+    WHERE (@solo=0 OR ISNULL(isApproved,1)=1)
+    ORDER BY username";
+      using var cmd = new SqlCommand(sql, cn);
+      cmd.Parameters.Add("@solo", SqlDbType.Bit).Value = soloAprobados ? 1 : 0;
+      cn.Open();
+      using var rd = cmd.ExecuteReader();
+      while (rd.Read())
+      {
+        var id = rd.GetGuid(0);
+        var usr = rd.IsDBNull(1) ? "" : rd.GetString(1).Trim();
+        items.Add(new SelectListItem { Value = id.ToString(), Text = string.IsNullOrWhiteSpace(usr) ? id.ToString() : usr, Selected = selected.HasValue && id == selected.Value });
+      }
+      return items;
+    }
+
+    // RAZONES DE SERVICIO
+    public static List<SelectListItem> ListarParaSelectRazon(Guid? selected = null)
+    {
+      var items = new List<SelectListItem>();
+      using var cn = new SqlConnection(System.Configuration.ConfigurationManager.ConnectionStrings["ServerDiverscan"].ConnectionString);
+      using var cmd = new SqlCommand(@"
+    SELECT id_razonServicios, LTRIM(RTRIM(ISNULL(nombre,''))) AS nombre
+    FROM dbo.RazonServicios
+    ORDER BY nombre", cn);
+      cn.Open();
+      using var rd = cmd.ExecuteReader();
+      while (rd.Read())
+      {
+        var id = rd.GetGuid(0);
+        var nom = rd.IsDBNull(1) ? "" : rd.GetString(1).Trim();
+        items.Add(new SelectListItem { Value = id.ToString(), Text = string.IsNullOrWhiteSpace(nom) ? id.ToString() : nom, Selected = selected.HasValue && id == selected.Value });
+      }
+      return items;
+    }
+
+    public List<ControlTraficoListItem> ObtenerControlTrafico()
+    {
+      var lista = new List<ControlTraficoListItem>();
+      string cs = System.Configuration.ConfigurationManager
+                    .ConnectionStrings["ServerDiverscan"].ConnectionString;
+
+      using (var conn = new SqlConnection(cs))
+      using (var cmd = new SqlCommand(@"
+    SELECT
+      ct.ControlTraficoId,
+      ct.ContratoId,
+      c.NUMERO                 AS ContratoNumero,
+      ct.RazonServicioId,
+      rs.nombre                AS RazonServicioNombre,
+      ct.FechaCreacionUtc,
+      ct.AsignadoAId,
+      u.username               AS AsignadoAUsername,
+      ct.Ticket,
+      ct.FechaCierre,
+      ct.EstadoIncidente,
+      ea.nombre                AS EstadoIncidenteNombre
+    FROM dbo.CONTROL_TRAFICO ct
+    LEFT JOIN dbo.CONTRATOS      c  ON ct.ContratoId      = c.ID_CONTRATO
+    LEFT JOIN dbo.RazonServicios rs ON ct.RazonServicioId = rs.id_razonServicios
+    LEFT JOIN dbo.users          u  ON ct.AsignadoAId     = u.userSysId
+    LEFT JOIN dbo.EstadoActivo   ea ON ct.EstadoIncidente = ea.id_estadoActivo
+    ORDER BY ct.Ticket ASC;
+  ", conn))
+      {
+        conn.Open();
+        using var reader = cmd.ExecuteReader();
+
+        int oId = reader.GetOrdinal("ControlTraficoId");
+        int oContratoId = reader.GetOrdinal("ContratoId");
+        int oContratoNum = reader.GetOrdinal("ContratoNumero");
+        int oRazonId = reader.GetOrdinal("RazonServicioId");
+        int oRazonNom = reader.GetOrdinal("RazonServicioNombre");
+        int oFecha = reader.GetOrdinal("FechaCreacionUtc");
+        int oAsignadoId = reader.GetOrdinal("AsignadoAId");
+        int oAsignadoUser = reader.GetOrdinal("AsignadoAUsername");
+        int oTicket = reader.GetOrdinal("Ticket");
+        int oFechaCierre = reader.GetOrdinal("FechaCierre");
+        int oEstadoId = reader.GetOrdinal("EstadoIncidente");
+        int oEstadoNom = reader.GetOrdinal("EstadoIncidenteNombre");
+
+        while (reader.Read())
+        {
+          lista.Add(new ControlTraficoListItem
+          {
+            ControlTraficoId = reader.GetGuid(oId),
+            ContratoId = reader.IsDBNull(oContratoId) ? (Guid?)null : reader.GetGuid(oContratoId),
+            ContratoNumero = reader.IsDBNull(oContratoNum) ? null : reader.GetString(oContratoNum),
+            RazonServicioId = reader.IsDBNull(oRazonId) ? (Guid?)null : reader.GetGuid(oRazonId),
+            RazonServicioNombre = reader.IsDBNull(oRazonNom) ? null : reader.GetString(oRazonNom),
+            FechaCreacionUtc = reader.IsDBNull(oFecha) ? (DateTime?)null : reader.GetDateTime(oFecha),
+            AsignadoAId = reader.IsDBNull(oAsignadoId) ? (Guid?)null : reader.GetGuid(oAsignadoId),
+            AsignadoAUsername = reader.IsDBNull(oAsignadoUser) ? null : reader.GetString(oAsignadoUser),
+            Ticket = reader.GetInt32(oTicket),
+            FechaCierre = reader.IsDBNull(oFechaCierre) ? (DateTime?)null : reader.GetDateTime(oFechaCierre),
+            EstadoIncidenteId = reader.IsDBNull(oEstadoId) ? (Guid?)null : reader.GetGuid(oEstadoId),
+            EstadoIncidenteNombre = reader.IsDBNull(oEstadoNom) ? null : reader.GetString(oEstadoNom)
+          });
+        }
+      }
+
+      return lista;
+    }
+
 
     private string GetUltimoNombreUbicacionA()
 

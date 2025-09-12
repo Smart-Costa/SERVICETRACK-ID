@@ -35,6 +35,7 @@
 
     bool inEmpresa = currentPage.StartsWith("/empresa");
     bool inEmpresas = currentPage.StartsWith("/empresa/empresas");
+    bool inContactos = currentPage.StartsWith("/empresa/contactos");
 }
 
 <link rel="stylesheet" href="~/vendor/css/theme-default.css" />
@@ -44,7 +45,7 @@
         <a asp-controller="GestionServicio" asp-action="GestionServicios" class="app-brand-link">
             <img src="~/img/serviceTrackLogo.svg" class="img-fluid" style="height: 70px;" alt="ServiceTrackID logo" />
         </a>
-     
+
     </div>
 
     <div class="menu-inner-shadow"></div>
@@ -171,10 +172,10 @@
                         <div data-i18n="">Empresas</div>
                     </a>
                 </li>
-               
+
             </ul>
             <ul class="menu-sub" style="@(inEmpresa ? "display:block" : "")">
-                <li class="menu-item@(inEmpresas ? " active" : "")">
+                <li class="menu-item@(inContactos ? " active" : "")">
                     <a asp-controller="Empresa" asp-action="Contactos" class="menu-link">
                         <div data-i18n="">Contactos</div>
                     </a>

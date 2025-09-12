@@ -515,80 +515,80 @@ namespace AspnetCoreMvcFull.Controllers
 
 
     //Gestion de Servicios
-    public IActionResult GestionServicios(string search, int page = 1, int pageSize = 10, string sortColumn = "NumeroTicket", string sortDirection = "asc")
-    {
-      var servicios = ObtenerServicios();
+    //public IActionResult GestionServicios(string search, int page = 1, int pageSize = 10, string sortColumn = "NumeroTicket", string sortDirection = "asc")
+    //{
+    //  var servicios = ObtenerServicios();
 
-      // Filtro por búsqueda
-      if (!string.IsNullOrEmpty(search))
-      {
-        search = search.ToLower();
+    //  // Filtro por búsqueda
+    //  if (!string.IsNullOrEmpty(search))
+    //  {
+    //    search = search.ToLower();
 
-        servicios = servicios
-            .Where(s =>
-                (s.NombreActivo?.ToLower().Contains(search) ?? false) ||
-                (s.NumeroTicket.ToString().Contains(search)) ||
-                (s.NombreSolicitante?.ToLower().Contains(search) ?? false) ||
-                (s.NombreRazonServicio?.ToLower().Contains(search) ?? false) ||
-                (s.NombreEstadoActivo?.ToLower().Contains(search) ?? false) ||
-                (s.NombreAsignarIncidente?.ToLower().Contains(search) ?? false) ||
-                (s.Descripcion?.ToLower().Contains(search) ?? false)
-            )
-            .ToList();
-      }
-      // Ordenamiento
-      servicios = sortColumn switch
-      {
-        "Fecha" => sortDirection == "asc"
-            ? servicios.OrderBy(s => s.Fecha).ToList()
-            : servicios.OrderByDescending(s => s.Fecha).ToList(),
-        "FechaEstimadaCierre" => sortDirection == "asc"
-            ? servicios.OrderBy(s => s.FechaEstimadaCierre).ToList()
-            : servicios.OrderByDescending(s => s.FechaEstimadaCierre).ToList(),
-        "NumeroTicket" => sortDirection == "asc"
-            ? servicios.OrderBy(s => s.NumeroTicket).ToList()
-            : servicios.OrderByDescending(s => s.NumeroTicket).ToList(),
-        _ => servicios.OrderBy(s => s.NumeroTicket).ToList()
-      };
+    //    servicios = servicios
+    //        .Where(s =>
+    //            (s.NombreActivo?.ToLower().Contains(search) ?? false) ||
+    //            (s.NumeroTicket.ToString().Contains(search)) ||
+    //            (s.NombreSolicitante?.ToLower().Contains(search) ?? false) ||
+    //            (s.NombreRazonServicio?.ToLower().Contains(search) ?? false) ||
+    //            (s.NombreEstadoActivo?.ToLower().Contains(search) ?? false) ||
+    //            (s.NombreAsignarIncidente?.ToLower().Contains(search) ?? false) ||
+    //            (s.Descripcion?.ToLower().Contains(search) ?? false)
+    //        )
+    //        .ToList();
+    //  }
+    //  // Ordenamiento
+    //  servicios = sortColumn switch
+    //  {
+    //    "Fecha" => sortDirection == "asc"
+    //        ? servicios.OrderBy(s => s.Fecha).ToList()
+    //        : servicios.OrderByDescending(s => s.Fecha).ToList(),
+    //    "FechaEstimadaCierre" => sortDirection == "asc"
+    //        ? servicios.OrderBy(s => s.FechaEstimadaCierre).ToList()
+    //        : servicios.OrderByDescending(s => s.FechaEstimadaCierre).ToList(),
+    //    "NumeroTicket" => sortDirection == "asc"
+    //        ? servicios.OrderBy(s => s.NumeroTicket).ToList()
+    //        : servicios.OrderByDescending(s => s.NumeroTicket).ToList(),
+    //    _ => servicios.OrderBy(s => s.NumeroTicket).ToList()
+    //  };
 
-      // Paginación
-      var totalItems = servicios.Count;
-      var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
-      var itemsOnPage = servicios.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+    //  // Paginación
+    //  var totalItems = servicios.Count;
+    //  var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
+    //  var itemsOnPage = servicios.Skip((page - 1) * pageSize).Take(pageSize).ToList();
 
-      // ViewModel
-      var model = new GestionServiciosTablaViewModel
-      {
-        Registros = itemsOnPage,
-        CurrentPage = page,
-        TotalPages = totalPages,
-        Search = search
-      };
-      ViewBag.NombreUbicacion = GetUltimoNombreUbicacionC() ?? "Ubicación C";
-      ViewBag.NombreUbicacionA = GetUltimoNombreUbicacionA() ?? "Ubicación A";
-      ViewBag.NombreUbicacionB = GetUltimoNombreUbicacionB() ?? "Ubicación B";
+    //  // ViewModel
+    //  var model = new GestionServiciosTablaViewModel
+    //  {
+    //    Registros = itemsOnPage,
+    //    CurrentPage = page,
+    //    TotalPages = totalPages,
+    //    Search = search
+    //  };
+    //  ViewBag.NombreUbicacion = GetUltimoNombreUbicacionC() ?? "Ubicación C";
+    //  ViewBag.NombreUbicacionA = GetUltimoNombreUbicacionA() ?? "Ubicación A";
+    //  ViewBag.NombreUbicacionB = GetUltimoNombreUbicacionB() ?? "Ubicación B";
 
-      ViewBag.SortColumn = sortColumn;
-      ViewBag.SortDirection = sortDirection;
-      ViewBag.SearchQuery = search;
+    //  ViewBag.SortColumn = sortColumn;
+    //  ViewBag.SortDirection = sortDirection;
+    //  ViewBag.SearchQuery = search;
 
-      return View("GestionServicios", model); // asegúrate de tener la vista
-    }
+    //  return View("GestionServicios", model); // asegúrate de tener la vista
+    //}
 
-    public IActionResult TablaGestionServicios()
-    {
-      var servicios = ObtenerServicios();
+    //public IActionResult TablaGestionServicios()
+    //{
+    //  var servicios = ObtenerServicios();
 
-      var viewModel = new GestionServiciosTablaViewModel
-      {
-        Registros = servicios,
-        CurrentPage = 1,
-        TotalPages = 1,
-        Search = ""
-      };
+    //  var viewModel = new GestionServiciosTablaViewModel
+    //  {
+    //    Registros = servicios,
+    //    CurrentPage = 1,
+    //    TotalPages = 1,
+    //    Search = ""
+    //  };
 
-      return View(viewModel);
-    }
+    //  return View(viewModel);
+    //}
 
     public List<GestionServiciosDTO> ObtenerServicios()
     {
@@ -2266,317 +2266,317 @@ namespace AspnetCoreMvcFull.Controllers
       return RedirectToAction("CrearTomaFisica");
     }
 
-    [HttpPost]
-    public IActionResult RegistroGestionServicios(GestionServicios model)
-    {
-      string estadoFormulario = Request.Form["estadoFormulario"].ToString() ?? "Insertar";
-      var alertMessage = new AlertMessage();
+    //[HttpPost]
+    //public IActionResult RegistroGestionServicios(GestionServicios model)
+    //{
+    //  string estadoFormulario = Request.Form["estadoFormulario"].ToString() ?? "Insertar";
+    //  var alertMessage = new AlertMessage();
 
-      string connectionString = System.Configuration.ConfigurationManager
-          .ConnectionStrings["ServerDiverscan"].ConnectionString;
+    //  string connectionString = System.Configuration.ConfigurationManager
+    //      .ConnectionStrings["ServerDiverscan"].ConnectionString;
 
-      try
-      {
-        using (SqlConnection connection = new SqlConnection(connectionString))
-        {
-          connection.Open();
+    //  try
+    //  {
+    //    using (SqlConnection connection = new SqlConnection(connectionString))
+    //    {
+    //      connection.Open();
 
-          string query;
-          int numeroTicket = 0;
+    //      string query;
+    //      int numeroTicket = 0;
 
-          if (estadoFormulario == "Insertar")
-          {
-            query = @"
-                INSERT INTO GestionServicios (
-                    gestionServiciosId,
-                    solicitante,
-                    activo,
-                    razonServicio,
-                    estadoActivo,
-                    asignarIncidente,
-                    fechaEstimadaCierre,
-                    descripcion
+    //      if (estadoFormulario == "Insertar")
+    //      {
+    //        query = @"
+    //            INSERT INTO GestionServicios (
+    //                gestionServiciosId,
+    //                solicitante,
+    //                activo,
+    //                razonServicio,
+    //                estadoActivo,
+    //                asignarIncidente,
+    //                fechaEstimadaCierre,
+    //                descripcion
                     
-                ) VALUES (
-                    @gestionServiciosId,
-                    @solicitante,
-                    @activo,
-                    @razonServicio,
-                    @estadoActivo,
-                    @asignarIncidente,
-                    @fechaEstimadaCierre,
-                    @descripcion
+    //            ) VALUES (
+    //                @gestionServiciosId,
+    //                @solicitante,
+    //                @activo,
+    //                @razonServicio,
+    //                @estadoActivo,
+    //                @asignarIncidente,
+    //                @fechaEstimadaCierre,
+    //                @descripcion
                     
-                );";
+    //            );";
 
-            using (SqlCommand command = new SqlCommand(query, connection))
-            {
-              Guid newId = Guid.NewGuid();
-              command.Parameters.AddWithValue("@gestionServiciosId", newId);
-              command.Parameters.AddWithValue("@solicitante", model.Solicitante);
-              command.Parameters.AddWithValue("@activo", model.Activo);
-              command.Parameters.AddWithValue("@razonServicio", model.RazonServicio);
-              command.Parameters.AddWithValue("@estadoActivo", model.EstadoActivo);
-              command.Parameters.AddWithValue("@asignarIncidente", model.AsignarIncidente);
-              command.Parameters.AddWithValue("@fechaEstimadaCierre", model.FechaEstimadaCierre);
-              command.Parameters.AddWithValue("@descripcion", model.Descripcion);
-              command.ExecuteNonQuery();
+    //        using (SqlCommand command = new SqlCommand(query, connection))
+    //        {
+    //          Guid newId = Guid.NewGuid();
+    //          command.Parameters.AddWithValue("@gestionServiciosId", newId);
+    //          command.Parameters.AddWithValue("@solicitante", model.Solicitante);
+    //          command.Parameters.AddWithValue("@activo", model.Activo);
+    //          command.Parameters.AddWithValue("@razonServicio", model.RazonServicio);
+    //          command.Parameters.AddWithValue("@estadoActivo", model.EstadoActivo);
+    //          command.Parameters.AddWithValue("@asignarIncidente", model.AsignarIncidente);
+    //          command.Parameters.AddWithValue("@fechaEstimadaCierre", model.FechaEstimadaCierre);
+    //          command.Parameters.AddWithValue("@descripcion", model.Descripcion);
+    //          command.ExecuteNonQuery();
 
          
 
-              using (SqlCommand cmdTicket = new SqlCommand("SELECT numeroTicket FROM GestionServicios WHERE gestionServiciosId = @id", connection))
-              {
-                cmdTicket.Parameters.AddWithValue("@id", newId);
-                object result = cmdTicket.ExecuteScalar();
-                if (result != null)
-                  numeroTicket = Convert.ToInt32(result);
-              }
+    //          using (SqlCommand cmdTicket = new SqlCommand("SELECT numeroTicket FROM GestionServicios WHERE gestionServiciosId = @id", connection))
+    //          {
+    //            cmdTicket.Parameters.AddWithValue("@id", newId);
+    //            object result = cmdTicket.ExecuteScalar();
+    //            if (result != null)
+    //              numeroTicket = Convert.ToInt32(result);
+    //          }
 
-            }
+    //        }
 
-            // Obtener email del solicitante
-            string emailSolicitante = "";
-            string nombreSolicitante = "";
-            string nombreActivo = "";
-            string emailAsignado = "";
-            string nombreAsignado = "";
+    //        // Obtener email del solicitante
+    //        string emailSolicitante = "";
+    //        string nombreSolicitante = "";
+    //        string nombreActivo = "";
+    //        string emailAsignado = "";
+    //        string nombreAsignado = "";
 
-            string fechaCierreStr;
-            if (model.FechaEstimadaCierre != DateTime.MinValue)
-            {
-              fechaCierreStr = model.FechaEstimadaCierre.ToString("dd/MM/yyyy");
-            }
-            else
-            {
-              fechaCierreStr = "Aún no tiene fecha de cierre asignada";
-            }
+    //        string fechaCierreStr;
+    //        if (model.FechaEstimadaCierre != DateTime.MinValue)
+    //        {
+    //          fechaCierreStr = model.FechaEstimadaCierre.ToString("dd/MM/yyyy");
+    //        }
+    //        else
+    //        {
+    //          fechaCierreStr = "Aún no tiene fecha de cierre asignada";
+    //        }
 
-            string nombreEstado = "";
-            using (SqlCommand cmdEstado = new SqlCommand("SELECT nombre FROM EstadoActivo WHERE id_estadoActivo = @id", connection))
-            {
-              cmdEstado.Parameters.AddWithValue("@id", model.EstadoActivo);
-              object result = cmdEstado.ExecuteScalar();
-              if (result != null)
-                nombreEstado = result.ToString();
-            }
-
-
-            string numeroPlaca = "";
-            using (SqlCommand cmdPlaca = new SqlCommand("SELECT NUMERO_ACTIVO FROM ActivosSignusID WHERE ID_ACTIVO = @id", connection))
-            {
-              cmdPlaca.Parameters.AddWithValue("@id", model.Activo);
-              object result = cmdPlaca.ExecuteScalar();
-              if (result != null && result != DBNull.Value)
-                numeroPlaca = result.ToString();
-            }
+    //        string nombreEstado = "";
+    //        using (SqlCommand cmdEstado = new SqlCommand("SELECT nombre FROM EstadoActivo WHERE id_estadoActivo = @id", connection))
+    //        {
+    //          cmdEstado.Parameters.AddWithValue("@id", model.EstadoActivo);
+    //          object result = cmdEstado.ExecuteScalar();
+    //          if (result != null)
+    //            nombreEstado = result.ToString();
+    //        }
 
 
-            using (SqlCommand cmdEmail = new SqlCommand("SELECT email, name FROM employees WHERE employeeSysId = @id", connection))
-            {
-              cmdEmail.Parameters.AddWithValue("@id", model.Solicitante);
-              using (var reader = cmdEmail.ExecuteReader())
-              {
-                if (reader.Read())
-                {
-                  emailSolicitante = reader.GetString(0);
-                  nombreSolicitante = reader.GetString(1);
-                }
-              }
-            }
-
-            using (SqlCommand cmdEmaiAsignado = new SqlCommand("SELECT email, username FROM users WHERE userSysId = @id", connection))
-            {
-              cmdEmaiAsignado.Parameters.AddWithValue("@id", model.AsignarIncidente);
-              using (var reader = cmdEmaiAsignado.ExecuteReader())
-              {
-                if (reader.Read())
-                {
-                  emailAsignado = reader.GetString(0);
-                  nombreAsignado = reader.GetString(1);
-                }
-              }
-            }
+    //        string numeroPlaca = "";
+    //        using (SqlCommand cmdPlaca = new SqlCommand("SELECT NUMERO_ACTIVO FROM ActivosSignusID WHERE ID_ACTIVO = @id", connection))
+    //        {
+    //          cmdPlaca.Parameters.AddWithValue("@id", model.Activo);
+    //          object result = cmdPlaca.ExecuteScalar();
+    //          if (result != null && result != DBNull.Value)
+    //            numeroPlaca = result.ToString();
+    //        }
 
 
-            // Obtener nombre del activo
-            using (SqlCommand cmdActivo = new SqlCommand("SELECT DESCRIPCION_LARGA FROM ActivosSignusID WHERE ID_ACTIVO = @id", connection))
-            {
-              cmdActivo.Parameters.AddWithValue("@id", model.Activo);
-              object result = cmdActivo.ExecuteScalar();
-              if (result != null)
-                nombreActivo = result.ToString();
-            }
-            // Obtener nombre de la razón del servicio
-            string nombreRazon = "";
-            using (SqlCommand cmdRazon = new SqlCommand("SELECT nombre FROM RazonServicios WHERE id_razonServicios = @id", connection))
-            {
-              cmdRazon.Parameters.AddWithValue("@id", model.RazonServicio);
-              object result = cmdRazon.ExecuteScalar();
-              if (result != null)
-                nombreRazon = result.ToString();
-            }
+    //        using (SqlCommand cmdEmail = new SqlCommand("SELECT email, name FROM employees WHERE employeeSysId = @id", connection))
+    //        {
+    //          cmdEmail.Parameters.AddWithValue("@id", model.Solicitante);
+    //          using (var reader = cmdEmail.ExecuteReader())
+    //          {
+    //            if (reader.Read())
+    //            {
+    //              emailSolicitante = reader.GetString(0);
+    //              nombreSolicitante = reader.GetString(1);
+    //            }
+    //          }
+    //        }
+
+    //        using (SqlCommand cmdEmaiAsignado = new SqlCommand("SELECT email, username FROM users WHERE userSysId = @id", connection))
+    //        {
+    //          cmdEmaiAsignado.Parameters.AddWithValue("@id", model.AsignarIncidente);
+    //          using (var reader = cmdEmaiAsignado.ExecuteReader())
+    //          {
+    //            if (reader.Read())
+    //            {
+    //              emailAsignado = reader.GetString(0);
+    //              nombreAsignado = reader.GetString(1);
+    //            }
+    //          }
+    //        }
 
 
-            // Enviar correo al solicitante
-            if (!string.IsNullOrEmpty(emailSolicitante))
-            {
-              EnviarCorreoNotificacionSolicitante(emailSolicitante, nombreSolicitante, nombreActivo, nombreRazon, nombreAsignado, numeroPlaca, nombreEstado, fechaCierreStr, numeroTicket, false);
-            }
-
-            if (!string.IsNullOrEmpty(emailAsignado))
-            {
-              EnviarCorreoNotificacionAsignado(emailAsignado, nombreAsignado, nombreSolicitante, nombreActivo, nombreRazon, numeroPlaca, nombreEstado, fechaCierreStr, numeroTicket, false);
-            }
-
-
-
-          }
-          else // Editar
-          {
-            query = @"
-                UPDATE GestionServicios
-                SET
-                    solicitante = @solicitante,
-                    activo = @activo,
-                    razonServicio = @razonServicio,
-                    estadoActivo = @estadoActivo,
-                    asignarIncidente = @asignarIncidente,
-                    fechaEstimadaCierre = @fechaEstimadaCierre,
-                    descripcion = @descripcion
-                WHERE gestionServiciosId = @gestionServiciosId;";
-
-            using (SqlCommand command = new SqlCommand(query, connection))
-            {
-              command.Parameters.AddWithValue("@gestionServiciosId", model.GestionServiciosId); // Solo se usa lo que viene del form
-              command.Parameters.AddWithValue("@solicitante", model.Solicitante);
-              command.Parameters.AddWithValue("@activo", model.Activo);
-              command.Parameters.AddWithValue("@razonServicio", model.RazonServicio);
-              command.Parameters.AddWithValue("@estadoActivo", model.EstadoActivo);
-              command.Parameters.AddWithValue("@asignarIncidente", model.AsignarIncidente);
-              command.Parameters.AddWithValue("@fechaEstimadaCierre", model.FechaEstimadaCierre);
-              command.Parameters.AddWithValue("@descripcion", model.Descripcion);
-              command.ExecuteNonQuery();
-            }
-
-            using (SqlCommand cmdTicket = new SqlCommand("SELECT numeroTicket FROM GestionServicios WHERE gestionServiciosId = @id", connection))
-            {
-              cmdTicket.Parameters.AddWithValue("@id", model.GestionServiciosId);
-              object result = cmdTicket.ExecuteScalar();
-              if (result != null)
-                numeroTicket = Convert.ToInt32(result);
-            }
-
-            // Obtener email del solicitante
-            string emailSolicitante = "";
-            string nombreSolicitante = "";
-            string nombreActivo = "";
-            string emailAsignado = "";
-            string nombreAsignado = "";
-
-            string fechaCierreStr;
-            if (model.FechaEstimadaCierre != DateTime.MinValue)
-            {
-              fechaCierreStr = model.FechaEstimadaCierre.ToString("dd/MM/yyyy");
-            }
-            else
-            {
-              fechaCierreStr = "Aún no tiene fecha de cierre asignada";
-            }
-
-            string nombreEstado = "";
-            using (SqlCommand cmdEstado = new SqlCommand("SELECT nombre FROM EstadoActivo WHERE id_estadoActivo = @id", connection))
-            {
-              cmdEstado.Parameters.AddWithValue("@id", model.EstadoActivo);
-              object result = cmdEstado.ExecuteScalar();
-              if (result != null)
-                nombreEstado = result.ToString();
-            }
-
-            string numeroPlaca = "";
-            using (SqlCommand cmdPlaca = new SqlCommand("SELECT NUMERO_ACTIVO FROM ActivosSignusID WHERE ID_ACTIVO = @id", connection))
-            {
-              cmdPlaca.Parameters.AddWithValue("@id", model.Activo);
-              object result = cmdPlaca.ExecuteScalar();
-              if (result != null && result != DBNull.Value)
-                numeroPlaca = result.ToString();
-            }
-
-            using (SqlCommand cmdEmail = new SqlCommand("SELECT email, name FROM employees WHERE employeeSysId = @id", connection))
-            {
-              cmdEmail.Parameters.AddWithValue("@id", model.Solicitante);
-              using (var reader = cmdEmail.ExecuteReader())
-              {
-                if (reader.Read())
-                {
-                  emailSolicitante = reader.GetString(0);
-                  nombreSolicitante = reader.GetString(1);
-                }
-              }
-            }
-
-            using (SqlCommand cmdEmaiAsignado = new SqlCommand("SELECT email, username FROM users WHERE userSysId = @id", connection))
-            {
-              cmdEmaiAsignado.Parameters.AddWithValue("@id", model.AsignarIncidente);
-              using (var reader = cmdEmaiAsignado.ExecuteReader())
-              {
-                if (reader.Read())
-                {
-                  emailAsignado = reader.GetString(0);
-                  nombreAsignado = reader.GetString(1);
-                }
-              }
-            }
-
-            // Obtener nombre del activo
-            using (SqlCommand cmdActivo = new SqlCommand("SELECT DESCRIPCION_LARGA FROM ActivosSignusID WHERE ID_ACTIVO = @id", connection))
-            {
-              cmdActivo.Parameters.AddWithValue("@id", model.Activo);
-              object result = cmdActivo.ExecuteScalar();
-              if (result != null)
-                nombreActivo = result.ToString();
-            }
-
-            // Obtener nombre de la razón del servicio
-            string nombreRazon = "";
-            using (SqlCommand cmdRazon = new SqlCommand("SELECT nombre FROM RazonServicios WHERE id_razonServicios = @id", connection))
-            {
-              cmdRazon.Parameters.AddWithValue("@id", model.RazonServicio);
-              object result = cmdRazon.ExecuteScalar();
-              if (result != null)
-                nombreRazon = result.ToString();
-            }
-
-            // Enviar correo al solicitante
-            if (!string.IsNullOrEmpty(emailSolicitante))
-            {
-              EnviarCorreoNotificacionSolicitante(emailSolicitante, nombreSolicitante, nombreActivo, nombreRazon, nombreAsignado, numeroPlaca, nombreEstado, fechaCierreStr, numeroTicket,true);
-            }
-
-            if (!string.IsNullOrEmpty(emailAsignado))
-            {
-              EnviarCorreoNotificacionAsignado(emailAsignado, nombreAsignado, nombreSolicitante, nombreActivo, nombreRazon, numeroPlaca, nombreEstado, fechaCierreStr, numeroTicket, true);
-            }
+    //        // Obtener nombre del activo
+    //        using (SqlCommand cmdActivo = new SqlCommand("SELECT DESCRIPCION_LARGA FROM ActivosSignusID WHERE ID_ACTIVO = @id", connection))
+    //        {
+    //          cmdActivo.Parameters.AddWithValue("@id", model.Activo);
+    //          object result = cmdActivo.ExecuteScalar();
+    //          if (result != null)
+    //            nombreActivo = result.ToString();
+    //        }
+    //        // Obtener nombre de la razón del servicio
+    //        string nombreRazon = "";
+    //        using (SqlCommand cmdRazon = new SqlCommand("SELECT nombre FROM RazonServicios WHERE id_razonServicios = @id", connection))
+    //        {
+    //          cmdRazon.Parameters.AddWithValue("@id", model.RazonServicio);
+    //          object result = cmdRazon.ExecuteScalar();
+    //          if (result != null)
+    //            nombreRazon = result.ToString();
+    //        }
 
 
-          }
+    //        // Enviar correo al solicitante
+    //        if (!string.IsNullOrEmpty(emailSolicitante))
+    //        {
+    //          EnviarCorreoNotificacionSolicitante(emailSolicitante, nombreSolicitante, nombreActivo, nombreRazon, nombreAsignado, numeroPlaca, nombreEstado, fechaCierreStr, numeroTicket, false);
+    //        }
 
-          alertMessage.Tipo = "success";
-          alertMessage.Mensaje = (estadoFormulario == "Insertar")
-              ? "Datos registrados correctamente."
-              : "Datos actualizados correctamente.";
-        }
-      }
-      catch (Exception ex)
-      {
-        alertMessage.Tipo = "error";
-        alertMessage.Mensaje = "Error al procesar los datos: " + ex.Message;
-      }
+    //        if (!string.IsNullOrEmpty(emailAsignado))
+    //        {
+    //          EnviarCorreoNotificacionAsignado(emailAsignado, nombreAsignado, nombreSolicitante, nombreActivo, nombreRazon, numeroPlaca, nombreEstado, fechaCierreStr, numeroTicket, false);
+    //        }
 
 
-      TempData["Alert"] = JsonSerializer.Serialize(alertMessage);
 
-      return RedirectToAction("GestionServicios");
-    }
+    //      }
+    //      else // Editar
+    //      {
+    //        query = @"
+    //            UPDATE GestionServicios
+    //            SET
+    //                solicitante = @solicitante,
+    //                activo = @activo,
+    //                razonServicio = @razonServicio,
+    //                estadoActivo = @estadoActivo,
+    //                asignarIncidente = @asignarIncidente,
+    //                fechaEstimadaCierre = @fechaEstimadaCierre,
+    //                descripcion = @descripcion
+    //            WHERE gestionServiciosId = @gestionServiciosId;";
+
+    //        using (SqlCommand command = new SqlCommand(query, connection))
+    //        {
+    //          command.Parameters.AddWithValue("@gestionServiciosId", model.GestionServiciosId); // Solo se usa lo que viene del form
+    //          command.Parameters.AddWithValue("@solicitante", model.Solicitante);
+    //          command.Parameters.AddWithValue("@activo", model.Activo);
+    //          command.Parameters.AddWithValue("@razonServicio", model.RazonServicio);
+    //          command.Parameters.AddWithValue("@estadoActivo", model.EstadoActivo);
+    //          command.Parameters.AddWithValue("@asignarIncidente", model.AsignarIncidente);
+    //          command.Parameters.AddWithValue("@fechaEstimadaCierre", model.FechaEstimadaCierre);
+    //          command.Parameters.AddWithValue("@descripcion", model.Descripcion);
+    //          command.ExecuteNonQuery();
+    //        }
+
+    //        using (SqlCommand cmdTicket = new SqlCommand("SELECT numeroTicket FROM GestionServicios WHERE gestionServiciosId = @id", connection))
+    //        {
+    //          cmdTicket.Parameters.AddWithValue("@id", model.GestionServiciosId);
+    //          object result = cmdTicket.ExecuteScalar();
+    //          if (result != null)
+    //            numeroTicket = Convert.ToInt32(result);
+    //        }
+
+    //        // Obtener email del solicitante
+    //        string emailSolicitante = "";
+    //        string nombreSolicitante = "";
+    //        string nombreActivo = "";
+    //        string emailAsignado = "";
+    //        string nombreAsignado = "";
+
+    //        string fechaCierreStr;
+    //        if (model.FechaEstimadaCierre != DateTime.MinValue)
+    //        {
+    //          fechaCierreStr = model.FechaEstimadaCierre.ToString("dd/MM/yyyy");
+    //        }
+    //        else
+    //        {
+    //          fechaCierreStr = "Aún no tiene fecha de cierre asignada";
+    //        }
+
+    //        string nombreEstado = "";
+    //        using (SqlCommand cmdEstado = new SqlCommand("SELECT nombre FROM EstadoActivo WHERE id_estadoActivo = @id", connection))
+    //        {
+    //          cmdEstado.Parameters.AddWithValue("@id", model.EstadoActivo);
+    //          object result = cmdEstado.ExecuteScalar();
+    //          if (result != null)
+    //            nombreEstado = result.ToString();
+    //        }
+
+    //        string numeroPlaca = "";
+    //        using (SqlCommand cmdPlaca = new SqlCommand("SELECT NUMERO_ACTIVO FROM ActivosSignusID WHERE ID_ACTIVO = @id", connection))
+    //        {
+    //          cmdPlaca.Parameters.AddWithValue("@id", model.Activo);
+    //          object result = cmdPlaca.ExecuteScalar();
+    //          if (result != null && result != DBNull.Value)
+    //            numeroPlaca = result.ToString();
+    //        }
+
+    //        using (SqlCommand cmdEmail = new SqlCommand("SELECT email, name FROM employees WHERE employeeSysId = @id", connection))
+    //        {
+    //          cmdEmail.Parameters.AddWithValue("@id", model.Solicitante);
+    //          using (var reader = cmdEmail.ExecuteReader())
+    //          {
+    //            if (reader.Read())
+    //            {
+    //              emailSolicitante = reader.GetString(0);
+    //              nombreSolicitante = reader.GetString(1);
+    //            }
+    //          }
+    //        }
+
+    //        using (SqlCommand cmdEmaiAsignado = new SqlCommand("SELECT email, username FROM users WHERE userSysId = @id", connection))
+    //        {
+    //          cmdEmaiAsignado.Parameters.AddWithValue("@id", model.AsignarIncidente);
+    //          using (var reader = cmdEmaiAsignado.ExecuteReader())
+    //          {
+    //            if (reader.Read())
+    //            {
+    //              emailAsignado = reader.GetString(0);
+    //              nombreAsignado = reader.GetString(1);
+    //            }
+    //          }
+    //        }
+
+    //        // Obtener nombre del activo
+    //        using (SqlCommand cmdActivo = new SqlCommand("SELECT DESCRIPCION_LARGA FROM ActivosSignusID WHERE ID_ACTIVO = @id", connection))
+    //        {
+    //          cmdActivo.Parameters.AddWithValue("@id", model.Activo);
+    //          object result = cmdActivo.ExecuteScalar();
+    //          if (result != null)
+    //            nombreActivo = result.ToString();
+    //        }
+
+    //        // Obtener nombre de la razón del servicio
+    //        string nombreRazon = "";
+    //        using (SqlCommand cmdRazon = new SqlCommand("SELECT nombre FROM RazonServicios WHERE id_razonServicios = @id", connection))
+    //        {
+    //          cmdRazon.Parameters.AddWithValue("@id", model.RazonServicio);
+    //          object result = cmdRazon.ExecuteScalar();
+    //          if (result != null)
+    //            nombreRazon = result.ToString();
+    //        }
+
+    //        // Enviar correo al solicitante
+    //        if (!string.IsNullOrEmpty(emailSolicitante))
+    //        {
+    //          EnviarCorreoNotificacionSolicitante(emailSolicitante, nombreSolicitante, nombreActivo, nombreRazon, nombreAsignado, numeroPlaca, nombreEstado, fechaCierreStr, numeroTicket,true);
+    //        }
+
+    //        if (!string.IsNullOrEmpty(emailAsignado))
+    //        {
+    //          EnviarCorreoNotificacionAsignado(emailAsignado, nombreAsignado, nombreSolicitante, nombreActivo, nombreRazon, numeroPlaca, nombreEstado, fechaCierreStr, numeroTicket, true);
+    //        }
+
+
+    //      }
+
+    //      alertMessage.Tipo = "success";
+    //      alertMessage.Mensaje = (estadoFormulario == "Insertar")
+    //          ? "Datos registrados correctamente."
+    //          : "Datos actualizados correctamente.";
+    //    }
+    //  }
+    //  catch (Exception ex)
+    //  {
+    //    alertMessage.Tipo = "error";
+    //    alertMessage.Mensaje = "Error al procesar los datos: " + ex.Message;
+    //  }
+
+
+    //  TempData["Alert"] = JsonSerializer.Serialize(alertMessage);
+
+    //  return RedirectToAction("GestionServicios");
+    //}
 
     private void EnviarCorreoNotificacionSolicitante(
         string destinatario,
@@ -2863,73 +2863,73 @@ Por favor, acceda al sistema para gestionar la revisión.";
 
 
 
-    [HttpPost]
-    public IActionResult RegistroIncidentesActivos(GestionServicios model)
-    {
-      var alertMessage = new AlertMessage();
+//    [HttpPost]
+//    public IActionResult RegistroIncidentesActivos(GestionServicios model)
+//    {
+//      var alertMessage = new AlertMessage();
 
-      string connectionString = System.Configuration.ConfigurationManager
-          .ConnectionStrings["ServerDiverscan"].ConnectionString;
+//      string connectionString = System.Configuration.ConfigurationManager
+//          .ConnectionStrings["ServerDiverscan"].ConnectionString;
 
-      try
-      {
-        using (SqlConnection connection = new SqlConnection(connectionString))
-        {
-          connection.Open();
+//      try
+//      {
+//        using (SqlConnection connection = new SqlConnection(connectionString))
+//        {
+//          connection.Open();
 
-          string query = @"
-                INSERT INTO GestionServicios (
-                    gestionServiciosId,
-                    solicitante,
-                    activo,
-                    razonServicio,
-                    estadoActivo,
-                    asignarIncidente,
-                    fechaEstimadaCierre,
-                    descripcion,
-TelefonoMovil
-                ) VALUES (
-                    @gestionServiciosId,
-                    @solicitante,
-                    @activo,
-                    @razonServicio,
-                    @estadoActivo,
-                    @asignarIncidente,
-                    @fechaEstimadaCierre,
-                    @descripcion,
-@TelefonoMovil
-                );";
+//          string query = @"
+//                INSERT INTO GestionServicios (
+//                    gestionServiciosId,
+//                    solicitante,
+//                    activo,
+//                    razonServicio,
+//                    estadoActivo,
+//                    asignarIncidente,
+//                    fechaEstimadaCierre,
+//                    descripcion,
+//TelefonoMovil
+//                ) VALUES (
+//                    @gestionServiciosId,
+//                    @solicitante,
+//                    @activo,
+//                    @razonServicio,
+//                    @estadoActivo,
+//                    @asignarIncidente,
+//                    @fechaEstimadaCierre,
+//                    @descripcion,
+//@TelefonoMovil
+//                );";
 
-          using (SqlCommand command = new SqlCommand(query, connection))
-          {
-            Guid newId = Guid.NewGuid();
-            command.Parameters.AddWithValue("@gestionServiciosId", newId);
-            command.Parameters.AddWithValue("@solicitante", model.Solicitante);
-            command.Parameters.AddWithValue("@activo", model.Activo);
-            command.Parameters.AddWithValue("@razonServicio", model.RazonServicio);
-            command.Parameters.AddWithValue("@estadoActivo", model.EstadoActivo);
-            command.Parameters.AddWithValue("@asignarIncidente", model.AsignarIncidente);
-            command.Parameters.AddWithValue("@fechaEstimadaCierre",
-    model.FechaEstimadaCierre == DateTime.MinValue ? DBNull.Value : (object)model.FechaEstimadaCierre);
-            command.Parameters.AddWithValue("@descripcion", model.Descripcion);
-            command.Parameters.AddWithValue("@TelefonoMovil", string.IsNullOrWhiteSpace(model.TelefonoMovil) ? DBNull.Value : (object)model.TelefonoMovil);
-            command.ExecuteNonQuery();
-          }
+//          using (SqlCommand command = new SqlCommand(query, connection))
+//          {
+//            Guid newId = Guid.NewGuid();
+//            command.Parameters.AddWithValue("@gestionServiciosId", newId);
+//            command.Parameters.AddWithValue("@solicitante", model.Solicitante);
+//            command.Parameters.AddWithValue("@activo", model.Activo);
+//            command.Parameters.AddWithValue("@razonServicio", model.RazonServicio);
+//            command.Parameters.AddWithValue("@estadoActivo", model.EstadoActivo);
+//            command.Parameters.AddWithValue("@asignarIncidente", model.AsignarIncidente);
+//            command.Parameters.AddWithValue("@fechaEstimadaCierre",
+//    model.FechaEstimadaCierre == DateTime.MinValue ? DBNull.Value : (object)model.FechaEstimadaCierre);
+//            command.Parameters.AddWithValue("@descripcion", model.Descripcion);
+//            command.Parameters.AddWithValue("@TelefonoMovil", string.IsNullOrWhiteSpace(model.TelefonoMovil) ? DBNull.Value : (object)model.TelefonoMovil);
+//            command.ExecuteNonQuery();
+//          }
 
-          alertMessage.Tipo = "success";
-          alertMessage.Mensaje = "Datos registrados correctamente.";
-        }
-      }
-      catch (Exception ex)
-      {
-        alertMessage.Tipo = "error";
-        alertMessage.Mensaje = "Error al procesar los datos: " + ex.Message;
-      }
+//          alertMessage.Tipo = "success";
+//          alertMessage.Mensaje = "Datos registrados correctamente.";
+//        }
+//      }
+//      catch (Exception ex)
+//      {
+//        alertMessage.Tipo = "error";
+//        alertMessage.Mensaje = "Error al procesar los datos: " + ex.Message;
+//      }
 
-      TempData["Alert"] = JsonSerializer.Serialize(alertMessage);
+//      TempData["Alert"] = JsonSerializer.Serialize(alertMessage);
 
-      return RedirectToAction("IncidentesActivos");
-    }
+//      return RedirectToAction("IncidentesActivos");
+//    }
 
 
 

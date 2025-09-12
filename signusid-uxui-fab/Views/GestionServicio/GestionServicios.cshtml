@@ -7,9 +7,10 @@
 
 <div class="card" style="padding: 1rem 1rem 1rem 1rem;">
     <!-- Form GET sólo para búsqueda (puede ir al inicio de la vista) -->
-    <form id="frmSearch" method="get" action="@Url.Action("ControlTrafico")"></form>
+    <form id="frmSearch" method="get" action="@Url.Action("GestionServicios")"></form>
 
-    <form id="frmControlTrafico" asp-controller="GestionServicio" asp-action="InsertarControTrafico" method="post">
+
+    <form id="frmGestionServicios" asp-controller="GestionServicio" asp-action="GuardarGestion" method="post">
         <input type="hidden" id="EstadoFormulario" name="EstadoFormulario" value="Insertar" />
         <input type="hidden" name="ticket" value="" />
         <!-- Header alineado -->
@@ -24,8 +25,8 @@
                 <div id="channelGroup"
                      class="channel-checks d-flex flex-wrap gap-3 justify-content-md-end justify-content-center">
 
-                    <button type="button" class="status-btn">SIN ASIGNAR</button>
-                    <button type="button" class="status-btn">SLA: A TIEMPO</button>
+                    <button type="button" id="SinAsignar" name="SinAsignar" class="status-btn">SIN ASIGNAR</button>
+                    <button type="button" id="SLATiempo" name="SLATiempo" class="status-btn">SLA: A TIEMPO</button>
 
                 </div>
                 <!-- error de canales -->
@@ -62,8 +63,14 @@
                     <div class="field-wrap">
                         <label class="form-label" style="color:#606060">Empresa*</label>
                         <select name="EmpresaId" id="selectEmpresa" class="form-select select-light">
-                            <option value="" selected disabled>Seleccione un elemento</option>
+                            <option value="" disabled>Seleccione un elemento</option>
+                            @foreach (var opt in (IEnumerable<SelectListItem>)ViewBag.Empresas)
+                            {
+                                <option value="@opt.Value" selected="@(opt.Selected ? "selected" : null)">@opt.Text</option>
+                            }
                         </select>
+
+
                         <div id="empresaError" class="field-error"></div>
                     </div>
 
@@ -76,19 +83,23 @@
                         <label style="color:#606060" class="form-label">Contrato Número</label>
                         <select name="ContratoId" id="selectContrato" class="form-select select-light">
                             <option value="">Sin contrato</option>
+                            @foreach (var opt in (IEnumerable<SelectListItem>)ViewBag.Contratos)
+                            {
+                                <option value="@opt.Value" selected="@(opt.Selected ? "selected" : null)">@opt.Text</option>
+                            }
                         </select>
+
                         <div id="contratoError" class="field-error"></div>
                     </div>
                 </div>
 
-                <!-- Buscador -->
                 <!-- Buscador -->
                 <div class="col-12 col-md-4">
                     <div class="field-wrap">
                         <label style="visibility:hidden">Buscar</label>
                         <div class="row g-2 align-items-end">
                             <div class="col">
-                                <input form="frmSearch" type="text" name="q" class="traffic-input h52"
+                                <input form="frmSearch" type="text" name="q" class="traffic-input"
                                        placeholder="Buscar" value="" /> @* @(Model?.Query ?? "") *@
                                 <input form="frmSearch" type="hidden" name="page" value="1" />
                                 <input form="frmSearch" type="hidden" name="pageSize" value="" /> @* @Model.PageSize *@
@@ -101,7 +112,6 @@
                         <div class="field-error">&nbsp;</div>
                     </div>
                 </div>
-
             </div>
 
 
@@ -114,11 +124,12 @@
                         <label style="color:#606060" class="form-label">Solicitante*</label>
                         <select name="SolicitanteId" id="selectSolicitante" class="form-select select-light">
                             <option value="">Seleccione un elemento</option>
-               @*              @foreach (var opt in (IEnumerable<SelectListItem>)ViewBag.Solicitantes)
+                            @foreach (var opt in (IEnumerable<SelectListItem>)ViewBag.Solicitantes)
                             {
-                                <option value="@opt.Value">@opt.Text</option>
-                            } *@
+                                <option value="@opt.Value" selected="@(opt.Selected ? "selected" : null)">@opt.Text</option>
+                            }
                         </select>
+
                         <div id="solicitanteError" class="field-error"></div>
                     </div>
                 </div>
@@ -128,9 +139,14 @@
                 <div class="col-12 col-md-4">
                     <div class="field-wrap">
                         <label style="color:#606060" class="form-label">Estado del Incidente*</label>
-                        <select id="selectEstadoActivo" name="EstadoActivo" class="form-select select-light">
+                        <select id="selectEstadoActivo" name="Estado" class="form-select select-light">
                             <option value="">Seleccione un elemento</option>
+                            @foreach (var opt in (IEnumerable<SelectListItem>)ViewBag.Estados)
+                            {
+                                <option value="@opt.Value" selected="@(opt.Selected ? "selected" : null)">@opt.Text</option>
+                            }
                         </select>
+
                         <div id="selectEstadoActivoError" class="text-danger" style="font-size: 0.85em;"></div>
                     </div>
                 </div>
@@ -142,11 +158,12 @@
                         <label class="form-label" style="color:#606060">Asignar Incidente a:</label>
                         <select name="AsignadoAId" id="selectAsignado" class="form-select select-light">
                             <option value="" selected disabled>Seleccione un elemento</option>
-                     @*        @foreach (var opt in (IEnumerable<SelectListItem>)ViewBag.Asignados)
+                            @foreach (var opt in (IEnumerable<SelectListItem>)ViewBag.Asignados)
                             {
-                                <option value="@opt.Value">@opt.Text</option>
-                            } *@
+                                <option value="@opt.Value" selected="@(opt.Selected ? "selected" : null)">@opt.Text</option>
+                            }
                         </select>
+
                         <div id="asignadoError" class="field-error"></div>
                     </div>
 
@@ -161,11 +178,12 @@
                         <label style="color:#606060" class="form-label">Razón de Servicios*</label>
                         <select name="RazonServicioId" id="selectRazonServicio" class="form-select select-light">
                             <option value="" selected disabled>Seleccione un elemento</option>
-                     @*        @foreach (var opt in (IEnumerable<SelectListItem>)ViewBag.RazonesServicio)
+                            @foreach (var opt in (IEnumerable<SelectListItem>)ViewBag.RazonesServicio)
                             {
-                                <option value="@opt.Value">@opt.Text</option>
-                            } *@
+                                <option value="@opt.Value" selected="@(opt.Selected ? "selected" : null)">@opt.Text</option>
+                            }
                         </select>
+
                         <div id="razonError"></div>
                     </div>
 
@@ -214,14 +232,14 @@
                 <!-- Columna izquierda: Fecha + Hora (apilados) -->
                 <div class="col-12 col-md-4">
 
-                    <!-- Fecha Próximo Servicio -->
+                    <!-- Fecha Próximo Servicio --> <!-- FechaProximoServicio -->
                     <div class="field-wrap">
                         <label class="form-label" style="color:#606060">Fecha Estimada para Cierre</label>
                         <div class="d-flex align-items-center gap-2">
                             <input type="text"
-                                   class="traffic-input h52"
-                                   id="FechaProximoServicio"
-                                   name="FechaProximoServicio"
+                                   class="traffic-input"
+                                   id="FechaCierre"
+                                   name="FechaCierre"
                                    placeholder="mm/dd/yy"
                                    readonly />
 
@@ -255,7 +273,6 @@
                     </div>
                 </div>
             </div>
-
         </div>
     </form>
 
@@ -282,7 +299,7 @@
         }
 
         /* Mensaje de error de canales: fijo arriba a la derecha,
-                                                     no mueve el grupo de checkboxes */
+                                                                                                     no mueve el grupo de checkboxes */
         .field-wrap {
             display: flex;
             flex-direction: column;
@@ -324,6 +341,82 @@
     </style>
 
     <script>
+        // --- helpers ---
+        function clearSelectKeepFirst(selectEl) {
+          while (selectEl.options.length > 1) selectEl.remove(1);
+        }
+        function appendOption(selectEl, value, text) {
+          // evita duplicados por value
+          for (let i = 0; i < selectEl.options.length; i++) {
+            if (selectEl.options[i].value === String(value)) return;
+          }
+          const opt = new Option(text, value);
+          selectEl.add(opt);
+        }
+        async function loadSelect(selectId, url, keepFirst = true, selectedValue = null) {
+          const sel = document.getElementById(selectId);
+          if (!sel) return;
+          if (keepFirst) clearSelectKeepFirst(sel); else sel.innerHTML = "";
+          try {
+            const res = await fetch(url, { headers: { 'Accept':'application/json' } });
+            const data = await res.json();
+            data.forEach(item => appendOption(sel, item.id, item.text));
+            if (selectedValue) sel.value = selectedValue;
+          } catch (e) {
+            console.error('Error cargando', selectId, e);
+          }
+          return true;
+        }
+
+        // Si estás en modo edición, puedes rellenar esto desde el servidor:
+        // window.initialValues = { empresaId:'...', contratoId:'...', solicitanteId:'...', estadoId:'...', asignadoId:'...', razonId:'...' };
+
+        document.addEventListener('DOMContentLoaded', async () => {
+          const selEmpresa = document.getElementById('selectEmpresa');
+          const selContrato = document.getElementById('selectContrato');
+          const selSolic   = document.getElementById('selectSolicitante');
+          const selEstado  = document.getElementById('selectEstadoActivo');
+          const selAsign   = document.getElementById('selectAsignado');
+          const selRazon   = document.getElementById('selectRazonServicio');
+
+          const iv = window.initialValues || {};
+
+          // Cargas paralelas (no dependientes)
+          const pEstados = loadSelect('selectEstadoActivo', '@Url.Content("~/GestionServicio/EstadosOptions")', true, iv.estadoId);
+          const pAsign   = loadSelect('selectAsignado',     '@Url.Content("~/GestionServicio/UsuariosOptions")', true, iv.asignadoId);
+          const pRazones = loadSelect('selectRazonServicio','@Url.Content("~/GestionServicio/RazonesOptions")', true, iv.razonId);
+          const pEmpresas= loadSelect('selectEmpresa',      '@Url.Content("~/GestionServicio/EmpresasOptions")', true, iv.empresaId);
+
+          // Cuando empresas termine, carga contratos y solicitantes dependientes
+          await pEmpresas;
+
+          // Si vienes editando y ya tienes empresaId, precarga dependientes
+          if (iv.empresaId) {
+            await loadSelect('selectContrato',
+              '@Url.Content("~/GestionServicio/ContratosOptions")' + '?empresaId=' + encodeURIComponent(iv.empresaId),
+              true, iv.contratoId);
+
+            await loadSelect('selectSolicitante',
+              '@Url.Content("~/GestionServicio/SolicitantesOptions")' + '?empresaId=' + encodeURIComponent(iv.empresaId),
+              true, iv.solicitanteId);
+          }
+
+          // Cambio de empresa => refrescar contratos + solicitantes
+          selEmpresa?.addEventListener('change', async () => {
+            const emp = selEmpresa.value || '';
+            await loadSelect('selectContrato',
+              '@Url.Content("~/GestionServicio/ContratosOptions")' + '?empresaId=' + encodeURIComponent(emp),
+              true, null);
+
+            await loadSelect('selectSolicitante',
+              '@Url.Content("~/GestionServicio/SolicitantesOptions")' + '?empresaId=' + encodeURIComponent(emp),
+              true, null);
+          });
+        });
+    </script>
+
+
+    <script>
         $(document).ready(function () {
             // Cargar estados desde el servidor
             $.getJSON('@Url.Content("~/Administration/ObtenerEstadoActivoSignus")', function (data) {
@@ -347,78 +440,79 @@
     </script>
 
     <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            fetch('@Url.Content("~/GestionServicio/ObtenerEmpresasService")')
-                .then(response => response.json())
-                .then(data => {
-                    const select = document.getElementById('selectEmpresa');
-                    data.forEach(item => {
-                        const option = document.createElement('option');
-                        option.value = item.id;
-                        option.textContent = item.texto;
-                        select.appendChild(option);
-                    });
-                });
-        });
+        // document.addEventListener("DOMContentLoaded", function () {
+        //     fetch('@Url.Content("~/GestionServicio/ObtenerEmpresasService")')
+        //         .then(response => response.json())
+        //         .then(data => {
+        //             const select = document.getElementById('selectEmpresa');
+        //             data.forEach(item => {
+        //                 const option = document.createElement('option');
+        //                 option.value = item.id;
+        //                 option.textContent = item.texto;
+        //                 select.appendChild(option);
+        //             });
+        //         });
+        // });
     </script>
     <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            const selectA = document.getElementById('selectEmpresa');
-            const selectB = document.getElementById('selectContrato');
+        // document.addEventListener("DOMContentLoaded", function () {
+        //     const selectA = document.getElementById('selectEmpresa');
+        //     const selectB = document.getElementById('selectContrato');
 
-            selectA.addEventListener('change', function () {
-                const companyId = this.value;
+        //     selectA.addEventListener('change', function () {
+        //         const companyId = this.value;
 
-                // Reset y deshabilita el select B
-                selectB.innerHTML = '<option value="">Seleccione un elemento</option>';
-                //selectB.disabled = true;
+        //         // Reset y deshabilita el select B
+        //         selectB.innerHTML = '<option value="">Seleccione un elemento</option>';
+        //         //selectB.disabled = true;
 
-                if (companyId) {
-                    fetch(`@Url.Content("~/GestionServicio/ObtenerContratosServices")?idCompany=${companyId}`)
-                        .then(response => response.json())
-                        .then(data => {
-                            data.forEach(item => {
-                                const option = document.createElement('option');
-                                option.value = item.id;
-                                option.textContent = item.texto;
-                                selectB.appendChild(option);
-                            });
-                            //selectB.disabled = false;
-                        });
-                }
-            });
-        });
+        //         if (companyId) {
+        //             fetch(`@Url.Content("~/GestionServicio/ObtenerContratosServices")?idCompany=${companyId}`)
+        //                 .then(response => response.json())
+        //                 .then(data => {
+        //                     data.forEach(item => {
+        //                         const option = document.createElement('option');
+        //                         option.value = item.id;
+        //                         option.textContent = item.texto;
+        //                         selectB.appendChild(option);
+        //                     });
+        //                     //selectB.disabled = false;
+        //                 });
+        //         }
+        //     });
+        // });
     </script>
 
     <script>
-        async function cargarContratosService(ubicacionA, ubicacionB) {
-            const selectA = document.getElementById('selectEmpresa');
-            const selectB = document.getElementById('selectContrato');
+        // async function cargarContratosService(ubicacionA, ubicacionB) {
+        //     const selectA = document.getElementById('selectEmpresa');
+        //     const selectB = document.getElementById('selectContrato');
 
 
-            // Asignar A y cargar B
-            selectA.value = ubicacionA;
-            await fetch(`@Url.Content("~/GestionServicio/ObtenerContratosServices")?idCompany=${ubicacionA}`)
-                .then(response => response.json())
-                .then(data => {
-                    selectB.innerHTML = '<option value="">Seleccione un elemento</option>';
-                    data.forEach(item => {
-                        const option = document.createElement('option');
-                        option.value = item.id;
-                        option.textContent = item.texto;
-                        selectB.appendChild(option);
-                    });
-                    selectB.value = ubicacionB;
-                });
+        //     // Asignar A y cargar B
+        //     selectA.value = ubicacionA;
+        //     await fetch(`@Url.Content("~/GestionServicio/ObtenerContratosServices")?idCompany=${ubicacionA}`)
+        //         .then(response => response.json())
+        //         .then(data => {
+        //             selectB.innerHTML = '<option value="">Seleccione un elemento</option>';
+        //             data.forEach(item => {
+        //                 const option = document.createElement('option');
+        //                 option.value = item.id;
+        //                 option.textContent = item.texto;
+        //                 selectB.appendChild(option);
+        //             });
+        //             selectB.value = ubicacionB;
+        //         });
 
 
 
-        }
+        // }
     </script>
 
 
     <br />
-    @model AspnetCoreMvcFull.Models.GestionServicios.GestionServiciosTablaViewModel
+    @model AspnetCoreMvcFull.Models.GestionServicios.ControlTraficoTablaViewModel
+
 
     <style>
 
@@ -427,7 +521,7 @@
         }
     </style>
 
-    <form asp-controller="GestionServicio" asp-action="ControlTrafico" method="get">
+    <form asp-controller="GestionServicio" asp-action="GestionServicios" method="get">
         <div class="card-datatable table-responsive border" style="padding: .5rem;">
             <style>
                 .card-datatable {
@@ -487,27 +581,46 @@
                             <th>Asignado a:</th>
                             <th>N° ticket</th>
                             <th>Fecha para cierre</th>
+                            <th>Estado</th>
                             <th class="text-end">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
-                      @*   @if (Model.Items != null && Model.Items.Any())
+                        @{
+                            var registros = Model?.Registros ?? new List<AspnetCoreMvcFull.Models.GestionServicios.ControlTraficoListItem>();
+                        }
+                        @if (registros.Any())
                         {
-                            foreach (var item in Model.Items)
+                            foreach (var item in registros)
                             {
                                 <tr>
-                                    <td style="font-size:12.5px" class="text-truncate">@item.ContratoId</td>
-                                    <td style="font-size:12.5px" class="d-none d-sm-table-cell text-truncate">@item.RazonServicioId</td>
-                                    <td style="font-size:12.5px" class="d-none d-md-table-cell text-truncate">@item.Fecha</td>
-                                    <td style="font-size:12.5px" class="d-none d-lg-table-cell text-truncate">@item.AsignadoAId</td>
-                                    <td style="font-size:12.5px" class="d-none d-sm-table-cell">@item.ticket</td>
-                                    <td style="font-size:12.5px" class="d-none d-md-table-cell text-truncate">@item.FechaProximoServicio</td>
+                                    <td style="font-size:12.5px" class="text-truncate">
+                                        @(item.ContratoNumero ?? "Sin contrato")
+                                    </td>
+                                    <td style="font-size:12.5px" class="d-none d-sm-table-cell text-truncate">
+                                        @(item.RazonServicioNombre ?? "—")
+                                    </td>
+                                    <td style="font-size:12.5px" class="d-none d-md-table-cell text-truncate">
+                                        @((item.FechaCreacionUtc?.ToString("MM/dd/yyyy")) ?? "—")   @* Formato EE.UU. *@
+                                    </td>
+                                    <td style="font-size:12.5px" class="d-none d-lg-table-cell text-truncate">
+                                        @(item.AsignadoAUsername ?? "Sin asignar")
+                                    </td>
+                                    <td style="font-size:12.5px" class="d-none d-sm-table-cell">
+                                        @item.Ticket
+                                    </td>
+                                    <td style="font-size:12.5px" class="d-none d-md-table-cell text-truncate">
+                                        @((item.FechaCierre?.ToString("MM/dd/yyyy")) ?? "—")        @* Formato EE.UU. *@
+                                    </td>
+                                    <td style="font-size:12.5px" class="text-truncate">
+                                        @(item.EstadoIncidenteNombre ?? "—")
+                                    </td>
                                     <td class="text-end">
                                         <div class="d-inline-flex gap-2">
                                             <a class="btn btn-edit d-flex align-items-center justify-content-center p-1 px-2"
                                                title="Editar"
                                                data-contrato="@item.ContratoId"
-                                               data-ticket="@item.ticket"
+                                               data-ticket="@item.Ticket"
                                                style="background-color:#00A5B8;border:none;border-radius:6px;height:28px;min-width:40px;">
                                                 <img src="~/img/editar_icono.svg" alt="Editar" style="width:16px;height:16px;">
                                             </a>
@@ -515,7 +628,7 @@
                                                     title="Borrar"
                                                     data-bs-toggle="modal" data-bs-target="#trafficDeleteModal"
                                                     data-contrato="@item.ContratoId"
-                                                    data-ticket="@item.ticket"
+                                                    data-ticket="@item.Ticket"
                                                     style="background-color:#666;border:none;border-radius:6px;height:28px;min-width:40px;">
                                                 <img src="~/img/eliminar_icono.svg" alt="Eliminar" style="width:16px;height:16px;">
                                             </button>
@@ -527,16 +640,15 @@
                         else
                         {
                             <tr>
-                                <td colspan="7" class="text-center text-muted py-4">Sin resultados.</td>
+                                <td colspan="8" class="text-center text-muted py-4">Sin resultados.</td>
                             </tr>
-                        } *@
+                        }
                     </tbody>
-
                 </table>
             </div>
 
 
-@*             @{
+            @*             @{
                 var page = Model.CurrentPage;
                 var pageSize = Model.PageSize;
                 var total = Model.TotalItems;
@@ -690,220 +802,40 @@
 </div>
 
 
-<script>
-    // ----------------- Helpers -----------------
-    function setSelectValueSafe(selectEl, value) {
-      if (!selectEl) return;
-      if (!value) { selectEl.value = ''; return; }
-      selectEl.value = value;                         // intento exacto
-      if (selectEl.value === value) return;
-      const v = String(value).trim().toLowerCase();   // intento case-insensitive
-      const opt = Array.from(selectEl.options)
-        .find(o => String(o.value).trim().toLowerCase() === v);
-      if (opt) { opt.selected = true; return; }
-      selectEl.value = '';                            // no existe -> Sin contrato
-    }
-
-    // async function cargarContratos(empresaId, selectedValue) {
-    //   const selContrato = document.getElementById('selectContrato');
-    //   // SIEMPRE dejar solo "Sin contrato" al iniciar
-    //   selContrato.innerHTML = '';
-    //   selContrato.append(new Option('Sin contrato', ''));
-
-    //   if (!empresaId) { selContrato.value = ''; return; }
-
-    //   try {
-    //     const url = '@Url.Action("ContratosPorEmpresa", "GestionServicio")' + '?empresaId=' + encodeURIComponent(empresaId);
-    //     const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
-    //     if (!res.ok) throw new Error('HTTP ' + res.status);
-    //     const data = await res.json(); // [{value,text}]
-
-    //     data.forEach(o => selContrato.append(new Option(o.text, o.value)));
-
-    //     // preseleccionar (solo en edición)
-    //     if (selectedValue != null) setSelectValueSafe(selContrato, selectedValue);
-    //   } catch (e) {
-    //     console.error('Error cargando contratos:', e);
-    //     selContrato.value = '';
-    //   }
-    // }
-
-    // canales: sincronizar hidden para que se envíen aunque estén disabled
-    function syncCanalHidden() {
-      const g = document.getElementById('channelGroup');
-      if (!g) return;
-      g.querySelectorAll('.chx-canal').forEach(chk => {
-        const hid = g.querySelector(`input[type="hidden"][name="${chk.name}"]`);
-        if (hid) hid.value = chk.checked ? 'true' : 'false';
-      });
-    }
-    function setCanalesDisabled(disabled) {
-      syncCanalHidden();
-      document.querySelectorAll('#channelGroup .chx-canal').forEach(chk => chk.disabled = disabled);
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-      const form        = document.getElementById('frmControlTrafico');
-     // const selEmpresa  = document.getElementById('selectEmpresa');
-      //const selContrato = document.getElementById('selectContrato');
-
-      // 1) Asegurar que "Contrato" arranque solo con "Sin contrato"
-     // selContrato.innerHTML = '';
-      //selContrato.append(new Option('Sin contrato', ''));
-
-      // 2) Cambio manual de empresa => cargar SOLO contratos de esa empresa
-    //  selEmpresa?.addEventListener('change', () => cargarContratos(selEmpresa.value, null));
-
-      // 3) Canales: single-select + sincronizar hidden
-      const checks = document.querySelectorAll('#channelGroup .chx-canal');
-      checks.forEach(ch => {
-        ch.addEventListener('change', () => {
-          if (ch.checked) checks.forEach(o => { if (o !== ch) o.checked = false; });
-          syncCanalHidden();
-        });
-      });
-      form?.addEventListener('submit', () => syncCanalHidden());
-
-      // 4) EDITAR: setear empresa -> cargar contratos filtrados -> preseleccionar contrato
-      document.querySelectorAll('.btn-edit').forEach(btn => {
-        btn.addEventListener('click', async () => {
-          const ticket = btn.dataset.ticket;
-          const url = '@Url.Action("ObtenerControlTrafico", "GestionServicio")' + '?ticket=' + encodeURIComponent(ticket);
-          const res = await fetch(url, { headers: { 'Accept':'application/json' } });
-          const data = await res.json();
-          if (!data.ok) { alert('No encontrado'); return; }
-
-          document.getElementById('EstadoFormulario').value = 'Editar';
-          document.querySelector('input[name="ticket"]').value = data.ticket;
-
-          // Empresa primero
-         // selEmpresa.value = data.empresaId || '';
-          // Ahora SÍ: cargar contratos de ESA empresa y dejar seleccionado el guardado
-        //  await cargarContratos(data.empresaId || '', data.contratoId || '');
-
-          // Si por algún motivo el contrato no llega en la lista, insértalo y selecciónalo
-          // if (data.contratoId && selContrato.value !== data.contratoId) {
-          //   const label = data.contratoLabel || 'Contrato seleccionado';
-          //   const opt = new Option(label, data.contratoId, true, true);
-          //   selContrato.add(opt, Math.min(1, selContrato.options.length)); // tras "Sin contrato"
-          //   selContrato.value = data.contratoId;
-          // }
-
-          // Resto de selects
-          setSelectValueSafe(document.getElementById('selectSolicitante'),   data.solicitanteId || '');
-          setSelectValueSafe(document.getElementById('selectAsignado'),      data.asignadoAId || '');
-          setSelectValueSafe(document.getElementById('selectRazonServicio'), data.razonServicioId || '');
-
-          // Canales: setear y deshabilitar (pero se enviarán por hidden)
-          const g = document.getElementById('channelGroup');
-          g.querySelector('input[name="CanalEmail"]').checked       = !!data.canalEmail;
-          g.querySelector('input[name="CanalWeb"]').checked         = !!data.canalWeb;
-          g.querySelector('input[name="CanalPresencial"]').checked  = !!data.canalPresencial;
-          g.querySelector('input[name="CanalTelefono"]').checked    = !!data.canalTelefono;
-          g.querySelector('input[name="CanalChatbot"]').checked     = !!data.canalChatbot;
-          setCanalesDisabled(true);
-
-          // Radios + inputs
-          form.querySelector(`input[name="LugarServicio"][value="${data.lugarServicio ?? 0}"]`).checked = true;
-          document.getElementById('TelefonoServicio').value     = data.telefonoServicio ?? '';
-          document.getElementById('EmailServicio').value        = data.emailServicio ?? '';
-          document.getElementById('DireccionServicio').value    = data.direccionServicio ?? '';
-          document.getElementById('DescripcionIncidente').value = data.descripcionIncidente ?? '';
-
-          document.getElementById('selectEmpresa').value = data.empresaId ?? '';
-          document.getElementById('selectContrato').value = data.contratoId ?? '';
-
-          //    const inpFecha = document.getElementById('FechaProximoServicio');
-          // if (inpFecha?._flatpickr) inpFecha._flatpickr.setDate(data.fechaProximoServicio || '', true);
-          // else inpFecha.value = data.fechaProximoServicio || '';
-          // document.getElementById('HoraServicio').value = data.horaServicio || '';
-
-            await cargarContratosService(data.empresaId || '', data.contratoId || '');
-
-
-
-
-
-
-            setDateField('FechaProximoServicio', data.fechaProximoServicio, { allowPast: true });
-            document.getElementById('HoraServicio').value = data.horaServicio || '';
-
-
-
-        });
-      });
-
-              function setDateField(id, iso, { allowPast = false } = {}) {
-      const el = document.getElementById(id);
-      if (!el) return;
-
-      const v = (iso || '').slice(0, 10); // 'YYYY-MM-DD'
-      const fp = el._flatpickr;
-
-      if (fp) {
-        // guardar minDate y levantar restricción si vamos a permitir pasado (editar)
-        const prevMin = fp.config.minDate;
-        if (allowPast) fp.set('minDate', null);
-
-        if (v) fp.setDate(v, true); else fp.clear();
-
-        // restaurar minDate
-        if (allowPast) fp.set('minDate', prevMin);
-      } else {
-        el.value = v; // fallback si no hay flatpickr
-      }
-    }
-
-
-      // 5) BORRAR: re-habilitar canales y limpiar (además de tu reset)
-      document.getElementById('btnBorrar')?.addEventListener('click', () => {
-        setCanalesDisabled(false);
-        document.querySelectorAll('#channelGroup .chx-canal').forEach(chk => chk.checked = false);
-        syncCanalHidden();
-        // deja "Contrato" solo con "Sin contrato" si limpiás empresa
-        // if (!selEmpresa.value) {
-        //   selContrato.innerHTML = '';
-        //   selContrato.append(new Option('Sin contrato', ''));
-        // }
-      });
-    });
-</script>
-
-
 
 <script>
     // Función para limpiar duplicados en el select
-    function limpiarDuplicadosSelect(selectId) {
-      const select = document.getElementById(selectId);
-      if (!select) return;
+    // function limpiarDuplicadosSelect(selectId) {
+    //   const select = document.getElementById(selectId);
+    //   if (!select) return;
 
-      const seen = new Set();
-      [...select.options].forEach(opt => {
-        if (seen.has(opt.value + "|" + opt.text)) {
-          opt.remove(); // elimina duplicado
-        } else {
-          seen.add(opt.value + "|" + opt.text);
-        }
-      });
-    }
+    //   const seen = new Set();
+    //   [...select.options].forEach(opt => {
+    //     if (seen.has(opt.value + "|" + opt.text)) {
+    //       opt.remove(); // elimina duplicado
+    //     } else {
+    //       seen.add(opt.value + "|" + opt.text);
+    //     }
+    //   });
+    // }
 
-    document.addEventListener("DOMContentLoaded", () => {
-      const selectContrato = document.getElementById("selectContrato");
+    // document.addEventListener("DOMContentLoaded", () => {
+    //   const selectContrato = document.getElementById("selectContrato");
 
-      if (!selectContrato) return;
+    //   if (!selectContrato) return;
 
-      // 1. Al cambiar el select
-      selectContrato.addEventListener("change", () => {
-        limpiarDuplicadosSelect("selectContrato");
-      });
+    //   // 1. Al cambiar el select
+    //   selectContrato.addEventListener("change", () => {
+    //     limpiarDuplicadosSelect("selectContrato");
+    //   });
 
-      // 2. Cada vez que se inserte algo nuevo dentro del select (Mutación del DOM)
-      const observer = new MutationObserver(() => {
-        limpiarDuplicadosSelect("selectContrato");
-      });
+    //   // 2. Cada vez que se inserte algo nuevo dentro del select (Mutación del DOM)
+    //   const observer = new MutationObserver(() => {
+    //     limpiarDuplicadosSelect("selectContrato");
+    //   });
 
-      observer.observe(selectContrato, { childList: true });
-    });
+    //   observer.observe(selectContrato, { childList: true });
+    // });
 </script>
 
 
@@ -911,14 +843,14 @@
 
 <link href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" rel="stylesheet" />
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-<script src="~/js/control-trafico.js"></script>
-
+@* <script src="~/js/control-trafico.js"></script>
+ *@
 
 <style>
     /* body {
-                                                    background-color: #FFE2DA;
+                                                                            background-color: #FFE2DA;
 
-                                                } */
+                                                                        } */
 
 
     .btn-orange {

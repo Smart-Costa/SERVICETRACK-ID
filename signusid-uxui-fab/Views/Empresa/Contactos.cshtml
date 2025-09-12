@@ -29,55 +29,77 @@
     <div class="p-3 rounded mb-4" style="border: 1px solid #d6d6d6;">
 
         @* <-- borde suave que encierra TODO menos el título *@
-        <form asp-action="GuardarContactos" method="post">
-            <input type="hidden" name="estadoFomrulario" value="Insertar" />
-            <input type="hidden" name="IdEmpresa" value="Insertar" />
+        <form id="formContactos" asp-controller="Empresa" asp-action="GuardarContactos" method="post" novalidate>
+
+            <input type="hidden" name="estadoFomrulario"
+                   value="@(Model?.FormData?.IdContacto != Guid.Empty ? "Editar" : "Insertar")" />
+            <input type="hidden" name="IdContacto"
+                   value="@(Model?.FormData?.IdContacto != Guid.Empty ? Model.FormData.IdContacto : Guid.Empty)" />
+            <input type="hidden" name="page" value="@(Model?.CurrentPage ?? 1)" />
+            <input type="hidden" name="pageSize" value="@(Model?.PageSize ?? 5)" />
+
             @Html.AntiForgeryToken()
 
             <div class="row g-4">
-                <!-- Fila 1: Nombre / Dirección -->
+                <!-- Fila 1 -->
                 <div class="col-12 col-md-3">
                     <label for="Nombre" class="form-label">Nombre</label>
-                    <input id="Nombre" name="Nombre" class="form-control  " />
+                    <input id="Nombre" name="Nombre" class="form-control" value="@Model?.FormData?.Nombre" />
+                    <div id="errNombre" class="field-error text-danger small"></div>
                 </div>
                 <div class="col-12 col-md-3">
                     <label for="Apellidos" class="form-label">Apellidos</label>
-                    <input id="Apellidos" name="Apellidos" class="form-control  " />
+                    <input id="Apellidos" name="Apellidos" class="form-control" value="@Model?.FormData?.Apellidos" />
                 </div>
                 <div class="col-12 col-md-6">
                     <label for="DireccionContacto" class="form-label">Dirección</label>
-                    <input id="DireccionContacto" name="DireccionContacto" class="form-control  " />
+                    <input id="Direccion" name="Direccion" class="form-control" value="@Model?.FormData?.Direccion" />
+                    <div id="errDireccion" class="field-error text-danger small"></div>
                 </div>
 
-                <!-- Fila 2: Identificación / Empresa Relacionada / Dirección (opcional) -->
+                <!-- Fila 2 -->
                 <div class="col-12 col-md-3">
                     <label for="IdentificacionERelacionada" class="form-label">Identificación</label>
-                    <input id="IdentificacionERelacionada" name="IdentificacionERelacionada" class="form-control  " />
+                    <input id="IdentificacionContacto" name="IdentificacionContacto" class="form-control" value="@Model?.FormData?.IdentificacionContacto" />
                 </div>
                 <div class="col-12 col-md-3">
                     <label for="EmpresaRelacionada" class="form-label">Empresa</label>
-                    <input id="EmpresaRelacionada" name="EmpresaRelacionada" class="form-control  " />
+                    <select id="EmpresaRelacionadaId" name="EmpresaRelacionadaId"
+                            class="form-select"
+                            style="appearance:none;-webkit-appearance:none;-moz-appearance:none;background-image:none;">
+                        <option value="">Seleccione una empresa</option>
+                        @foreach (var opt in Model.EmpresasOptions)
+                        {
+                            <option value="@opt.Value"
+                                    selected="@(Model?.FormData?.EmpresaRelacionadaId?.ToString() == opt.Value ? "selected" : null)">
+                                @opt.Text
+                            </option>
+                        }
+                    </select>
                 </div>
                 <div class="col-12 col-md-6">
                     <label for="DireccionERelacionada" class="form-label">Dirección (opcional)</label>
-                    <input id="DireccionERelacionada" name="DireccionERelacionada" class="form-control  " />
+                    <input id="DireccionOpcional" name="DireccionOpcional" class="form-control" value="@Model?.FormData?.DireccionOpcional" />
                 </div>
 
-                <!-- Fila 3: Email / Teléfono / Ciudad / Estado -->
+                <!-- Fila 3 -->
                 <div class="col-12 col-md-3">
                     <label for="Email" class="form-label">Email</label>
-                    <input id="Email" name="Email" type="email" class="form-control  " />
+                    <input id="Email" name="Email" type="email" class="form-control" value="@Model?.FormData?.Email" />
+                    <div id="errEmail" class="field-error text-danger small"></div>
                 </div>
                 <div class="col-12 col-md-3">
                     <label for="Telefono" class="form-label">Teléfono</label>
-                    <input id="Telefono" name="Telefono" class="form-control  " />
+                    <input id="Telefono" name="Telefono" class="form-control" value="@Model?.FormData?.Telefono" />
                 </div>
                 <div class="col-12 col-md-3">
-                    <label for="Ciudad" class="form-label">Ciudad</label>
-                    <select id="Ciudad" name="Ciudad" class="form-select select-light">
+                    <label for="Pais" class="form-label">País*</label>
+                    <select id="Pais" name="Pais" class="form-select select-light">
                         <option value="">Seleccione un elemento</option>
                     </select>
+                    <div id="errPais" class="field-error text-danger small"></div>
                 </div>
+     
                 <div class="col-12 col-md-3">
                     <label for="Estado" class="form-label">Estado</label>
                     <select id="Estado" name="Estado" class="form-select select-light">
@@ -85,65 +107,124 @@
                     </select>
                 </div>
 
-                <!-- Fila 4: Forma de Pago / Condición Financiera / Código Postal / País -->
-                <!-- Forma de Pago -->
+                <!-- Fila 4 -->
                 <div class="col-12 col-md-3">
                     <label for="Puesto" class="form-label">Puesto</label>
-                    <input id="Puesto" name="Puesto"class="form-control  " />
+                    <input id="Puesto" name="Puesto" class="form-control" value="@Model?.FormData?.Puesto" />
                 </div>
-
-                <!-- Condición Financiera de Servicio -->
                 <div class="col-12 col-md-3">
                     <label for="TelefonoMovil" class="form-label">Teléfono Móvil</label>
-                    <input id="TelefonoMovil" name="TelefonoMovil" class="form-control  " />
+                    <input id="TelefonoMovil" name="TelefonoMovil" class="form-control" value="@Model?.FormData?.TelefonoMovil" />
                 </div>
                 <div class="col-12 col-md-3">
                     <label for="CodigoPostal" class="form-label">Código Postal</label>
-                    <input id="CodigoPostal" name="CodigoPostal" class="form-control  " />
+                    <input id="CodigoPostal" name="CodigoPostal" class="form-control" value="@Model?.FormData?.CodigoPostal" />
                 </div>
+
                 <div class="col-12 col-md-3">
-                    <label for="Pais" class="form-label">País*</label>
-                    <select id="Pais" name="Pais" class="form-select select-light">
+                    <label for="Ciudad" class="form-label">Ciudad</label>
+                    <select id="Ciudad" name="Ciudad" class="form-select select-light">
                         <option value="">Seleccione un elemento</option>
                     </select>
                 </div>
+
             </div>
 
-            <!-- Fila final: Estatus + Identificación (total col-md-3) | Botón a la derecha -->
+           
+
+            <!-- Fila final -->
             <div class="row g-3 align-items-end mt-3">
-                <!-- IZQUIERDA: total col-md-3 -->
                 <div class="col-12 col-md-3">
                     <div class="row g-3">
                         <div class="col-6">
                             <select id="Estatus" name="Estatus" class="form-select">
-                                <option value="" selected disabled hidden>Estatus</option>
-                                <option value="Prepago" selected="@(Model?.FormData?.Estatus == "Activo" ? "selected" : null)">Activo</option>
-                                <option value="5 dias Credito" selected="@(Model?.FormData?.Estatus == "Inactivo" ? "selected" : null)">Inactivo</option>
+                                <option value="" selected="@(string.IsNullOrEmpty(Model?.FormData?.Estatus) ? "selected" : null)" hidden>Estatus</option>
+                                <option value="Activo" selected="@(Model?.FormData?.Estatus == "Activo" ? "selected" : null)">Activo</option>
+                                <option value="Inactivo" selected="@(Model?.FormData?.Estatus == "Inactivo" ? "selected" : null)">Inactivo</option>
                             </select>
                         </div>
                         <div class="col-6">
-                            <input id="Identificacion"
-                                   name="Identificacion"
-                                   class="form-control"
-                                   placeholder="Identificación" />
+                            <input id="Identificacion" name="Identificacion" class="form-control"
+                                   placeholder="Identificación"
+                                   value="@Model?.FormData?.Identificacion"
+                                   type="text"
+                                   inputmode="numeric"
+                                   pattern="[0-9]*"
+                                   maxlength="7"
+                                   oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,7)" />
+
                         </div>
                     </div>
                 </div>
-
             </div>
 
-
-
-            <!-- Acciones -->
             <div class="d-flex justify-content-center gap-3 mt-4">
-                <button type="submit" class="btn text-white"
-                        style="background-color:#FF5100;border-color:#FF5100;">
+                <button type="submit" class="btn text-white" style="background-color:#FF5100;border-color:#FF5100;">
                     Guardar
                 </button>
-                <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
+                <a asp-action="Contactos" class="btn btn-secondary">Cancelar</a>
             </div>
         </form>
+
     </div>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+          const form = document.getElementById("formContactos");
+          if (!form) return;
+
+          // Helpers para mostrar/limpiar errores
+          const setErr = (id, msg) => { const el = document.getElementById(id); if (el) el.textContent = msg || ""; };
+
+          form.addEventListener("submit", function (e) {
+            let ok = true;
+
+            // Limpia mensajes previos
+            document.querySelectorAll(".field-error").forEach(div => div.textContent = "");
+
+            // Nombre
+            const nombre = form.querySelector("#Nombre")?.value?.trim() || "";
+            if (!nombre) { setErr("errNombre", "Obligatorio"); ok = false; }
+
+            // Dirección
+            const dir = form.querySelector("#Direccion")?.value?.trim() || "";
+            if (!dir) { setErr("errDireccion", "Obligatorio"); ok = false; }
+
+            // Email
+            const email = form.querySelector("#Email")?.value?.trim() || "";
+            if (!email) { setErr("errEmail", "Obligatorio"); ok = false; }
+
+            // País
+            const pais = form.querySelector("#Pais")?.value?.trim() || "";
+            if (!pais) { setErr("errPais", "Obligatorio"); ok = false; }
+
+            if (!ok) e.preventDefault(); // <- detiene el POST
+          });
+        });
+    </script>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+          const prePais   = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model?.FormData?.Pais ?? ""));
+          const preEstado = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model?.FormData?.Estado ?? ""));
+          const preCiudad = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model?.FormData?.Ciudad ?? ""));
+
+          // Reutiliza tus funciones existentes
+          if (typeof loadCountries === 'function') {
+            await loadCountries('Pais', prePais);
+            await loadStates('Pais', 'Estado', preEstado);
+            await loadCities('Pais', 'Estado', 'Ciudad', preCiudad);
+          } else {
+            // si no tienes helpers, al menos setea valores directos (si ya existen en <option>)
+            const pais   = document.getElementById('Pais');
+            const estado = document.getElementById('Estado');
+            const ciudad = document.getElementById('Ciudad');
+            if (pais && prePais) pais.value = prePais;
+            if (estado && preEstado) estado.value = preEstado;
+            if (ciudad && preCiudad) ciudad.value = preCiudad;
+          }
+        });
+    </script>
 
 
     @{
@@ -153,7 +234,7 @@
         var pageSizeCurrent = Model?.PageSize ?? 5;
     }
 
-    <form asp-controller="GestionServicio" asp-action="ControlTrafico" method="get">
+    <form asp-controller="Empresa" asp-action="Contactos" method="get">
 
         <!-- AQUI DEBERIAN DE IR LOS FILTROS -->
         <!-- FILTROS: Fila 1 -->
@@ -163,8 +244,9 @@
                 <div class="row gx-2 gy-2 align-items-center">
                     <!-- Empresa (se expande) -->
                     <div class="col">
-                        <input type="text" name="q" class="form-control" placeholder="Empresa" />
+                        <input type="text" name="q" value="@Model.Query" class="form-control" placeholder="Contacto" />
                     </div>
+
 
                     <!-- Buscar (tamaño contenido) -->
                     <div class="col-auto">
@@ -175,13 +257,12 @@
                         </button>
                     </div>
 
-                    <!-- ---Todos--- (se expande igual que Empresa) -->
                     <!-- ---Todos--- como select sin flecha -->
                     <div class="col">
                         <select id="estatus" name="estatus" class="form-select no-caret">
-                            <option value="" selected="@(string.IsNullOrEmpty(estatusVal) ? "selected" : null)">---Todos---</option>
-                            <option value="Activo" selected="@(estatusVal == "Activo" ? "selected" : null)">Activo</option>
-                            <option value="Inactivo" selected="@(estatusVal == "Inactivo" ? "selected" : null)">Inactivo</option>
+                            <option value="" selected="@(string.IsNullOrEmpty(Model.EstatusFilter) ? "selected" : null)">---Todos---</option>
+                            <option value="Activo" selected="@(Model.EstatusFilter == "Activo" ? "selected" : null)">Activo</option>
+                            <option value="Inactivo" selected="@(Model.EstatusFilter == "Inactivo" ? "selected" : null)">Inactivo</option>
                         </select>
                     </div>
                 </div>
@@ -195,7 +276,8 @@
                             style="background-color:#FF5100;border-color:#FF5100;">
                         Filtrar
                     </button>
-                    <button type="reset" class="btn btn-secondary">Limpiar Filtro</button>
+                    <a href="@Url.Action("Contactos", new { page = 1, pageSize = Model.PageSize })"
+                       class="btn btn-secondary">Limpiar Filtro</a>
                 </div>
             </div>
         </div>
@@ -207,17 +289,20 @@
         <div class="row align-items-center mb-2">
             <div class="col-12 col-lg-9 d-flex flex-wrap align-items-center gap-2">
                 <span>Mostrar</span>
-                <select id="pageSize" name="pageSize" class="form-select form-select-sm w-auto">
-                    <option value="1">1</option>
-                    <option value="5" selected>5</option>
-                    <option value="10">10</option>
-                    <option value="20">20</option>
+                <select id="pageSize" name="pageSize"
+                        class="form-select form-select-sm w-auto"
+                        onchange="this.form.submit()">
+                    <option value="1" selected="@(pageSizeCurrent == 1 ? "selected" : null)">1</option>
+                    <option value="5" selected="@(pageSizeCurrent == 5 ? "selected" : null)">5</option>
+                    <option value="10" selected="@(pageSizeCurrent == 10 ? "selected" : null)">10</option>
+                    <option value="20" selected="@(pageSizeCurrent == 20 ? "selected" : null)">20</option>
                 </select>
+
                 <span>Contactos</span>
             </div>
 
             <div class="col-12 col-lg-3 d-flex justify-content-lg-end mt-2 mt-lg-0">
-                <a asp-action="RegistrarEmpresa"
+                <a asp-controller="Empresa" asp-action="Empresas"
                    class="btn text-white"
                    style="background-color:#FF5100;border-color:#FF5100;">
                     <span class="fw-bold me-2">+</span> Registrar Empresa
@@ -278,21 +363,20 @@
                 .table-responsive {
                     overflow-x: auto;
                 }
-
             </style>
             <div class="table-responsive table-scroll">
                 <table class="datatables-basic table table-stretch">
                     <thead>
                         <tr>
                             <th>Nombre de contacto</th>
-                            <th>Incidente de activos</th>
-                            <th>Técnico asignado </th>
+                   
+                            <th>País </th>
                             <th>Teléfono</th>
                             <th>Tel.Móvil</th>
                             <th>Email</th>
                             <th class="text-end">Acciones</th>
                         </tr>
-                    </thead> 
+                    </thead>
                     <tbody>
                         @if (Model?.Items != null && Model.Items.Any())
                         {
@@ -300,8 +384,7 @@
                             {
                                 <tr>
                                     <td class="text-truncate" style="font-size:12.5px">@item.Nombre</td>
-                                    <td class="text-truncate d-none d-sm-table-cell" style="font-size:12.5px">@item.Nombre</td>
-                                    <td class="text-truncate d-none d-md-table-cell" style="font-size:12.5px">@item.Nombre</td>
+                                    <td class="text-truncate d-none d-md-table-cell" style="font-size:12.5px">@item.Pais</td>
                                     <td class="text-truncate d-none d-lg-table-cell" style="font-size:12.5px">@item.Telefono</td>
                                     <td class="text-truncate d-none d-sm-table-cell" style="font-size:12.5px">@item.TelefonoMovil</td>
                                     <td class="text-truncate d-none d-sm-table-cell" style="font-size:12.5px">@item.Email</td>
@@ -310,18 +393,28 @@
                                             <a class="btn d-flex align-items-center justify-content-center p-1 px-2"
                                                title="Editar"
                                                asp-controller="Empresa"
-                                               asp-action="Editar"
-                                               asp-action="Editar" asp-route-id="@item.IdContacto"
+                                               asp-action="EditarContacto"
+                                               asp-route-id="@item.IdContacto"
+                                               asp-route-page="@(Model?.CurrentPage ?? 1)"
+                                               asp-route-pageSize="@(Model?.PageSize ?? 5)"
+                                               asp-route-q="@(Model?.Query)"
+                                               asp-route-todos="@(Model?.Todos)"
+                                               asp-route-estatus="@(Model?.EstatusFilter)"
                                                style="background-color:#00A5B8;border:none;border-radius:6px;height:28px;min-width:40px;">
                                                 <img src="~/img/editar_icono.svg" alt="Editar" style="width:16px;height:16px;">
                                             </a>
-                                            <button type="button" class="btn d-flex align-items-center justify-content-center p-1 px-2"
+
+                                            <button type="button"
+                                                    class="btn d-flex align-items-center justify-content-center p-1 px-2"
                                                     title="Borrar"
-                                                    data-bs-toggle="modal" data-bs-target="#empresaDeleteModal"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#contactoDeleteModal"
                                                     data-id="@item.IdContacto"
+                                                    data-nombre="@($"{item.Nombre} {item.Apellidos}".Trim())"
                                                     style="background-color:#666;border:none;border-radius:6px;height:28px;min-width:40px;">
                                                 <img src="~/img/eliminar_icono.svg" alt="Eliminar" style="width:16px;height:16px;">
                                             </button>
+
                                         </div>
                                     </td>
                                 </tr>
@@ -353,9 +446,7 @@
                 var to = total == 0 ? 0 : Math.Min(page * pageSize, total);
             }
 
-            <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mt-2 gap-2">
-           
-
+            <div class="d-flex justify-content-end mt-2">
                 <nav aria-label="Paginación">
                     <ul class="pagination flex-wrap mb-0">
 
@@ -403,19 +494,73 @@
     </form>
 </div>
 
-<!-- Modal de alerta (arriba) -->
+<!-- Modal eliminar contacto -->
+<div class="modal fade" id="contactoDeleteModal" tabindex="-1" aria-labelledby="contactoDeleteLabel" aria-hidden="true">
+    <div class="modal-dialog modal-sm mt-3">
+        <div class="modal-content">
+            <div class="modal-header py-2 px-3">
+                <h6 class="modal-title mb-0" id="contactoDeleteLabel">Confirmar eliminación</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+
+            <div class="modal-body py-2 px-3">
+                ¿Eliminar <span id="contactoDeleteNombre" class="fw-semibold"></span>?
+            </div>
+
+            <div class="modal-footer py-2 px-3">
+                <form asp-controller="Empresa" asp-action="EliminarContacto" method="post" class="m-0">
+                    @Html.AntiForgeryToken()
+
+                    <input type="hidden" name="id" id="deleteContactoId" />
+
+                    <!-- Preservar filtros/página -->
+                    <input type="hidden" name="page" value="@(ViewContext?.HttpContext?.Request?.Query["page"])" />
+                    <input type="hidden" name="pageSize" value="@(ViewContext?.HttpContext?.Request?.Query["pageSize"])" />
+                    <input type="hidden" name="q" value="@(ViewContext?.HttpContext?.Request?.Query["q"])" />
+                    <input type="hidden" name="todos" value="@(ViewContext?.HttpContext?.Request?.Query["todos"])" />
+                    <input type="hidden" name="estatus" value="@(ViewContext?.HttpContext?.Request?.Query["estatus"])" />
+
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-sm text-white" style="background-color:#FF5100;border-color:#FF5100;">
+                        Eliminar
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const modalEl = document.getElementById('contactoDeleteModal');
+      if (!modalEl) return;
+
+      modalEl.addEventListener('show.bs.modal', function (ev) {
+        const btn = ev.relatedTarget;
+        if (!btn) return;
+        const id     = btn.getAttribute('data-id') || '';
+        const nombre = btn.getAttribute('data-nombre') || '';
+
+        const idInput   = modalEl.querySelector('#deleteContactoId');
+        const nombreEl  = modalEl.querySelector('#contactoDeleteNombre');
+
+        if (idInput)  idInput.value = id;
+        if (nombreEl) nombreEl.textContent = nombre;
+      });
+    });
+</script>
+
+
+
 <!-- Modal de alerta (compacto y arriba) -->
 <div class="modal fade" id="alertModal" tabindex="-1" aria-labelledby="alertModalLabel" aria-hidden="true">
     <div class="modal-dialog mt-3">
-        @* sin modal-lg; más pegado arriba *@
         <div class="modal-content">
             <div class="modal-header py-2 px-3">
                 <h6 class="modal-title mb-0" id="alertModalLabel">Éxito</h6>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
-            <div class="modal-body py-2 px-3" id="alertModalBody">
-                Contacto registrado correctamente
-            </div>
+            <div class="modal-body py-2 px-3" id="alertModalBody">Contacto registrado correctamente</div>
             <div class="modal-footer py-2 px-3">
                 <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cerrar</button>
             </div>
@@ -423,33 +568,24 @@
     </div>
 </div>
 
+@{
+    var msg = TempData.Peek("Alert") as string;            // mirar sin consumir
+    var title = TempData.Peek("AlertTitle") as string ?? "Aviso";
+}
 
-
-
-@if (ViewBag.Alert != null)
+@if (!string.IsNullOrEmpty(msg))
 {
+    // Borrar ya mismo para que no aparezca en otras vistas
+    TempData.Remove("Alert");
+    TempData.Remove("AlertTitle");
+
     <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            const alertBody  = @Html.Raw(System.Text.Json.JsonSerializer.Serialize((string)ViewBag.Alert));
-            const alertTitle = @Html.Raw(System.Text.Json.JsonSerializer.Serialize((string)ViewBag.AlertTitle ?? "Aviso"));
-
-            const bodyEl  = document.getElementById('alertModalBody');
-            const titleEl = document.getElementById('alertModalLabel');
-            if (bodyEl)  bodyEl.textContent  = alertBody;
-            if (titleEl) titleEl.textContent = alertTitle;
-
-            const m = new bootstrap.Modal(document.getElementById('alertModal'));
-            m.show();
-
-            // ----> limpiar la query para que no se repita al refrescar o navegar
-            try {
-                const url = new URL(window.location.href);
-                url.searchParams.delete('registrado');
-                // Reemplazamos la URL en el historial sin recargar la página
-                window.history.replaceState({}, document.title, url.pathname + url.search + url.hash);
-            } catch (e) {
-                // en navegadores antiguos podría fallar, se ignora
-            }
+        document.addEventListener('DOMContentLoaded', function () {
+          const bodyEl  = document.getElementById('alertModalBody');
+          const titleEl = document.getElementById('alertModalLabel');
+          if (bodyEl)  bodyEl.textContent  = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(msg));
+          if (titleEl) titleEl.textContent = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(title));
+          new bootstrap.Modal(document.getElementById('alertModal')).show();
         });
     </script>
 }

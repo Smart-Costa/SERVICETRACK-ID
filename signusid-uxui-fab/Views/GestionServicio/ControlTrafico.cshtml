@@ -88,7 +88,7 @@
                         <label style="visibility:hidden">Buscar</label>
                         <div class="row g-2 align-items-end">
                             <div class="col">
-                                <input form="frmSearch" type="text" name="q" class="traffic-input h52"
+                                <input form="frmSearch" type="text" name="q" class="traffic-input"
                                        placeholder="Buscar" value="@(Model?.Query ?? "")" />
                                 <input form="frmSearch" type="hidden" name="page" value="1" />
                                 <input form="frmSearch" type="hidden" name="pageSize" value="@Model.PageSize" />
@@ -128,13 +128,13 @@
                         <div class="tel-email">
                             <div class="field-half">
                                 <label class="form-label" style="color:#606060">Tel para el Servicio*</label>
-                                <input name="TelefonoServicio" id="TelefonoServicio" class="traffic-input h52" />
+                                <input name="TelefonoServicio" id="TelefonoServicio" class="traffic-input" />
                                 <div id="telefonoEmailError" class="field-error"></div>
                             </div>
 
                             <div class="field-half">
                                 <label class="form-label" style="color:#606060">Email para el Servicio*</label>
-                                <input name="EmailServicio" id="EmailServicio" class="traffic-input h52" />
+                                <input name="EmailServicio" id="EmailServicio" class="traffic-input" />
                                 <div id="telefonoEmailError2" class="field-error"></div>
                             </div>
                         </div>
@@ -159,6 +159,17 @@
                     </div>
 
                 </div>
+                <script>
+                    document.addEventListener('DOMContentLoaded', () => {
+                      const estado = document.getElementById('EstadoFormulario')?.value || 'Insertar';
+                      const sel = document.getElementById('selectAsignado');
+                      if (estado === 'Insertar' && sel) {
+                        const opt = [...sel.options].find(o => o.text.trim().toLowerCase().startsWith('sin asignar'));
+                        if (opt) sel.value = opt.value;
+                      }
+                    });
+                </script>
+
             </div>
 
             <!-- Fila 3 -->
@@ -227,7 +238,7 @@
                         <label class="form-label" style="color:#606060">Fecha Próximo Servicio</label>
                         <div class="d-flex align-items-center gap-2">
                             <input type="text"
-                                   class="traffic-input h52"
+                                   class="traffic-input"
                                    id="FechaProximoServicio"
                                    name="FechaProximoServicio"
                                    placeholder="mm/dd/yy"
@@ -250,7 +261,7 @@
                             <!-- Select hora -->
                             <div class="col-12 col-sm-6 col-lg-7">
                                 <select name="HoraServicio" id="HoraServicio"
-                                        class="form-select time-select h52"
+                                        class="form-select time-select"
                                         data-selected="@ViewBag.HoraServicio">
                                     <option value="">hh:mm</option>
                                 </select>
@@ -262,7 +273,7 @@
                             <!-- Checkboxes (GD / SC / S-ID) -->
                             <!-- Checkboxes (GD / SC / S-ID) -->
                             <div class="col-12 col-sm-6 col-lg-5">
-                                <div class="hour-flags d-flex w-100 align-items-center gap-2 gap-sm-3 h52 px-3 rounded-3
+                                <div class="hour-flags d-flex w-100 align-items-center gap-2 gap-sm-3 px-3 rounded-3
             flex-wrap flex-sm-nowrap justify-content-start ms-md-2 ms-lg-3">
                                     <label class="mb-0 d-flex align-items-center gap-2">
                                         <input type="checkbox" name="GD" value="true" style="accent-color:#ff5100;" id="flagGD">
@@ -921,6 +932,8 @@
         selEmpresa.value  = d.empresaId || '';
         await cargarContratosService(d.empresaId || '', d.contratoId || '');
 
+        await window.cargarSolicitantes(d.empresaId || null, d.solicitanteId || '');
+
         // Por si el contrato no vino en la lista (pertenece a otra empresa, etc.)
         if (d.contratoId) {
           const selContrato = $('#selectContrato');
@@ -936,6 +949,7 @@
         setSelectValueSafe($('#selectSolicitante'),   d.solicitanteId || '');
         setSelectValueSafe($('#selectAsignado'),      d.asignadoAId || '');
         setSelectValueSafe($('#selectRazonServicio'), d.razonServicioId || '');
+
 
         // Radios + inputs
         const radio = document.querySelector(`input[name="LugarServicio"][value="${d.lugarServicio ?? 0}"]`);
@@ -957,6 +971,10 @@
         $('#flagSC').checked  = !!d.sc;
         $('#flagSID').checked = !!d.sid;
         setFlagsDisabled(true);
+
+
+
+
       }
 
       // ===================== Wiring =====================
@@ -1087,4 +1105,112 @@
     }
 
 </style>
+
+
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const selEmpresa      = document.getElementById('selectEmpresa');
+      const selSolicitante  = document.getElementById('selectSolicitante');
+
+      async function cargarSolicitantes(empresaId, selectedValue) {
+        // 1) reset
+        selSolicitante.innerHTML = '';
+        selSolicitante.append(new Option('Seleccione un elemento', ''));
+
+        // 2) arma URL: si no hay empresa => trae todos
+        const baseUrl = '@Url.Action("SolicitantesPorEmpresa", "GestionServicio")';
+        const url = empresaId ? `${baseUrl}?empresaId=${encodeURIComponent(empresaId)}` : baseUrl;
+
+        try {
+          const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          const data = await res.json(); // [{value,text}]
+
+          // 3) poblar
+          data.forEach(o => selSolicitante.append(new Option(o.text, o.value)));
+
+          // 4) preselección (útil cuando estás editando)
+          if (selectedValue) {
+            selSolicitante.value = selectedValue;
+            // por si no vino en la lista (poco probable si el contacto pertenece a otra empresa)
+            if (selSolicitante.value !== selectedValue) {
+              const label = 'Solicitante seleccionado';
+              selSolicitante.add(new Option(label, selectedValue, true, true), 1);
+              selSolicitante.value = selectedValue;
+            }
+          }
+        } catch (e) {
+          console.error('Error cargando solicitantes:', e);
+          // deja solo el “Seleccione”
+        }
+      }
+
+      // Cambio manual de empresa => filtra por esa empresa
+      selEmpresa?.addEventListener('change', () => {
+        const empId = selEmpresa.value || null;
+        cargarSolicitantes(empId, null);
+      });
+
+      // Exponer para modo Edición (si ya tienes flujo de editar):
+      window.cargarSolicitantes = cargarSolicitantes;
+
+      // Estado inicial:
+      // - Sin empresa seleccionada => ya tienes TODOS del ViewBag (no hacemos nada).
+      // - Si quieres forzar a que siempre venga desde API, descomenta:
+      // cargarSolicitantes(null, null);
+    });
+</script>
+
+<script>
+    (function () {
+      const $ = (s) => document.querySelector(s);
+
+      function selectSinAsignarDefault({ onlyIfInsert = true } = {}) {
+        const sel = $('#selectAsignado');
+        if (!sel) return;
+
+        if (onlyIfInsert) {
+          const estado = $('#EstadoFormulario')?.value?.toLowerCase() || 'insertar';
+          if (estado !== 'insertar') return;
+        }
+
+        const pick = () => {
+          const opt = [...sel.options].find(o =>
+            (o.text || '').trim().toLowerCase().startsWith('sin asignar')
+          );
+          if (opt) sel.value = opt.value;
+        };
+
+        // si ya está la opción, seleccionar
+        pick();
+
+        // si aún no está (se llena async), observar una sola vez hasta que aparezca
+        const hasSinAsignar = [...sel.options].some(o =>
+          (o.text || '').trim().toLowerCase().startsWith('sin asignar')
+        );
+        if (!hasSinAsignar) {
+          const obs = new MutationObserver(() => {
+            const found = [...sel.options].some(o =>
+              (o.text || '').trim().toLowerCase().startsWith('sin asignar')
+            );
+            if (found) { pick(); obs.disconnect(); }
+          });
+          obs.observe(sel, { childList: true });
+          // safety: corta a los 5s para no dejar observer colgado
+          setTimeout(() => obs.disconnect(), 5000);
+        }
+      }
+
+      document.addEventListener('DOMContentLoaded', () => {
+        // 1) En carga inicial, si estamos en "Insertar", dejar "Sin Asignar"
+        selectSinAsignarDefault({ onlyIfInsert: true });
+
+        // 2) Después de BORRAR: ejecuta al final del tick para que gane
+        $('#btnBorrar')?.addEventListener('click', () => {
+          setTimeout(() => selectSinAsignarDefault({ onlyIfInsert: false }), 0);
+        });
+      });
+    })();
+</script>
 

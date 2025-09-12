@@ -39,8 +39,8 @@ document.addEventListener('DOMContentLoaded', () => {
     asignado: { el: document.getElementById('selectAsignado'), err: 'asignadoError', required: true, type: 'select' },
     razon: { el: document.getElementById('selectRazonServicio'), err: 'razonError', required: true, type: 'select' },
     direccion: { el: document.getElementById('DireccionServicio'), err: 'direccionError', required: true, type: 'text' },
-    fecha: { el: document.getElementById('FechaProximoServicio'), err: 'fechaError', required: true, type: 'date' },
-    hora: { el: document.getElementById('HoraServicio'), err: 'horaError', required: true, type: 'select' },
+    fecha: { el: document.getElementById('FechaProximoServicio'), err: 'fechaError', required: false, type: 'date' },
+    hora: { el: document.getElementById('HoraServicio'), err: 'horaError', required: false, type: 'select' },
     descripcion: { el: document.getElementById('DescripcionIncidente'), err: 'descripcionError', required: true, type: 'text' }
   };
 
