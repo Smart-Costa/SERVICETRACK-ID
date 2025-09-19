@@ -52,7 +52,7 @@ public class AuthController : Controller
       return View(loginSuccesful);
     }
     //En caso de exito, redireccionar al listado de usuarios
-    return RedirectToAction("GestionServicios", "GestionServicio");
+    return RedirectToAction("ControlTrafico", "GestionServicio");
 
   }
 

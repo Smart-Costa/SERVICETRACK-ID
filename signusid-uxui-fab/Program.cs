@@ -14,20 +14,18 @@ builder.Services.AddDbContext<AspnetCoreMvcFullContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("AspnetCoreMvcFullContext") ?? throw new InvalidOperationException("Connection string 'AspnetCoreMvcFullContext' not found.")));
 
 builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+builder.Services.AddMemoryCache();
 
-var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
-
+// Bind de perfiles SMTP (ya lo tenías bien)
 builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("SmtpSignus"));
 builder.Services.Configure<SmtpSettings>("Signus", builder.Configuration.GetSection("SmtpSignus"));
 builder.Services.Configure<SmtpSettings>("Diverscan", builder.Configuration.GetSection("SmtpDiverscan"));
 builder.Services.Configure<SmtpSettings>("Smartcosta", builder.Configuration.GetSection("SmtpSmartcosta"));
 
+// Selector
+builder.Services.AddSingleton<ISmtpSelector, SmtpSelector>();
 
-// Add services to the container.
-builder.Services.AddControllersWithViews(options =>
-{
-  //options.Filters.Add<MenuUbicacionFilter>();
-});
+builder.Services.AddControllersWithViews();
 
 var app = builder.Build();
 

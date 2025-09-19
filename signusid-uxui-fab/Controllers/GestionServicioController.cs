@@ -1,4 +1,5 @@
 using AspnetCoreMvcFull.Mailer;
+using AspnetCoreMvcFull.Models;
 using AspnetCoreMvcFull.Models.Common;
 using AspnetCoreMvcFull.Models.Contro_de_Trafico;
 using AspnetCoreMvcFull.Models.Contro_de_Trafico;
@@ -671,14 +672,17 @@ OFFSET @Skip ROWS FETCH NEXT @Take ROWS ONLY;";
     private readonly SmtpSettings _smtp;
     private readonly string _cs;
     private readonly IOptionsMonitor<SmtpSettings> _smtpOptions;
+    private readonly ISmtpSelector _smtpSelector;
 
-    public GestionServicioController(IConfiguration cfg, IOptionsMonitor<SmtpSettings> smtpOptions)
+    public GestionServicioController(ISmtpSelector smtpSelector, IConfiguration cfg, IOptionsMonitor<SmtpSettings> smtpOptions)
     {
       _cs = System.Configuration.ConfigurationManager.ConnectionStrings["ServerDiverscan"].ConnectionString
               ?? cfg.GetConnectionString("ServerDiverscan");
       _smtp = cfg.GetSection("Smtp").Get<SmtpSettings>() ?? new SmtpSettings();
 
       _smtpOptions = smtpOptions;
+
+      _smtpSelector = smtpSelector;
     }
 
     private SmtpSettings PickSmtp(bool gd, bool sc, bool sid, out string marca)
@@ -1035,7 +1039,7 @@ WHERE Ticket = @Ticket;";
         }
 
         // === SMTP por marca ===
-        var smtp = PickSmtp(dto.GD == true, dto.SC == true, dto.SID == true, out var marca);
+        var smtp = _smtpSelector.Pick(dto.GD == true, dto.SC == true, dto.SID == true, out var marca);
 
         try
         {
@@ -1170,7 +1174,7 @@ WHERE Ticket = @Ticket;";
 
         // === SMTP por marca ===
         // var smtp = PickSmtp(dto.GD, dto.SC, dto.SID, out var marca);
-        var smtp = PickSmtp(dto.GD == true, dto.SC == true, dto.SID == true, out var marca);
+        var smtp = _smtpSelector.Pick(dto.GD == true, dto.SC == true, dto.SID == true, out var marca);
 
         if (jobs.Count > 0)
         {
@@ -1553,62 +1557,174 @@ Por favor, gestiona este caso en ServiceTrackID.";
 
     private static string NullOrND(string? s) => string.IsNullOrWhiteSpace(s) ? "Sin Datos" : s.Trim();
 
+    //    private static (string subject, string txt, string html) BuildMailToUser(
+    //        string nombreSolicitante,
+    //        string nombreAsignado,
+    //        int ticket,
+    //        DateTime? fechaProx,   // fecha agendada
+    //        TimeSpan? horaServ     // hora agendada
+    //    )
+    //    {
+    //      string fechaTxt = FormatFechaCR(fechaProx);  // ej. 23/Setiembre/2025
+    //      string horaTxt = FormatHoraCR(horaServ);    // ej. 14:20 horas
+
+    //      string subject = $"Ticket #{ticket} asignado";
+
+    //      // === Texto plano ===
+    //      string plain =
+    //  $@"Estimado: {nombreSolicitante}
+
+    //Su incidente, No. {ticket}, ha sido asignado al Agente de Servicio “{nombreAsignado}”, quien se estará poniendo en contacto con usted para la respectiva evaluación.
+
+    //Por favor, mantener a mano la información que será requerida como números de serie, modelo, marca, registros del problema y otras evidencias que nos permitan efectuar el diagnóstico respectivo y en el tiempo asignado para tal fin.
+
+    //Le recordamos que todo servicio que no se encuentre bajo garantía o contrato, podrá requerir la aprobación de la cotización de diagnóstico previo a la ejecución del respectivo servicio.
+
+    //Su Servicio se encuentra agendado para:
+
+    //{fechaTxt}
+    //{horaTxt}
+
+    //Atención: Cuando una evaluación de la situación no se pueda llevar a cabo por disponibilidad o la no atención de la visita o la llamada, este incidente se podría estar cerrando sin ninguna responsabilidad de nuestra parte, por lo que le solicitamos notificar con al menos 2 horas de tiempo previo a la fecha y hora establecida para que el servicio le sea re-agendado nuevamente.
+
+    //Estamos para servirle.
+
+    //Saludos.
+    //Servicio al Cliente.";
+
+    //      // === HTML ===
+    //      string html = $@"
+    //<div style='font-family:Arial,sans-serif;font-size:14px;color:#333;line-height:1.5'>
+    //  <p>Estimado: <strong>{WebUtility.HtmlEncode(nombreSolicitante)}</strong></p>
+
+    //  <p>Su incidente, <strong>No. {ticket}</strong>, ha sido asignado al Agente de Servicio
+    //     <strong>“{WebUtility.HtmlEncode(nombreAsignado)}”</strong>, quien se estará poniendo en contacto con usted para la respectiva evaluación.</p>
+
+    //  <p>Por favor, mantener a mano la información que será requerida como números de serie, modelo, marca, registros del problema y otras evidencias que nos permitan efectuar el diagnóstico respectivo y en el tiempo asignado para tal fin.</p>
+
+    //  <p>Le recordamos que todo servicio que no se encuentre bajo garantía o contrato, podrá requerir la aprobación de la cotización de diagnóstico previo a la ejecución del respectivo servicio.</p>
+
+    //  <p style='margin:16px 0 6px'><strong>Su Servicio se encuentra agendado para:</strong></p>
+    //  <p style='margin:0'>{WebUtility.HtmlEncode(fechaTxt)}</p>
+    //  <p style='margin:0'>{WebUtility.HtmlEncode(horaTxt)}</p>
+
+    //  <p style='margin-top:16px'><strong>Atención:</strong> Cuando una evaluación de la situación no se pueda llevar a cabo por disponibilidad o la no atención de la visita o la llamada, este incidente se podría estar cerrando sin ninguna responsabilidad de nuestra parte, por lo que le solicitamos notificar con al menos 2 horas de tiempo previo a la fecha y hora establecida para que el servicio le sea re-agendado nuevamente.</p>
+
+    //  <p style='margin-top:16px'>Estamos para servirle.</p>
+    //  <p>Saludos.<br/>Servicio al Cliente.</p>
+    //</div>";
+
+    //      return (subject, plain, html);
+    //    }
+
     private static (string subject, string txt, string html) BuildMailToUser(
-        string nombreSolicitante,
-        string nombreAsignado,
-        int ticket,
-        DateTime? fechaProx,   // fecha agendada
-        TimeSpan? horaServ     // hora agendada
-    )
+    string nombreSolicitante,
+    string nombreAsignado,
+    int ticket,
+    DateTime? fechaProx,
+    TimeSpan? horaServ)
     {
-      string fechaTxt = FormatFechaCR(fechaProx);  // ej. 23/Setiembre/2025
-      string horaTxt = FormatHoraCR(horaServ);    // ej. 14:20 horas
+      string fechaTxt = FormatFechaCR(fechaProx);
+      string horaTxt = FormatHoraCR(horaServ);
+      string subject = $"Ticket #{ticket} asignado - Smart Costa";
 
-      string subject = $"Ticket #{ticket} asignado";
-
-      // === Texto plano ===
-      string plain =
-  $@"Estimado: {nombreSolicitante}
-
-Su incidente, No. {ticket}, ha sido asignado al Agente de Servicio “{nombreAsignado}”, quien se estará poniendo en contacto con usted para la respectiva evaluación.
-
-Por favor, mantener a mano la información que será requerida como números de serie, modelo, marca, registros del problema y otras evidencias que nos permitan efectuar el diagnóstico respectivo y en el tiempo asignado para tal fin.
-
-Le recordamos que todo servicio que no se encuentre bajo garantía o contrato, podrá requerir la aprobación de la cotización de diagnóstico previo a la ejecución del respectivo servicio.
-
-Su Servicio se encuentra agendado para:
-
-{fechaTxt}
-{horaTxt}
-
-Atención: Cuando una evaluación de la situación no se pueda llevar a cabo por disponibilidad o la no atención de la visita o la llamada, este incidente se podría estar cerrando sin ninguna responsabilidad de nuestra parte, por lo que le solicitamos notificar con al menos 2 horas de tiempo previo a la fecha y hora establecida para que el servicio le sea re-agendado nuevamente.
-
+      // === Texto plano (mejorado) ===
+      string plain = $@"Estimado/a {nombreSolicitante},
+ 
+Su incidente (No. {ticket}) ha sido asignado a {nombreAsignado}, quien se contactará con usted para la evaluación.
+ 
+Por favor tenga a mano:
+- Números de serie
+- Modelo y marca
+- Registros del problema
+- Otras evidencias
+ 
+Nota: Para servicios fuera de garantía, se requerirá aprobación de cotización previa.
+ 
+Detalles del servicio agendado:
+Fecha: {fechaTxt}
+Hora: {horaTxt}
+ 
+Importante: Si no podemos realizar la evaluación por falta de disponibilidad o atención, el ticket será cerrado. Avísenos con 2 horas de anticipación para reagendar.
+ 
+Gestione su ticket aquí: https://servicetrackid.com/ticket/{ticket}
+ 
 Estamos para servirle.
+ 
+Saludos,
+Servicio al Cliente
+Smart Costa, LLC
+Teléfono: +506 24512442
+https://smartcosta.com";
 
-Saludos.
-Servicio al Cliente.";
-
-      // === HTML ===
+      // === HTML optimizado ===
       string html = $@"
-<div style='font-family:Arial,sans-serif;font-size:14px;color:#333;line-height:1.5'>
-  <p>Estimado: <strong>{WebUtility.HtmlEncode(nombreSolicitante)}</strong></p>
-
-  <p>Su incidente, <strong>No. {ticket}</strong>, ha sido asignado al Agente de Servicio
-     <strong>“{WebUtility.HtmlEncode(nombreAsignado)}”</strong>, quien se estará poniendo en contacto con usted para la respectiva evaluación.</p>
-
-  <p>Por favor, mantener a mano la información que será requerida como números de serie, modelo, marca, registros del problema y otras evidencias que nos permitan efectuar el diagnóstico respectivo y en el tiempo asignado para tal fin.</p>
-
-  <p>Le recordamos que todo servicio que no se encuentre bajo garantía o contrato, podrá requerir la aprobación de la cotización de diagnóstico previo a la ejecución del respectivo servicio.</p>
-
-  <p style='margin:16px 0 6px'><strong>Su Servicio se encuentra agendado para:</strong></p>
-  <p style='margin:0'>{WebUtility.HtmlEncode(fechaTxt)}</p>
-  <p style='margin:0'>{WebUtility.HtmlEncode(horaTxt)}</p>
-
-  <p style='margin-top:16px'><strong>Atención:</strong> Cuando una evaluación de la situación no se pueda llevar a cabo por disponibilidad o la no atención de la visita o la llamada, este incidente se podría estar cerrando sin ninguna responsabilidad de nuestra parte, por lo que le solicitamos notificar con al menos 2 horas de tiempo previo a la fecha y hora establecida para que el servicio le sea re-agendado nuevamente.</p>
-
-  <p style='margin-top:16px'>Estamos para servirle.</p>
-  <p>Saludos.<br/>Servicio al Cliente.</p>
-</div>";
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset=""UTF-8"">
+<meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
+<title>Ticket #{ticket} asignado</title>
+</head>
+<body style=""margin:0; padding:20px; font-family:Arial, sans-serif; font-size:14px; color:#333; line-height:1.6;"">
+<!-- Logo -->
+<div style=""text-align:center; margin:0 0 20px;"">
+<img src=""https://smartcosta.com/logo.png"" alt=""Smart Costa"" style=""max-width:150px;"">
+</div>
+ 
+  <!-- Saludo -->
+<p>Estimado/a <strong>{WebUtility.HtmlEncode(nombreSolicitante)}</strong>,</p>
+ 
+  <!-- Contenido principal -->
+<p>Su incidente (<strong>No. {ticket}</strong>) ha sido asignado a <strong>{WebUtility.HtmlEncode(nombreAsignado)}</strong>, quien se contactará con usted para la evaluación.</p>
+ 
+  <p>Por favor tenga a mano esta información:</p>
+<ul>
+<li>Números de serie</li>
+<li>Modelo y marca</li>
+<li>Registros del problema</li>
+<li>Otras evidencias relevantes</li>
+</ul>
+ 
+  <div style=""background:#f8f9fa; padding:15px; border-left:4px solid #17a2b8; margin:20px 0;"">
+<p><strong>Nota:</strong> Para servicios fuera de garantía o contrato, se requerirá su aprobación de una cotización de diagnóstico antes de realizar cualquier trabajo.</p>
+</div>
+ 
+  <!-- Detalles de agendamiento -->
+<div style=""background:#e7f3ff; padding:20px; border-radius:8px; margin:20px 0;"">
+<h4 style=""margin:0 0 15px; color:#0066cc;"">Detalles del servicio agendado</h4>
+<p style=""margin:5px 0;""><strong>Fecha:</strong> {WebUtility.HtmlEncode(fechaTxt)}</p>
+<p style=""margin:5px 0;""><strong>Hora:</strong> {WebUtility.HtmlEncode(horaTxt)}</p>
+<div style=""margin-top:15px;"">
+<p style=""margin:0 0 5px;"">¿Necesita cambiar la cita?</p>
+<a href=""https://servicetrackid.com/reagendar/{ticket}"" style=""background:#0066cc; color:white; padding:10px 20px; text-decoration:none; border-radius:4px; display:inline-block;"">Reagendar cita</a>
+</div>
+</div>
+ 
+  <!-- Advertencia importante -->
+<div style=""background:#fff3cd; padding:15px; border-left:4px solid #ffc107; margin:20px 0;"">
+<p><strong>Importante:</strong> Si no podemos realizar la evaluación por falta de disponibilidad o atención, el ticket será cerrado. Por favor avísenos con al menos 2 horas de anticipación para reagendar.</p>
+</div>
+ 
+  <!-- Cierre -->
+<p style=""margin-top:20px;"">Estamos para servirle.</p>
+<p>Saludos,<br><strong>Servicio al Cliente</strong><br>Smart Costa, LLC</p>
+ 
+  <!-- Enlace de gestión -->
+<div style=""text-align:center; margin:30px 0 20px;"">
+<a href=""https://servicetrackid.com/ticket/{ticket}"" style=""background:#28a745; color:white; padding:12px 25px; text-decoration:none; border-radius:4px; display:inline-block; font-weight:bold;"">Gestionar mi ticket</a>
+</div>
+ 
+  <!-- Footer legal -->
+<hr style=""border:none; border-top:1px solid #eee; margin:20px 0;"">
+<p style=""font-size:12px; color:#666; line-height:1.4;"">
+    Smart Costa, LLC<br>
+    Dirección: Calle 123, San José, Costa Rica<br>
+    Teléfono: +506 24512442<br>
+<a href=""https://smartcosta.com"" style=""color:#0066cc;"">www.smartcosta.com</a>
+</p>
+</body>
+</html>";
 
       return (subject, plain, html);
     }

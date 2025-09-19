@@ -7,21 +7,22 @@ using System.Security.Authentication;
 
 namespace AspnetCoreMvcFull.Mailer
 {
-  // Config básica
+  // ===== Config =====
+  // --- NUEVO en tu modelo ---
   public sealed class SmtpSettings
   {
     public string Host { get; set; } = "";
-    public int Port { get; set; } = 465; // HostGator: 465 (SSL). Para Outlook: 587 (STARTTLS).
+    public int Port { get; set; } = 465;                   // 465 SSL por defecto
     public string User { get; set; } = "";
     public string Pass { get; set; } = "";
-    public string From { get; set; } = "";  // si vacío, usa User
+    public string From { get; set; } = "";
     public string FromName { get; set; } = "ServiceTrackID Notificaciones";
-
-    // Opcional: carpeta donde guardar logs SMTP (si null usa C:\temp)
     public string? LogDir { get; set; }
+    public bool TrustServerCertificate { get; set; } = false; // true solo para localhost/lab
   }
 
-  // Un envío
+
+  // ===== Job / Resultado =====
   public sealed class MailJob
   {
     public string To { get; init; } = "";
@@ -33,168 +34,195 @@ namespace AspnetCoreMvcFull.Mailer
     public string? ReplyTo { get; init; }
   }
 
-  // Resultado por mensaje
   public sealed class MailResult
   {
     public MailJob Job { get; init; } = default!;
-    public bool AcceptedBySmtp { get; init; }   // true si el servidor respondió 250 OK tras DATA
-    public string? Error { get; init; }         // texto de error si falló el envío en SMTP
+    public bool AcceptedBySmtp { get; init; }
+    public string? Error { get; init; }
   }
 
   public static class Mailer
   {
-    // Serializa lotes (insert -> edit pegados) y aplica una pausa global
+    // ===== Logging a C:\logErroresCorreo\log.txt =====
+    private const string ErrorLogDirDefault = @"C:\logErroresCorreo";
+    private const string ErrorLogFileName = "log.txt";
+    private const long MaxLogBytes = 5 * 1024 * 1024; // 5 MB
+    private static readonly object _logLock = new();
+
+    private static string EnsureErrorLogPath(string? dirFromCfg)
+    {
+      var dir = string.IsNullOrWhiteSpace(dirFromCfg) ? ErrorLogDirDefault : dirFromCfg!;
+      try { Directory.CreateDirectory(dir); } catch { }
+      return Path.Combine(dir, ErrorLogFileName);
+    }
+    private static void RotateIfNeeded(string path)
+    {
+      try
+      {
+        var fi = new FileInfo(path);
+        if (fi.Exists && fi.Length >= MaxLogBytes)
+        {
+          var backup = Path.Combine(fi.DirectoryName!,
+            $"log_{DateTime.UtcNow:yyyyMMdd_HHmmss_fff}.txt");
+          File.Move(path, backup, overwrite: false);
+        }
+      }
+      catch { }
+    }
+    private static void LogLine(string? dirFromCfg, string level, string msg)
+    {
+      try
+      {
+        var path = EnsureErrorLogPath(dirFromCfg);
+        lock (_logLock)
+        {
+          RotateIfNeeded(path);
+          File.AppendAllText(path,
+            $"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}Z] [{level}] {msg}{Environment.NewLine}");
+        }
+      }
+      catch { }
+    }
+    private static void LogInfo(string? d, string m) => LogLine(d, "INFO", m);
+    private static void LogWarn(string? d, string m) => LogLine(d, "WARN", m);
+    private static void LogError(string? d, string m) => LogLine(d, "ERROR", m);
+
+    // ===== Throttle suave entre mensajes =====
     private static readonly SemaphoreSlim GlobalGate = new(1, 1);
     private static DateTime _lastBatchSentUtc = DateTime.MinValue;
+    private const int InterSendDelayMs = 1000; // 1s entre correos del mismo lote
 
-    // Pausa entre mensajes del mismo lote (anti-burst)
-    private const int InterSendDelayMs = 800;
-
-    /// <summary>
-    /// Envía varios correos en UNA conexión SMTP, registra log y devuelve resultados por mensaje.
-    /// </summary>
+    /// Envía varios correos en UNA conexión, guarda protocolo en C:\temp, y logea a C:\logErroresCorreo\log.txt
     public static async Task<(string logPath, List<MailResult> results)> SendBatchAsync(
-      SmtpSettings cfg,
-      IEnumerable<MailJob> jobs,
-      CancellationToken ct = default)
+   SmtpSettings cfg,
+   IEnumerable<MailJob> jobs,
+   CancellationToken ct = default)
     {
-      if (string.IsNullOrWhiteSpace(cfg.Host)) throw new InvalidOperationException("SMTP Host vacío.");
-      if (string.IsNullOrWhiteSpace(cfg.User)) throw new InvalidOperationException("SMTP User vacío.");
+      if (string.IsNullOrWhiteSpace(cfg.Host))
+        throw new InvalidOperationException("SMTP Host vacío.");
 
       var list = jobs?.ToList() ?? new();
-      if (list.Count == 0)
-        return (logPath: "", results: new List<MailResult>());
+      if (list.Count == 0) return ("", new());
 
-      var from = string.IsNullOrWhiteSpace(cfg.From) ? cfg.User : cfg.From;
+      var from = string.IsNullOrWhiteSpace(cfg.From)
+        ? (string.IsNullOrWhiteSpace(cfg.User) ? "noreply@localhost" : cfg.User)
+        : cfg.From;
 
-      // Gap global entre lotes (evita ráfagas insert→edit)
+      // Gap global anti-ráfaga
       await GlobalGate.WaitAsync(ct);
       try
       {
-        var neededGap = TimeSpan.FromMilliseconds(1500 * list.Count); // ~1.5s por correo
-        var now = DateTime.UtcNow;
-        var elapsed = now - _lastBatchSentUtc;
+        var neededGap = TimeSpan.FromMilliseconds(1500 * list.Count);
+        var elapsed = DateTime.UtcNow - _lastBatchSentUtc;
         if (elapsed < neededGap)
-        {
-          var wait = neededGap - elapsed;
-          await Task.Delay(wait, ct);
-        }
+          await Task.Delay(neededGap - elapsed, ct);
       }
-      finally
-      {
-        GlobalGate.Release();
-      }
+      finally { GlobalGate.Release(); }
 
-      // Archivo de log para este lote
-      string logDir = string.IsNullOrWhiteSpace(cfg.LogDir) ? @"C:\temp" : cfg.LogDir!;
-      Directory.CreateDirectory(logDir);
-      string logFile = Path.Combine(logDir, $"smtp_{DateTime.UtcNow:yyyyMMdd_HHmmss_fff}.log");
+      LogInfo(cfg.LogDir, $"Batch start Host={cfg.Host} PortPref={cfg.Port} From={from} Jobs={list.Count}");
+
+      // Protocol logger (MailKit) → C:\temp
+      string protoDir = @"C:\temp";
+      Directory.CreateDirectory(protoDir);
+      string logFile = Path.Combine(protoDir, $"smtp_{DateTime.UtcNow:yyyyMMdd_HHmmss_fff}.log");
 
       var results = new List<MailResult>();
 
-      // Preferir 465 (HostGator). Para Outlook, más abajo te muestro cómo fijar 587.
-      foreach (var port in PreferredPorts(cfg))
-      {
-        using var logger = new ProtocolLogger(logFile);
-        using var smtp = new MailKit.Net.Smtp.SmtpClient(logger) { Timeout = 15000 };
+      using var logger = new ProtocolLogger(logFile);
+      using var smtp = new MailKit.Net.Smtp.SmtpClient(logger);
 
-        // Si el cert del servidor es válido, comenta la línea de abajo.
+      // TLS fuerte y sin XOAUTH2 (no usamos OAuth)
+      smtp.SslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13;
+      smtp.AuthenticationMechanisms.Remove("XOAUTH2");
+      smtp.Timeout = 20000;
+
+      // Solo confiar en el cert si el perfil lo pide (lab/pruebas). En prod, dejar false.
+      if (cfg.TrustServerCertificate)
         smtp.ServerCertificateValidationCallback = (s, cert, chain, errors) => true;
 
-        try
+      try
+      {
+        LogInfo(cfg.LogDir, $"Connect try Host={cfg.Host} Port={cfg.Port}");
+        await ConnectAndAuthAsync(smtp, cfg, cfg.Port, ct);   // usa la versión que te pasé (465=SSL, 587=StartTls)
+        LogInfo(cfg.LogDir, $"Connected & Authenticated Host={cfg.Host} Port={cfg.Port}");
+
+        for (int i = 0; i < list.Count; i++)
         {
-          await ConnectAndAuthAsync(smtp, cfg, port, ct);
+          var job = list[i];
+          var msg = BuildMimeMessage(from, cfg.FromName, job);
 
-          for (int i = 0; i < list.Count; i++)
+          try
           {
-            var job = list[i];
-            var msg = BuildMimeMessage(from, cfg.FromName, job);
+            await smtp.SendAsync(msg, ct);
+            results.Add(new MailResult { Job = job, AcceptedBySmtp = true });
+            LogInfo(cfg.LogDir, $"250 OK to='{job.To}' subj='{job.Subject}'");
+          }
+          catch (Exception ex)
+          {
+            LogWarn(cfg.LogDir, $"Send failed first try to='{job.To}' subj='{job.Subject}' ex='{ex.Message}'");
 
-            try
+            if (!smtp.IsConnected || !smtp.IsAuthenticated)
             {
-              await smtp.SendAsync(msg, ct);
-              results.Add(new MailResult { Job = job, AcceptedBySmtp = true });
-            }
-            catch (Exception ex)
-            {
-              // Si se cayó la sesión, reintenta reconectando una sola vez
-              if (!smtp.IsConnected || !smtp.IsAuthenticated)
+              await SafeReconnectAsync(smtp, cfg, cfg.Port, ct);
+              try
               {
-                await SafeReconnectAsync(smtp, cfg, port, ct);
-                try
-                {
-                  await smtp.SendAsync(msg, ct);
-                  results.Add(new MailResult { Job = job, AcceptedBySmtp = true });
-                }
-                catch (Exception ex2)
-                {
-                  results.Add(new MailResult { Job = job, AcceptedBySmtp = false, Error = ex2.Message });
-                }
+                await smtp.SendAsync(msg, ct);
+                results.Add(new MailResult { Job = job, AcceptedBySmtp = true });
+                LogInfo(cfg.LogDir, $"250 OK (after reconnect) to='{job.To}' subj='{job.Subject}'");
               }
-              else
+              catch (Exception ex2)
               {
-                results.Add(new MailResult { Job = job, AcceptedBySmtp = false, Error = ex.Message });
+                results.Add(new MailResult { Job = job, AcceptedBySmtp = false, Error = ex2.Message });
+                LogError(cfg.LogDir, $"FAILED to='{job.To}' subj='{job.Subject}' ex='{ex2}'");
               }
             }
-
-            if (i < list.Count - 1)
-              await Task.Delay(InterSendDelayMs, ct);
+            else
+            {
+              results.Add(new MailResult { Job = job, AcceptedBySmtp = false, Error = ex.Message });
+              LogError(cfg.LogDir, $"FAILED (connected) to='{job.To}' subj='{job.Subject}' ex='{ex}'");
+            }
           }
 
-          await smtp.DisconnectAsync(true, ct);
-
-          // Marca fin de lote para calcular el gap del siguiente
-          await GlobalGate.WaitAsync(ct);
-          try { _lastBatchSentUtc = DateTime.UtcNow; }
-          finally { GlobalGate.Release(); }
-
-          return (logFile, results); // OK (no probamos más puertos)
+          if (i < list.Count - 1)
+            await Task.Delay(InterSendDelayMs, ct);
         }
-        catch
-        {
-          // Si falla este puerto, probamos el otro (465 -> 587 o viceversa)
-          if (smtp.IsConnected) { try { await smtp.DisconnectAsync(true, ct); } catch { } }
-        }
+
+        await smtp.DisconnectAsync(true, ct);
+        LogInfo(cfg.LogDir, $"Batch end OK. ProtocolLog='{logFile}'");
+
+        await GlobalGate.WaitAsync(ct);
+        try { _lastBatchSentUtc = DateTime.UtcNow; }
+        finally { GlobalGate.Release(); }
+
+        return (logFile, results);
       }
-
-      // Si no funcionó ningún puerto, devolvemos lo que haya y el path del log
-      throw new InvalidOperationException($"No se pudo enviar por SMTP (revisa el log: {logFile}).");
-    }
-
-    // ===== Helpers =====
-
-    // Para HostGator: intenta 465 y luego 587. Para Outlook, usa 587 (ver nota al final).
-    private static IEnumerable<int> PreferredPorts(SmtpSettings cfg)
-    {
-      // Office 365: solo 587
-      if (cfg.Host.EndsWith("office365.com", StringComparison.OrdinalIgnoreCase))
-        return new[] { 587 };
-
-      // HostGator u otros: conserva preferencia
-      if (cfg.Port == 465) return new[] { 465, 587 };
-      if (cfg.Port == 587) return new[] { 587, 465 };
-      return new[] { 465, 587 };
-    }
-
-    private static async Task ConnectAndAuthAsync(MailKit.Net.Smtp.SmtpClient smtp, SmtpSettings cfg, int port, CancellationToken ct)
-    {
-      // Opcional pero recomendado: limitar protocolos
-      smtp.SslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13;
-
-      if (cfg.Host.EndsWith("office365.com", StringComparison.OrdinalIgnoreCase))
+      catch (Exception ex)
       {
-        // O365 SIEMPRE por 587 + STARTTLS
-        await smtp.ConnectAsync(cfg.Host, port, SecureSocketOptions.StartTls, ct);
+        LogError(cfg.LogDir, $"Batch FAILED Host={cfg.Host} ex='{ex.Message}'. ProtocolLog='{logFile}'");
+        if (smtp.IsConnected) { try { await smtp.DisconnectAsync(true, ct); } catch { } }
+        throw;
       }
-      else
-      {
-        var ssl = (port == 465) ? SecureSocketOptions.SslOnConnect : SecureSocketOptions.StartTls;
-        await smtp.ConnectAsync(cfg.Host, port, ssl, ct);
-      }
-
-      smtp.AuthenticationMechanisms.Remove("XOAUTH2"); // seguimos con user/pass
-      await smtp.AuthenticateAsync(cfg.User, cfg.Pass, ct);
     }
+
+
+    private static async Task ConnectAndAuthAsync(SmtpClient smtp, SmtpSettings cfg, int port, CancellationToken ct)
+    {
+      if (string.IsNullOrWhiteSpace(cfg.Host))
+        throw new InvalidOperationException("SMTP Host vacío.");
+
+      // Elegir modo TLS correcto según puerto
+      var secure = SecureSocketOptions.Auto;
+      if (port == 465) secure = SecureSocketOptions.SslOnConnect;
+      else if (port == 587) secure = SecureSocketOptions.StartTls;
+
+      await smtp.ConnectAsync(cfg.Host, port, secure, ct);
+
+      // Si hay credenciales, autenticamos (recomendado para 465/587)
+      if (!string.IsNullOrWhiteSpace(cfg.User))
+        await smtp.AuthenticateAsync(cfg.User, cfg.Pass, ct);
+    }
+
+
     private static async Task SafeReconnectAsync(MailKit.Net.Smtp.SmtpClient smtp, SmtpSettings cfg, int port, CancellationToken ct)
     {
       if (smtp.IsConnected) { try { await smtp.DisconnectAsync(true, ct); } catch { } }
@@ -208,12 +236,16 @@ namespace AspnetCoreMvcFull.Mailer
       foreach (var a in Split(j.To)) msg.To.Add(MailboxAddress.Parse(a));
       foreach (var a in Split(j.Cc)) msg.Cc.Add(MailboxAddress.Parse(a));
       foreach (var a in Split(j.Bcc)) msg.Bcc.Add(MailboxAddress.Parse(a));
-      if (!string.IsNullOrWhiteSpace(j.ReplyTo)) msg.ReplyTo.Add(MailboxAddress.Parse(j.ReplyTo));
+      if (!string.IsNullOrWhiteSpace(j.ReplyTo))
+        msg.ReplyTo.Add(MailboxAddress.Parse(j.ReplyTo));
 
-      // IDs únicos y fecha actual para evitar deduplicaciones
-      msg.MessageId = MimeUtils.GenerateMessageId("signusid.com");
+      // Message-Id con el dominio del From (mejor para antispam)
+      var fromDomain = "localhost";
+      var at = from.IndexOf('@');
+      if (at > 0 && at < from.Length - 1) fromDomain = from[(at + 1)..];
+
+      msg.MessageId = MimeUtils.GenerateMessageId(fromDomain);
       msg.Date = DateTimeOffset.Now;
-
       msg.Subject = j.Subject;
       msg.Headers.Add("X-ServiceTrackID", DateTime.UtcNow.ToString("yyyyMMddHHmmssfff"));
 
